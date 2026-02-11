@@ -225,7 +225,6 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
           </button>
           {CONTENT_TYPES.map((type) => {
             const count = contentTypeCounts[type] || 0;
-            if (count === 0) return null;
             return (
               <button
                 key={type}

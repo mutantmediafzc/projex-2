@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type MotionTask = {
@@ -9,6 +10,7 @@ type MotionTask = {
   task_number: number;
   workspace_id: string | null;
   parent_task_id: string | null;
+  project_id: string | null;
   title: string;
   description: string | null;
   status: string;
@@ -29,6 +31,14 @@ type MotionTask = {
   labels?: MotionLabel[];
   checklist_items?: MotionChecklistItem[];
   subtasks?: MotionTask[];
+  project?: ProjectSummary | null;
+};
+
+type ProjectSummary = {
+  id: string;
+  name: string;
+  status: string | null;
+  company?: { id: string; name: string } | null;
 };
 
 type MotionLabel = {
@@ -57,6 +67,13 @@ type UserSummary = {
   id: string;
   full_name: string | null;
   email: string | null;
+};
+
+type ProjectOption = {
+  id: string;
+  name: string;
+  status: string | null;
+  company_name: string | null;
 };
 
 type ViewType = "list" | "kanban" | "calendar" | "timeline";
@@ -105,6 +122,7 @@ export default function MotionPage() {
   const [labels, setLabels] = useState<MotionLabel[]>([]);
   const [workspaces, setWorkspaces] = useState<MotionWorkspace[]>([]);
   const [users, setUsers] = useState<UserSummary[]>([]);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -113,11 +131,13 @@ export default function MotionPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
+  const [projectFilter, setProjectFilter] = useState<string>("all");
   const [labelFilter, setLabelFilter] = useState<string>("all");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<MotionTask | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   // Create/Edit form state
   const [formTitle, setFormTitle] = useState("");
@@ -126,6 +146,7 @@ export default function MotionPage() {
   const [formPriority, setFormPriority] = useState("medium");
   const [formDueDate, setFormDueDate] = useState("");
   const [formAssigneeId, setFormAssigneeId] = useState("");
+  const [formProjectId, setFormProjectId] = useState("");
   const [formSaving, setFormSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -138,16 +159,17 @@ export default function MotionPage() {
         setLoading(true);
         setError(null);
 
-        const [tasksRes, labelsRes, workspacesRes, usersRes] = await Promise.all([
+        const [tasksRes, labelsRes, workspacesRes, usersRes, projectsRes] = await Promise.all([
           supabaseClient
             .from("motion_tasks")
-            .select("*")
+            .select("*, project:projects(id, name, status, company:companies(id, name))")
             .eq("is_archived", false)
             .order("sort_order", { ascending: true })
             .order("created_at", { ascending: false }),
           supabaseClient.from("motion_labels").select("*").order("name"),
           supabaseClient.from("motion_workspaces").select("*").order("name"),
           supabaseClient.from("users").select("id, full_name, email").order("full_name"),
+          supabaseClient.from("projects").select("id, name, status, company:companies(name)").eq("is_archived", false).order("name"),
         ]);
 
         if (!isMounted) return;
@@ -155,10 +177,19 @@ export default function MotionPage() {
         if (tasksRes.error) throw new Error(tasksRes.error.message);
         if (labelsRes.error) throw new Error(labelsRes.error.message);
 
-        setTasks((tasksRes.data || []) as MotionTask[]);
+        setTasks((tasksRes.data || []).map((t: any) => ({
+          ...t,
+          project: Array.isArray(t.project) ? t.project[0] || null : t.project,
+        })) as MotionTask[]);
         setLabels((labelsRes.data || []) as MotionLabel[]);
         setWorkspaces((workspacesRes.data || []) as MotionWorkspace[]);
         setUsers((usersRes.data || []) as UserSummary[]);
+        setProjects((projectsRes.data || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          status: p.status,
+          company_name: Array.isArray(p.company) ? p.company[0]?.name : p.company?.name || null,
+        })) as ProjectOption[]);
         setLoading(false);
       } catch (err) {
         if (!isMounted) return;
@@ -178,13 +209,14 @@ export default function MotionPage() {
       if (statusFilter !== "all" && task.status !== statusFilter) return false;
       if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
       if (assigneeFilter !== "all" && task.assignee_id !== assigneeFilter) return false;
+      if (projectFilter !== "all" && task.project_id !== projectFilter) return false;
       if (term) {
-        const searchFields = [task.title, task.description, task.task_id, task.assignee_name].filter(Boolean).join(" ").toLowerCase();
+        const searchFields = [task.title, task.description, task.task_id, task.assignee_name, task.project?.name].filter(Boolean).join(" ").toLowerCase();
         if (!searchFields.includes(term)) return false;
       }
       return true;
     });
-  }, [tasks, searchQuery, statusFilter, priorityFilter, assigneeFilter]);
+  }, [tasks, searchQuery, statusFilter, priorityFilter, assigneeFilter, projectFilter]);
 
   // Group tasks by status for Kanban
   const tasksByStatus = useMemo(() => {
@@ -210,6 +242,7 @@ export default function MotionPage() {
     setFormPriority("medium");
     setFormDueDate("");
     setFormAssigneeId("");
+    setFormProjectId("");
     setFormError(null);
   }, []);
 
@@ -226,6 +259,7 @@ export default function MotionPage() {
     setFormPriority(task.priority);
     setFormDueDate(formatDateForInput(task.due_date));
     setFormAssigneeId(task.assignee_id || "");
+    setFormProjectId(task.project_id || "");
     setFormError(null);
     setSelectedTask(task);
     setIsCreateModalOpen(true);
@@ -263,6 +297,7 @@ export default function MotionPage() {
         due_date: formDueDate ? new Date(formDueDate).toISOString() : null,
         assignee_id: formAssigneeId || null,
         assignee_name: assigneeName,
+        project_id: formProjectId || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -373,6 +408,109 @@ export default function MotionPage() {
     return counts;
   }, [tasks]);
 
+  // Export to Excel (CSV format)
+  const exportToExcel = useCallback(() => {
+    setExporting(true);
+    try {
+      const headers = ["Task ID", "Title", "Description", "Status", "Priority", "Due Date", "Assignee", "Project", "Created At"];
+      const rows = filteredTasks.map((task) => [
+        task.task_id,
+        `"${(task.title || "").replace(/"/g, '""')}"`,
+        `"${(task.description || "").replace(/"/g, '""')}"`,
+        STATUS_CONFIG[task.status]?.label || task.status,
+        PRIORITY_CONFIG[task.priority]?.label || task.priority,
+        task.due_date ? new Date(task.due_date).toLocaleDateString() : "",
+        task.assignee_name || "",
+        task.project?.name || "",
+        task.created_at ? new Date(task.created_at).toLocaleDateString() : "",
+      ]);
+
+      const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `motion-tasks-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [filteredTasks]);
+
+  // Export to PDF
+  const exportToPDF = useCallback(() => {
+    setExporting(true);
+    try {
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("Please allow popups to export PDF");
+        setExporting(false);
+        return;
+      }
+
+      const tableRows = filteredTasks.map((task) => `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${task.task_id}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${task.title}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${STATUS_CONFIG[task.status]?.label || task.status}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${PRIORITY_CONFIG[task.priority]?.label || task.priority}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${task.due_date ? new Date(task.due_date).toLocaleDateString() : "-"}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${task.assignee_name || "-"}</td>
+          <td style="padding: 8px; border: 1px solid #e2e8f0;">${task.project?.name || "-"}</td>
+        </tr>
+      `).join("");
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Motion Tasks Export</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; }
+            h1 { color: #1e293b; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th { background: #f1f5f9; padding: 10px 8px; border: 1px solid #e2e8f0; text-align: left; font-weight: 600; }
+            td { padding: 8px; border: 1px solid #e2e8f0; }
+            tr:nth-child(even) { background: #f8fafc; }
+            .meta { color: #64748b; font-size: 12px; margin-bottom: 16px; }
+          </style>
+        </head>
+        <body>
+          <h1>Motion Tasks</h1>
+          <p class="meta">Exported on ${new Date().toLocaleString()} • ${filteredTasks.length} tasks</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Task ID</th>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Due Date</th>
+                <th>Assignee</th>
+                <th>Project</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    } catch (err) {
+      console.error("PDF export failed:", err);
+    } finally {
+      setExporting(false);
+    }
+  }, [filteredTasks]);
+
   if (loading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -408,15 +546,45 @@ export default function MotionPage() {
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Motion</h1>
           <p className="text-sm text-slate-500">Task management with multiple views</p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition-all hover:shadow-xl hover:shadow-fuchsia-500/30"
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          New Task
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Export Buttons */}
+          <button
+            onClick={exportToExcel}
+            disabled={exporting || filteredTasks.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition-all hover:bg-emerald-100 disabled:opacity-50"
+            title="Export to Excel (CSV)"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M8 13h2M8 17h2M14 13h2M14 17h2" />
+            </svg>
+            Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            disabled={exporting || filteredTasks.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 transition-all hover:bg-red-100 disabled:opacity-50"
+            title="Export to PDF"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14 2 14 8 20 8" />
+              <path d="M9 15v-2h6v2" />
+              <path d="M12 13v5" />
+            </svg>
+            PDF
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/25 transition-all hover:shadow-xl hover:shadow-fuchsia-500/30"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            New Task
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -531,6 +699,17 @@ export default function MotionPage() {
             <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
           ))}
         </select>
+
+        <select
+          value={projectFilter}
+          onChange={(e) => setProjectFilter(e.target.value)}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-black shadow-sm focus:border-fuchsia-500 focus:outline-none"
+        >
+          <option value="all">All Projects</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>{p.name}{p.company_name ? ` (${p.company_name})` : ""}</option>
+          ))}
+        </select>
       </div>
 
       {/* Views */}
@@ -580,7 +759,10 @@ export default function MotionPage() {
           setFormDueDate={setFormDueDate}
           formAssigneeId={formAssigneeId}
           setFormAssigneeId={setFormAssigneeId}
+          formProjectId={formProjectId}
+          setFormProjectId={setFormProjectId}
           users={users}
+          projects={projects}
           formSaving={formSaving}
           formError={formError}
           onSave={handleSaveTask}
@@ -696,6 +878,18 @@ function TaskCard({
       {task.description && (
         <p className="mb-2 text-xs text-slate-500 line-clamp-2">{task.description}</p>
       )}
+      {task.project && (
+        <Link
+          href={`/projects/${task.project.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="mb-2 inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+        >
+          <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+          {task.project.name}
+        </Link>
+      )}
       <div className="flex items-center justify-between gap-2">
         {task.due_date && (
           <span className={`inline-flex items-center gap-1 text-[10px] ${overdue ? "text-red-600 font-semibold" : "text-slate-500"}`}>
@@ -735,6 +929,7 @@ function ListView({
           <tr>
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">ID</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Title</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Project</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Status</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Priority</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600">Due Date</th>
@@ -759,6 +954,21 @@ function ListView({
                   <button onClick={() => onEdit(task)} className="text-left font-medium text-slate-900 hover:text-fuchsia-600">
                     {task.title}
                   </button>
+                </td>
+                <td className="px-4 py-3">
+                  {task.project ? (
+                    <Link
+                      href={`/projects/${task.project.id}`}
+                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors"
+                    >
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
+                      {task.project.name}
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-slate-400">—</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <select
@@ -808,7 +1018,7 @@ function ListView({
           })}
           {tasks.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-400">
+              <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-400">
                 No tasks found
               </td>
             </tr>
@@ -991,7 +1201,10 @@ function TaskModal({
   setFormDueDate,
   formAssigneeId,
   setFormAssigneeId,
+  formProjectId,
+  setFormProjectId,
   users,
+  projects,
   formSaving,
   formError,
   onSave,
@@ -1011,7 +1224,10 @@ function TaskModal({
   setFormDueDate: (v: string) => void;
   formAssigneeId: string;
   setFormAssigneeId: (v: string) => void;
+  formProjectId: string;
+  setFormProjectId: (v: string) => void;
   users: UserSummary[];
+  projects: ProjectOption[];
   formSaving: boolean;
   formError: string | null;
   onSave: () => void;
@@ -1117,6 +1333,20 @@ function TaskModal({
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-slate-700">Project</label>
+              <select
+                value={formProjectId}
+                onChange={(e) => setFormProjectId(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-black focus:border-fuchsia-500 focus:outline-none"
+              >
+                <option value="">No Project</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}{p.company_name ? ` (${p.company_name})` : ""}</option>
+                ))}
+              </select>
             </div>
 
             {formError && (

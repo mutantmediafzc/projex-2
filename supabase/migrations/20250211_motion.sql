@@ -64,6 +64,7 @@ create table if not exists motion_tasks (
   task_id text generated always as ('MTN-' || task_number) stored,
   workspace_id uuid references motion_workspaces(id) on delete set null,
   parent_task_id uuid references motion_tasks(id) on delete cascade,
+  project_id uuid references projects(id) on delete set null,
   
   -- Core fields
   title text not null,
@@ -99,6 +100,7 @@ create table if not exists motion_tasks (
 
 create index if not exists motion_tasks_workspace_id_idx on motion_tasks(workspace_id);
 create index if not exists motion_tasks_parent_task_id_idx on motion_tasks(parent_task_id);
+create index if not exists motion_tasks_project_id_idx on motion_tasks(project_id);
 create index if not exists motion_tasks_assignee_id_idx on motion_tasks(assignee_id);
 create index if not exists motion_tasks_status_idx on motion_tasks(status);
 create index if not exists motion_tasks_due_date_idx on motion_tasks(due_date);

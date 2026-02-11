@@ -60,24 +60,20 @@ const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
 
 const CONTENT_TYPES = [
   "Reel",
-  "Moving Carousel",
-  "Static Carousel",
-  "Moving & Static Carousel",
-  "Story",
-  "Post",
-  "Video",
-  "Live",
+  "Single Image Post",
+  "Carousel Post (Images only)",
+  "Carousel Post (Videos only)",
+  "Carousel Post (Images and Videos)",
+  "Long-Form Video",
 ];
 
 const CONTENT_TYPE_ICONS: Record<string, string> = {
   "Reel": "🎬",
-  "Moving Carousel": "📱",
-  "Static Carousel": "🖼️",
-  "Moving & Static Carousel": "🎭",
-  "Story": "⏱️",
-  "Post": "📝",
-  "Video": "🎥",
-  "Live": "🔴",
+  "Single Image Post": "�️",
+  "Carousel Post (Images only)": "�",
+  "Carousel Post (Videos only)": "🎥",
+  "Carousel Post (Images and Videos)": "📱",
+  "Long-Form Video": "🎞️",
 };
 
 export default function ContentCalendar({ projectId, platforms, brandColor }: Props) {

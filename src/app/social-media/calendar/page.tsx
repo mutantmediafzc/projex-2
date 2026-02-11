@@ -45,13 +45,11 @@ type Project = {
 
 const CONTENT_TYPES = [
   "Reel",
-  "Moving Carousel",
-  "Static Carousel",
-  "Moving & Static Carousel",
-  "Story",
-  "Post",
-  "Video",
-  "Live",
+  "Single Image Post",
+  "Carousel Post (Images only)",
+  "Carousel Post (Videos only)",
+  "Carousel Post (Images and Videos)",
+  "Long-Form Video",
 ];
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
@@ -456,10 +454,11 @@ export default function ContentCalendar2026() {
                   const count = contentTypeCounts[type] || 0;
                   const isSelected = selectedContentTypes.includes(type);
                   const icon = type === "Reel" ? "🎬" 
-                    : type.includes("Carousel") ? "📱" 
-                    : type === "Story" ? "⏱️"
-                    : type === "Video" ? "🎥"
-                    : type === "Live" ? "🔴"
+                    : type === "Single Image Post" ? "🖼️"
+                    : type === "Carousel Post (Images only)" ? "�"
+                    : type === "Carousel Post (Videos only)" ? "🎥"
+                    : type === "Carousel Post (Images and Videos)" ? "📱"
+                    : type === "Long-Form Video" ? "🎞️"
                     : "📝";
                   return (
                     <button

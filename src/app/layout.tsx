@@ -13,6 +13,7 @@ import { MessagesUnreadProvider } from "@/components/MessagesUnreadContext";
 import { TasksNotificationsProvider } from "@/components/TasksNotificationsContext";
 import SupportChat from "@/components/SupportChat";
 import { MobileSidebarProvider, MobileMenuButton } from "@/components/MobileSidebarContext";
+import StatusPromptModal from "@/components/StatusPromptModal";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -358,6 +359,7 @@ export default function RootLayout({
           </ShellFrame>
           </MobileSidebarProvider>
           <SupportChat />
+          <StatusPromptModal />
           </TasksNotificationsProvider>
           </MessagesUnreadProvider>
         </div>

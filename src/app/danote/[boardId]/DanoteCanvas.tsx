@@ -1033,10 +1033,87 @@ function CanvasElement({ element, isSelected, isEditing, onMouseDown, onDoubleCl
   const sel = isSelected ? "ring-2 ring-cyan-500 ring-offset-2" : "";
 
   if (element.type === "note") {
+    const [noteTextareaRef, setNoteTextareaRef] = useState<HTMLTextAreaElement | null>(null);
+    
+    const applyFormat = (format: 'bold' | 'italic' | 'underline') => {
+      if (!noteTextareaRef) return;
+      const start = noteTextareaRef.selectionStart;
+      const end = noteTextareaRef.selectionEnd;
+      const text = noteTextareaRef.value;
+      const selectedText = text.substring(start, end);
+      if (!selectedText) return;
+      
+      let formatted = selectedText;
+      if (format === 'bold') formatted = `**${selectedText}**`;
+      if (format === 'italic') formatted = `*${selectedText}*`;
+      if (format === 'underline') formatted = `__${selectedText}__`;
+      
+      const newText = text.substring(0, start) + formatted + text.substring(end);
+      onContentChange(newText);
+      noteTextareaRef.value = newText;
+      noteTextareaRef.focus();
+    };
+    
+    // Parse markdown-style formatting for display
+    const renderFormattedText = (text: string) => {
+      if (!text) return <span className="text-slate-400">Double-click to edit...</span>;
+      // Replace **text** with bold, *text* with italic, __text__ with underline
+      const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|__[^_]+__)/g);
+      return parts.map((part, idx) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={idx}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+          return <em key={idx}>{part.slice(1, -1)}</em>;
+        }
+        if (part.startsWith('__') && part.endsWith('__')) {
+          return <u key={idx}>{part.slice(2, -2)}</u>;
+        }
+        return part;
+      });
+    };
+    
     return <div style={{ ...base, backgroundColor: element.color }} className={`rounded-lg shadow-lg ${sel}`} onMouseDown={onMouseDown} onDoubleClick={onDoubleClick} onContextMenu={onContextMenu}>
       {element.locked && <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-slate-500 text-white"><svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" /></svg></div>}
-      {isEditing ? <textarea autoFocus defaultValue={element.content} onBlur={(e) => { onContentChange(e.target.value); onEditEnd(); }} onKeyDown={(e) => e.key === "Escape" && onEditEnd()} className="h-full w-full resize-none bg-transparent p-3 text-sm text-slate-700 focus:outline-none" placeholder="Type your note..." />
-        : <div className="h-full w-full overflow-auto p-3 text-sm text-slate-700 whitespace-pre-wrap">{element.content || <span className="text-slate-400">Double-click to edit...</span>}</div>}
+      {isEditing ? (
+        <>
+          {/* Formatting toolbar */}
+          <div className="absolute -top-9 left-0 flex gap-1 bg-white rounded-lg shadow-lg border border-slate-200 p-1 z-50">
+            <button 
+              onClick={(e) => { e.stopPropagation(); applyFormat('bold'); }}
+              className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 font-bold text-slate-700"
+              title="Bold (select text first)"
+            >B</button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); applyFormat('italic'); }}
+              className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 italic text-slate-700"
+              title="Italic (select text first)"
+            >I</button>
+            <button 
+              onClick={(e) => { e.stopPropagation(); applyFormat('underline'); }}
+              className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-100 underline text-slate-700"
+              title="Underline (select text first)"
+            >U</button>
+          </div>
+          <textarea 
+            ref={(el) => setNoteTextareaRef(el)}
+            autoFocus 
+            defaultValue={element.content} 
+            onBlur={(e) => { onContentChange(e.target.value); onEditEnd(); }} 
+            onKeyDown={(e) => {
+              if (e.key === "Escape") onEditEnd();
+              // Ctrl+B for bold, Ctrl+I for italic, Ctrl+U for underline
+              if (e.ctrlKey && e.key === 'b') { e.preventDefault(); applyFormat('bold'); }
+              if (e.ctrlKey && e.key === 'i') { e.preventDefault(); applyFormat('italic'); }
+              if (e.ctrlKey && e.key === 'u') { e.preventDefault(); applyFormat('underline'); }
+            }} 
+            className="h-full w-full resize-none bg-transparent p-3 text-sm text-black focus:outline-none" 
+            placeholder="Type your note..." 
+          />
+        </>
+      ) : (
+        <div className="h-full w-full overflow-auto p-3 text-sm text-slate-700 whitespace-pre-wrap">{renderFormattedText(element.content)}</div>
+      )}
       {isSelected && <div className="absolute -bottom-8 left-0 flex gap-1">{NOTE_COLORS.map((c) => <button key={c.value} onClick={() => onColorChange(c.value)} className="h-5 w-5 rounded-full border-2 border-white shadow" style={{ backgroundColor: c.value }} />)}</div>}
       <ResizeHandles />
     </div>;
@@ -1067,15 +1144,75 @@ function CanvasElement({ element, isSelected, isEditing, onMouseDown, onDoubleCl
   }
 
   if (element.type === "todo") {
-    let todos: { id: string; text: string; checked: boolean }[] = [];
-    try { todos = JSON.parse(element.content || "[]"); } catch {}
+    let todoData: { title?: string; items: { id: string; text: string; checked: boolean }[] } = { items: [] };
+    try { 
+      const parsed = JSON.parse(element.content || "[]");
+      // Support both old array format and new object format
+      if (Array.isArray(parsed)) {
+        todoData = { title: "", items: parsed };
+      } else {
+        todoData = parsed;
+      }
+    } catch {}
+    const todos = todoData.items || [];
+    const listTitle = todoData.title || "";
+    
+    const updateTodos = (newItems: typeof todos, newTitle?: string) => {
+      onContentChange(JSON.stringify({ title: newTitle ?? listTitle, items: newItems }));
+    };
+    
+    const addNewItem = () => {
+      updateTodos([...todos, { id: crypto.randomUUID(), text: "", checked: false }]);
+    };
+    
+    const deleteItem = (idx: number) => {
+      const n = [...todos];
+      n.splice(idx, 1);
+      updateTodos(n);
+    };
+    
     return <div style={{ ...base, backgroundColor: element.color }} className={`rounded-lg shadow-lg ${sel}`} onMouseDown={onMouseDown} onContextMenu={onContextMenu}>
-      <div className="p-3"><h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">To-Do List</h4>
-        <div className="space-y-1.5">{todos.map((todo, idx) => <label key={todo.id} className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={todo.checked} onChange={(e) => { const n = [...todos]; n[idx] = { ...todo, checked: e.target.checked }; onContentChange(JSON.stringify(n)); }} className="rounded border-slate-300" />
-          <input type="text" value={todo.text} onChange={(e) => { const n = [...todos]; n[idx] = { ...todo, text: e.target.value }; onContentChange(JSON.stringify(n)); }} placeholder="Task..." className={`flex-1 bg-transparent focus:outline-none ${todo.checked ? "text-slate-400 line-through" : "text-slate-700"}`} />
-        </label>)}
-          <button onClick={(e) => { e.stopPropagation(); onContentChange(JSON.stringify([...todos, { id: crypto.randomUUID(), text: "", checked: false }])); }} className="mt-1 text-xs text-cyan-600 hover:underline">+ Add item</button>
+      <div className="p-3">
+        <input 
+          type="text" 
+          value={listTitle} 
+          onChange={(e) => updateTodos(todos, e.target.value)} 
+          placeholder="List title..." 
+          className="mb-2 w-full bg-transparent text-xs font-semibold uppercase tracking-wide text-slate-600 placeholder:text-slate-400 focus:outline-none border-b border-transparent focus:border-slate-300"
+        />
+        <div className="space-y-1.5">{todos.map((todo, idx) => <div key={todo.id} className="flex items-center gap-2 text-sm group">
+          <input type="checkbox" checked={todo.checked} onChange={(e) => { const n = [...todos]; n[idx] = { ...todo, checked: e.target.checked }; updateTodos(n); }} className="rounded border-slate-300" />
+          <input 
+            type="text" 
+            value={todo.text} 
+            onChange={(e) => { const n = [...todos]; n[idx] = { ...todo, text: e.target.value }; updateTodos(n); }} 
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addNewItem();
+                // Focus the new input after render
+                setTimeout(() => {
+                  const inputs = e.currentTarget.closest('.space-y-1\\.5')?.querySelectorAll('input[type="text"]');
+                  if (inputs) (inputs[inputs.length - 1] as HTMLInputElement)?.focus();
+                }, 50);
+              }
+              if (e.key === "Backspace" && todo.text === "" && todos.length > 1) {
+                e.preventDefault();
+                deleteItem(idx);
+              }
+            }}
+            placeholder="Task..." 
+            className={`flex-1 bg-transparent text-black focus:outline-none ${todo.checked ? "text-slate-400 line-through" : ""}`} 
+          />
+          <button 
+            onClick={(e) => { e.stopPropagation(); deleteItem(idx); }} 
+            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity p-0.5"
+            title="Delete item"
+          >
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>)}
+          <button onClick={(e) => { e.stopPropagation(); addNewItem(); }} className="mt-1 text-xs text-cyan-600 hover:underline">+ Add item</button>
         </div></div></div>;
   }
 
@@ -1757,16 +1894,87 @@ function CanvasElement({ element, isSelected, isEditing, onMouseDown, onDoubleCl
           />
         </svg>
         {isSelected && (
-          <div className="absolute -bottom-12 left-0 bg-white rounded-lg shadow-lg border border-slate-200 p-2 z-50">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-slate-500 w-10">Color:</span>
-              <div className="flex gap-1">
-                {SHAPE_COLORS.filter(c => c.value !== 'transparent').map((c) => (
-                  <button key={c.value} onClick={() => onMetadataChange({ strokeColor: c.value })} className={`h-4 w-4 rounded-full border ${strokeColor === c.value ? 'ring-2 ring-cyan-500 ring-offset-1' : 'border-slate-300'}`} style={{ backgroundColor: c.value }} />
-                ))}
+          <>
+            {/* Start endpoint handle */}
+            <div 
+              className="absolute w-4 h-4 bg-white border-2 border-cyan-500 rounded-full cursor-move z-10 hover:bg-cyan-100"
+              style={{ left: startX - minX - 8, top: startY - minY - 8 }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const handleDrag = (moveE: MouseEvent) => {
+                  const newStartX = moveE.clientX;
+                  const newStartY = moveE.clientY;
+                  // Hold Shift to make straight (snap to horizontal/vertical)
+                  if (moveE.shiftKey) {
+                    const dx = Math.abs(endX - newStartX);
+                    const dy = Math.abs(endY - newStartY);
+                    if (dx > dy) {
+                      onMetadataChange({ startX: newStartX, startY: endY });
+                    } else {
+                      onMetadataChange({ startX: endX, startY: newStartY });
+                    }
+                  } else {
+                    onMetadataChange({ startX: newStartX, startY: newStartY });
+                  }
+                };
+                const handleUp = () => {
+                  window.removeEventListener('mousemove', handleDrag);
+                  window.removeEventListener('mouseup', handleUp);
+                };
+                window.addEventListener('mousemove', handleDrag);
+                window.addEventListener('mouseup', handleUp);
+              }}
+              title="Drag to move start point (Shift for straight)"
+            />
+            {/* End endpoint handle */}
+            <div 
+              className="absolute w-4 h-4 bg-white border-2 border-cyan-500 rounded-full cursor-move z-10 hover:bg-cyan-100"
+              style={{ left: endX - minX - 8, top: endY - minY - 8 }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const handleDrag = (moveE: MouseEvent) => {
+                  const newEndX = moveE.clientX;
+                  const newEndY = moveE.clientY;
+                  // Hold Shift to make straight (snap to horizontal/vertical)
+                  if (moveE.shiftKey) {
+                    const dx = Math.abs(newEndX - startX);
+                    const dy = Math.abs(newEndY - startY);
+                    if (dx > dy) {
+                      onMetadataChange({ endX: newEndX, endY: startY });
+                    } else {
+                      onMetadataChange({ endX: startX, endY: newEndY });
+                    }
+                  } else {
+                    onMetadataChange({ endX: newEndX, endY: newEndY });
+                  }
+                };
+                const handleUp = () => {
+                  window.removeEventListener('mousemove', handleDrag);
+                  window.removeEventListener('mouseup', handleUp);
+                };
+                window.addEventListener('mousemove', handleDrag);
+                window.addEventListener('mouseup', handleUp);
+              }}
+              title="Drag to move end point (Shift for straight)"
+            />
+            {/* Color picker and make straight button */}
+            <div className="absolute -bottom-16 left-0 bg-white rounded-lg shadow-lg border border-slate-200 p-2 z-50">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium text-slate-500 w-10">Color:</span>
+                <div className="flex gap-1">
+                  {SHAPE_COLORS.filter(c => c.value !== 'transparent').map((c) => (
+                    <button key={c.value} onClick={() => onMetadataChange({ strokeColor: c.value })} className={`h-4 w-4 rounded-full border ${strokeColor === c.value ? 'ring-2 ring-cyan-500 ring-offset-1' : 'border-slate-300'}`} style={{ backgroundColor: c.value }} />
+                  ))}
+                </div>
               </div>
+              <button 
+                onClick={() => onMetadataChange({ startY: endY })}
+                className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 w-full"
+              >
+                Make Horizontal
+              </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     );
@@ -1830,16 +2038,85 @@ function CanvasElement({ element, isSelected, isEditing, onMouseDown, onDoubleCl
           />
         </svg>
         {isSelected && (
-          <div className="absolute -bottom-12 left-0 bg-white rounded-lg shadow-lg border border-slate-200 p-2 z-50">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-medium text-slate-500 w-10">Color:</span>
-              <div className="flex gap-1">
-                {SHAPE_COLORS.filter(c => c.value !== 'transparent').map((c) => (
-                  <button key={c.value} onClick={() => onMetadataChange({ strokeColor: c.value })} className={`h-4 w-4 rounded-full border ${strokeColor === c.value ? 'ring-2 ring-cyan-500 ring-offset-1' : 'border-slate-300'}`} style={{ backgroundColor: c.value }} />
-                ))}
+          <>
+            {/* Start endpoint handle */}
+            <div 
+              className="absolute w-4 h-4 bg-white border-2 border-cyan-500 rounded-full cursor-move z-10 hover:bg-cyan-100"
+              style={{ left: startX - minX + padding - 8, top: startY - minY + padding - 8 }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const handleDrag = (moveE: MouseEvent) => {
+                  const newStartX = moveE.clientX;
+                  const newStartY = moveE.clientY;
+                  if (moveE.shiftKey) {
+                    const dx = Math.abs(endX - newStartX);
+                    const dy = Math.abs(endY - newStartY);
+                    if (dx > dy) {
+                      onMetadataChange({ startX: newStartX, startY: endY });
+                    } else {
+                      onMetadataChange({ startX: endX, startY: newStartY });
+                    }
+                  } else {
+                    onMetadataChange({ startX: newStartX, startY: newStartY });
+                  }
+                };
+                const handleUp = () => {
+                  window.removeEventListener('mousemove', handleDrag);
+                  window.removeEventListener('mouseup', handleUp);
+                };
+                window.addEventListener('mousemove', handleDrag);
+                window.addEventListener('mouseup', handleUp);
+              }}
+              title="Drag to move start point (Shift for straight)"
+            />
+            {/* End endpoint handle (arrow tip) */}
+            <div 
+              className="absolute w-4 h-4 bg-cyan-500 border-2 border-white rounded-full cursor-move z-10 hover:bg-cyan-600"
+              style={{ left: endX - minX + padding - 8, top: endY - minY + padding - 8 }}
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                const handleDrag = (moveE: MouseEvent) => {
+                  const newEndX = moveE.clientX;
+                  const newEndY = moveE.clientY;
+                  if (moveE.shiftKey) {
+                    const dx = Math.abs(newEndX - startX);
+                    const dy = Math.abs(newEndY - startY);
+                    if (dx > dy) {
+                      onMetadataChange({ endX: newEndX, endY: startY });
+                    } else {
+                      onMetadataChange({ endX: startX, endY: newEndY });
+                    }
+                  } else {
+                    onMetadataChange({ endX: newEndX, endY: newEndY });
+                  }
+                };
+                const handleUp = () => {
+                  window.removeEventListener('mousemove', handleDrag);
+                  window.removeEventListener('mouseup', handleUp);
+                };
+                window.addEventListener('mousemove', handleDrag);
+                window.addEventListener('mouseup', handleUp);
+              }}
+              title="Drag to move arrow tip (Shift for straight)"
+            />
+            {/* Color picker and make straight button */}
+            <div className="absolute -bottom-16 left-0 bg-white rounded-lg shadow-lg border border-slate-200 p-2 z-50">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium text-slate-500 w-10">Color:</span>
+                <div className="flex gap-1">
+                  {SHAPE_COLORS.filter(c => c.value !== 'transparent').map((c) => (
+                    <button key={c.value} onClick={() => onMetadataChange({ strokeColor: c.value })} className={`h-4 w-4 rounded-full border ${strokeColor === c.value ? 'ring-2 ring-cyan-500 ring-offset-1' : 'border-slate-300'}`} style={{ backgroundColor: c.value }} />
+                  ))}
+                </div>
               </div>
+              <button 
+                onClick={() => onMetadataChange({ startY: endY })}
+                className="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded text-slate-600 w-full"
+              >
+                Make Horizontal
+              </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     );

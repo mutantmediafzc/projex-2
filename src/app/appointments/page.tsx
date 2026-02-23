@@ -63,6 +63,7 @@ type ServiceOption = {
 const MEETING_TYPE_OPTIONS = [
   { value: "online", label: "Online" },
   { value: "physical", label: "Physical" },
+  { value: "shooting", label: "Shooting Schedule" },
 ];
 
 function generateMeetCode(): string {

@@ -17,6 +17,8 @@ export default function BoardPage() {
   const boardId = params.boardId as string;
   const [board, setBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     async function loadBoard() {
@@ -30,6 +32,21 @@ export default function BoardPage() {
     }
     loadBoard();
   }, [boardId]);
+
+  async function saveBoardName() {
+    if (!board || !editName.trim()) {
+      setIsEditingName(false);
+      return;
+    }
+    const { error } = await supabaseClient
+      .from("danote_boards")
+      .update({ name: editName.trim() })
+      .eq("id", boardId);
+    if (!error) {
+      setBoard({ ...board, name: editName.trim() });
+    }
+    setIsEditingName(false);
+  }
 
   if (loading) {
     return (
@@ -64,7 +81,28 @@ export default function BoardPage() {
             </svg>
           </Link>
           <div>
-            <h1 className="font-semibold text-slate-900">{board.name}</h1>
+            {isEditingName ? (
+              <input
+                autoFocus
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={saveBoardName}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") saveBoardName();
+                  if (e.key === "Escape") setIsEditingName(false);
+                }}
+                className="font-semibold text-black bg-slate-100 px-2 py-0.5 rounded border border-slate-300 focus:outline-none focus:border-cyan-500"
+              />
+            ) : (
+              <h1 
+                className="font-semibold text-slate-900 cursor-pointer hover:bg-slate-100 px-2 py-0.5 rounded -ml-2"
+                onDoubleClick={() => { setEditName(board.name); setIsEditingName(true); }}
+                title="Double-click to rename"
+              >
+                {board.name}
+              </h1>
+            )}
             {board.description && (
               <p className="text-xs text-slate-500">{board.description}</p>
             )}

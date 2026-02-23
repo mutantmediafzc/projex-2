@@ -26,7 +26,10 @@ type CreditEntry = {
   project: Project | null;
 };
 
-type DateRange = "daily" | "weekly" | "monthly" | "all";
+type DateRange = "today" | "daily" | "weekly" | "monthly" | "custom" | "all";
+type SortOption = "latest" | "oldest" | "amount_high" | "amount_low";
+
+const ITEMS_PER_PAGE = 5;
 
 const COST_PER_500_PROMPTS = 41; // AED
 
@@ -52,21 +55,109 @@ function formatDateTime(date: string): string {
   });
 }
 
-function getDateRangeFilter(range: DateRange): Date | null {
+function getDateRangeFilter(range: DateRange, customFrom?: string, customTo?: string): { from: Date | null; to: Date | null } {
   const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  
   switch (range) {
+    case "today":
+      return { from: todayStart, to: todayEnd };
     case "daily":
-      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return { from: todayStart, to: null };
     case "weekly":
       const weekAgo = new Date(now);
       weekAgo.setDate(weekAgo.getDate() - 7);
-      return weekAgo;
+      return { from: weekAgo, to: null };
     case "monthly":
       const monthAgo = new Date(now);
       monthAgo.setMonth(monthAgo.getMonth() - 1);
-      return monthAgo;
+      return { from: monthAgo, to: null };
+    case "custom":
+      return {
+        from: customFrom ? new Date(customFrom) : null,
+        to: customTo ? new Date(customTo + "T23:59:59") : null
+      };
     default:
-      return null;
+      return { from: null, to: null };
+  }
+}
+
+// PDF Export function
+function exportToPDF(data: CreditEntry[], stats: { totalPrompts: number; totalCost: number }, dateRangeLabel: string) {
+  // Create printable HTML
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Windsurf Credits Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; }
+        h1 { color: #4f46e5; margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 24px; }
+        .stats { display: flex; gap: 32px; margin-bottom: 32px; padding: 16px; background: #f8fafc; border-radius: 8px; }
+        .stat { }
+        .stat-label { font-size: 12px; color: #64748b; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #1e293b; }
+        table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+        th { text-align: left; padding: 12px 8px; border-bottom: 2px solid #e2e8f0; font-size: 12px; color: #64748b; text-transform: uppercase; }
+        td { padding: 12px 8px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        .text-right { text-align: right; }
+        .text-indigo { color: #4f46e5; font-weight: 600; }
+        .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8; }
+      </style>
+    </head>
+    <body>
+      <h1>Windsurf Credits Report</h1>
+      <p class="subtitle">Date Range: ${dateRangeLabel} | Generated: ${new Date().toLocaleString()}</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Total Prompts</div>
+          <div class="stat-value">${stats.totalPrompts.toLocaleString()}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Cost</div>
+          <div class="stat-value">AED ${stats.totalCost.toFixed(2)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Total Entries</div>
+          <div class="stat-value">${data.length}</div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Project</th>
+            <th class="text-right">Prompts</th>
+            <th class="text-right">Cost (AED)</th>
+            <th>Date</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(entry => `
+            <tr>
+              <td>${entry.user?.full_name || 'Unknown'}</td>
+              <td>${entry.project?.name || 'Unassigned'}</td>
+              <td class="text-right">${entry.prompts_used.toLocaleString()}</td>
+              <td class="text-right text-indigo">${((entry.prompts_used / 500) * 41).toFixed(2)}</td>
+              <td>${new Date(entry.logged_at).toLocaleDateString()}</td>
+              <td>${entry.notes || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div class="footer">Windsurf Credits Report - Projex by Mutant</div>
+    </body>
+    </html>
+  `;
+  
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
   }
 }
 
@@ -79,9 +170,17 @@ export default function WSReportsPage() {
 
   // Filters
   const [dateRange, setDateRange] = useState<DateRange>("monthly");
+  const [customDateFrom, setCustomDateFrom] = useState<string>("");
+  const [customDateTo, setCustomDateTo] = useState<string>("");
   const [userFilter, setUserFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<SortOption>("latest");
+
+  // Pagination
+  const [entriesPage, setEntriesPage] = useState(1);
+  const [userStatsPage, setUserStatsPage] = useState(1);
+  const [projectStatsPage, setProjectStatsPage] = useState(1);
 
   // Log form state
   const [showLogModal, setShowLogModal] = useState(false);
@@ -182,9 +281,12 @@ export default function WSReportsPage() {
     let result = [...credits];
 
     // Date range filter
-    const rangeDate = getDateRangeFilter(dateRange);
-    if (rangeDate) {
-      result = result.filter(c => new Date(c.logged_at) >= rangeDate);
+    const { from, to } = getDateRangeFilter(dateRange, customDateFrom, customDateTo);
+    if (from) {
+      result = result.filter(c => new Date(c.logged_at) >= from);
+    }
+    if (to) {
+      result = result.filter(c => new Date(c.logged_at) <= to);
     }
 
     // User filter
@@ -211,8 +313,51 @@ export default function WSReportsPage() {
       );
     }
 
+    // Sort
+    switch (sortOption) {
+      case "latest":
+        result.sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime());
+        break;
+      case "oldest":
+        result.sort((a, b) => new Date(a.logged_at).getTime() - new Date(b.logged_at).getTime());
+        break;
+      case "amount_high":
+        result.sort((a, b) => b.prompts_used - a.prompts_used);
+        break;
+      case "amount_low":
+        result.sort((a, b) => a.prompts_used - b.prompts_used);
+        break;
+    }
+
     return result;
-  }, [credits, dateRange, userFilter, projectFilter, searchQuery]);
+  }, [credits, dateRange, customDateFrom, customDateTo, userFilter, projectFilter, searchQuery, sortOption]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setEntriesPage(1);
+    setUserStatsPage(1);
+    setProjectStatsPage(1);
+  }, [dateRange, customDateFrom, customDateTo, userFilter, projectFilter, searchQuery, sortOption]);
+
+  // Paginated data
+  const paginatedCredits = useMemo(() => {
+    const start = (entriesPage - 1) * ITEMS_PER_PAGE;
+    return filteredCredits.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCredits, entriesPage]);
+
+  const totalEntriesPages = Math.ceil(filteredCredits.length / ITEMS_PER_PAGE);
+
+  // Get date range label for PDF
+  const getDateRangeLabel = () => {
+    switch (dateRange) {
+      case "today": return "Today";
+      case "daily": return "Today";
+      case "weekly": return "Last 7 Days";
+      case "monthly": return "Last 30 Days";
+      case "custom": return `${customDateFrom || 'Start'} to ${customDateTo || 'End'}`;
+      default: return "All Time";
+    }
+  };
 
   // Statistics
   const stats = useMemo(() => {
@@ -340,7 +485,7 @@ export default function WSReportsPage() {
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
@@ -359,20 +504,64 @@ export default function WSReportsPage() {
 
           {/* Date Range */}
           <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-            {(["daily", "weekly", "monthly", "all"] as DateRange[]).map((range) => (
+            {(["today", "weekly", "monthly", "custom", "all"] as DateRange[]).map((range) => (
               <button
                 key={range}
                 onClick={() => setDateRange(range)}
-                className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
                   dateRange === range
                     ? "bg-white text-indigo-600 shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                {range.charAt(0).toUpperCase() + range.slice(1)}
+                {range === "custom" ? "Custom" : range.charAt(0).toUpperCase() + range.slice(1)}
               </button>
             ))}
           </div>
+
+          {/* Custom Date Range */}
+          {dateRange === "custom" && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={customDateFrom}
+                onChange={(e) => setCustomDateFrom(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-black focus:border-indigo-500 focus:outline-none"
+              />
+              <span className="text-slate-400">to</span>
+              <input
+                type="date"
+                value={customDateTo}
+                onChange={(e) => setCustomDateTo(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-black focus:border-indigo-500 focus:outline-none"
+              />
+            </div>
+          )}
+
+          {/* Sort Options */}
+          <select
+            value={sortOption}
+            onChange={(e) => setSortOption(e.target.value as SortOption)}
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-black focus:border-indigo-500 focus:outline-none"
+          >
+            <option value="latest">Latest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="amount_high">Highest Amount</option>
+            <option value="amount_low">Lowest Amount</option>
+          </select>
+
+          {/* Export PDF */}
+          <button
+            onClick={() => exportToPDF(filteredCredits, stats, getDateRangeLabel())}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors"
+            title="Export all filtered data to PDF"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3" />
+            </svg>
+            Export PDF
+          </button>
 
           {/* User Filter */}
           <select
@@ -428,72 +617,126 @@ export default function WSReportsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* By User */}
         <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-4">
+          <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Usage by User</h2>
+            <span className="text-xs text-slate-500">{Object.keys(stats.byUser).length} users</span>
           </div>
           <div className="p-5">
             <div className="space-y-3">
-              {Object.entries(stats.byUser)
-                .sort((a, b) => b[1].prompts - a[1].prompts)
-                .slice(0, 10)
-                .map(([userId, data]) => {
-                  const percentage = stats.totalPrompts > 0 ? (data.prompts / stats.totalPrompts) * 100 : 0;
-                  return (
-                    <div key={userId} className="group">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700">{data.name}</span>
-                        <span className="text-sm text-slate-600">
-                          {data.prompts.toLocaleString()} prompts · <span className="font-semibold text-indigo-600">AED {data.cost.toFixed(2)}</span>
-                        </span>
+              {(() => {
+                const sortedUsers = Object.entries(stats.byUser).sort((a, b) => b[1].prompts - a[1].prompts);
+                const totalUserPages = Math.ceil(sortedUsers.length / ITEMS_PER_PAGE);
+                const paginatedUsers = sortedUsers.slice((userStatsPage - 1) * ITEMS_PER_PAGE, userStatsPage * ITEMS_PER_PAGE);
+                
+                return (
+                  <>
+                    {paginatedUsers.map(([userId, data]) => {
+                      const percentage = stats.totalPrompts > 0 ? (data.prompts / stats.totalPrompts) * 100 : 0;
+                      return (
+                        <div key={userId} className="group">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-slate-700">{data.name}</span>
+                            <span className="text-sm text-slate-600">
+                              {data.prompts.toLocaleString()} prompts · <span className="font-semibold text-indigo-600">AED {data.cost.toFixed(2)}</span>
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {sortedUsers.length === 0 && (
+                      <p className="text-center text-sm text-slate-500 py-4">No data for selected period</p>
+                    )}
+                    {totalUserPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-3">
+                        <button
+                          onClick={() => setUserStatsPage(Math.max(1, userStatsPage - 1))}
+                          disabled={userStatsPage === 1}
+                          className="text-xs text-slate-500 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          ← Previous
+                        </button>
+                        <span className="text-xs text-slate-500">{userStatsPage} of {totalUserPages}</span>
+                        <button
+                          onClick={() => setUserStatsPage(Math.min(totalUserPages, userStatsPage + 1))}
+                          disabled={userStatsPage === totalUserPages}
+                          className="text-xs text-slate-500 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next →
+                        </button>
                       </div>
-                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              {Object.keys(stats.byUser).length === 0 && (
-                <p className="text-center text-sm text-slate-500 py-4">No data for selected period</p>
-              )}
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
 
         {/* By Project */}
         <div className="rounded-2xl border border-slate-200 bg-white">
-          <div className="border-b border-slate-100 px-5 py-4">
+          <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-slate-900">Usage by Project</h2>
+            <span className="text-xs text-slate-500">{Object.keys(stats.byProject).length} projects</span>
           </div>
           <div className="p-5">
             <div className="space-y-3">
-              {Object.entries(stats.byProject)
-                .sort((a, b) => b[1].prompts - a[1].prompts)
-                .slice(0, 10)
-                .map(([projectId, data]) => {
-                  const percentage = stats.totalPrompts > 0 ? (data.prompts / stats.totalPrompts) * 100 : 0;
-                  return (
-                    <div key={projectId} className="group">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700">{data.name}</span>
-                        <span className="text-sm text-slate-600">
-                          {data.prompts.toLocaleString()} prompts · <span className="font-semibold text-emerald-600">AED {data.cost.toFixed(2)}</span>
-                        </span>
+              {(() => {
+                const sortedProjects = Object.entries(stats.byProject).sort((a, b) => b[1].prompts - a[1].prompts);
+                const totalProjectPages = Math.ceil(sortedProjects.length / ITEMS_PER_PAGE);
+                const paginatedProjects = sortedProjects.slice((projectStatsPage - 1) * ITEMS_PER_PAGE, projectStatsPage * ITEMS_PER_PAGE);
+                
+                return (
+                  <>
+                    {paginatedProjects.map(([projectId, data]) => {
+                      const percentage = stats.totalPrompts > 0 ? (data.prompts / stats.totalPrompts) * 100 : 0;
+                      return (
+                        <div key={projectId} className="group">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-slate-700">{data.name}</span>
+                            <span className="text-sm text-slate-600">
+                              {data.prompts.toLocaleString()} prompts · <span className="font-semibold text-emerald-600">AED {data.cost.toFixed(2)}</span>
+                            </span>
+                          </div>
+                          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {sortedProjects.length === 0 && (
+                      <p className="text-center text-sm text-slate-500 py-4">No data for selected period</p>
+                    )}
+                    {totalProjectPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-3">
+                        <button
+                          onClick={() => setProjectStatsPage(Math.max(1, projectStatsPage - 1))}
+                          disabled={projectStatsPage === 1}
+                          className="text-xs text-slate-500 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          ← Previous
+                        </button>
+                        <span className="text-xs text-slate-500">{projectStatsPage} of {totalProjectPages}</span>
+                        <button
+                          onClick={() => setProjectStatsPage(Math.min(totalProjectPages, projectStatsPage + 1))}
+                          disabled={projectStatsPage === totalProjectPages}
+                          className="text-xs text-slate-500 hover:text-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next →
+                        </button>
                       </div>
-                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              {Object.keys(stats.byProject).length === 0 && (
-                <p className="text-center text-sm text-slate-500 py-4">No data for selected period</p>
-              )}
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
@@ -592,7 +835,9 @@ export default function WSReportsPage() {
       <div className="rounded-2xl border border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">Credit Entries</h2>
-          <span className="text-sm text-slate-500">{filteredCredits.length} entries</span>
+          <span className="text-sm text-slate-500">
+            Showing {paginatedCredits.length} of {filteredCredits.length} entries
+          </span>
         </div>
 
         {viewMode === "table" ? (
@@ -610,7 +855,7 @@ export default function WSReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredCredits.map((entry) => (
+                {paginatedCredits.map((entry) => (
                   <tr key={entry.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
@@ -653,7 +898,7 @@ export default function WSReportsPage() {
                     </td>
                   </tr>
                 ))}
-                {filteredCredits.length === 0 && (
+                {paginatedCredits.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">
                       No credit entries found for the selected filters
@@ -665,7 +910,7 @@ export default function WSReportsPage() {
           </div>
         ) : (
           <div className="p-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredCredits.map((entry) => (
+            {paginatedCredits.map((entry) => (
               <div key={entry.id} className="rounded-xl border border-slate-200 p-4 hover:shadow-lg transition-all">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -707,11 +952,76 @@ export default function WSReportsPage() {
                 </div>
               </div>
             ))}
-            {filteredCredits.length === 0 && (
+            {paginatedCredits.length === 0 && (
               <div className="col-span-full py-12 text-center text-sm text-slate-500">
                 No credit entries found for the selected filters
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalEntriesPages > 1 && (
+          <div className="border-t border-slate-100 px-5 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEntriesPage(1)}
+                disabled={entriesPage === 1}
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                First
+              </button>
+              <button
+                onClick={() => setEntriesPage(Math.max(1, entriesPage - 1))}
+                disabled={entriesPage === 1}
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Previous
+              </button>
+            </div>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalEntriesPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalEntriesPages <= 5) {
+                  pageNum = i + 1;
+                } else if (entriesPage <= 3) {
+                  pageNum = i + 1;
+                } else if (entriesPage >= totalEntriesPages - 2) {
+                  pageNum = totalEntriesPages - 4 + i;
+                } else {
+                  pageNum = entriesPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setEntriesPage(pageNum)}
+                    className={`w-8 h-8 text-sm rounded-lg transition-colors ${
+                      entriesPage === pageNum
+                        ? "bg-indigo-500 text-white"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setEntriesPage(Math.min(totalEntriesPages, entriesPage + 1))}
+                disabled={entriesPage === totalEntriesPages}
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+              <button
+                onClick={() => setEntriesPage(totalEntriesPages)}
+                disabled={entriesPage === totalEntriesPages}
+                className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Last
+              </button>
+            </div>
           </div>
         )}
       </div>

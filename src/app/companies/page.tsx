@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import RequireAdmin from "@/components/RequireAdmin";
 
 type CompanyRow = {
   id: string;
@@ -127,6 +128,7 @@ export default function CompaniesPage() {
   }
 
   return (
+    <RequireAdmin>
     <div className="space-y-6">
       {/* Header with gradient accent */}
       <div className="relative">
@@ -399,6 +401,7 @@ export default function CompaniesPage() {
         </div>
       )}
     </div>
+    </RequireAdmin>
   );
 }
 

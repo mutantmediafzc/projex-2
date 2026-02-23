@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import RequireAdmin from "@/components/RequireAdmin";
 
 type Contact = {
   id: string;
@@ -104,6 +105,7 @@ export default function ContactsPage() {
   }, [contacts, search, filterPrimary]);
 
   return (
+    <RequireAdmin>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6 md:p-8">
       <div className="mx-auto max-w-7xl space-y-8">
         {/* Header */}
@@ -393,5 +395,6 @@ export default function ContactsPage() {
         </div>
       )}
     </div>
+    </RequireAdmin>
   );
 }

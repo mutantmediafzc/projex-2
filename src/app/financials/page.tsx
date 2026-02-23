@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import RequireAdmin from "@/components/RequireAdmin";
 
 type Invoice = {
   id: string;
@@ -153,6 +154,7 @@ export default function FinancialsPage() {
   const hasActiveFilters = dateFromFilter || dateToFilter || typeFilter !== "all" || statusFilter !== "all" || companyFilter !== "all" || projectFilter !== "all";
 
   return (
+    <RequireAdmin>
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -277,5 +279,6 @@ export default function FinancialsPage() {
         </div>
       )}
     </div>
+    </RequireAdmin>
   );
 }

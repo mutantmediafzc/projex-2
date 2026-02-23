@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import RequireAdmin from "@/components/RequireAdmin";
 
 type AccountClient = {
   id: string;
@@ -175,6 +176,7 @@ export default function AccountsPage() {
   }
 
   return (
+    <RequireAdmin>
     <div className="space-y-6">
       {/* Header */}
       <div className="relative">
@@ -380,6 +382,7 @@ export default function AccountsPage() {
         <CardView clients={filteredClients} />
       )}
     </div>
+    </RequireAdmin>
   );
 }
 

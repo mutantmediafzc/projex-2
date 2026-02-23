@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NewUserModal from "./NewUserModal";
+import RequireAdmin from "@/components/RequireAdmin";
 
 type WorkStatus = "available" | "on_leave" | "wfh";
 
@@ -51,6 +52,7 @@ export default function UsersPageClient({ users }: Props) {
     : users.filter(u => u.work_status === statusFilter);
 
   return (
+    <RequireAdmin>
     <div className="space-y-6">
       {/* Decorative gradient background */}
       <div className="pointer-events-none fixed top-[120px] right-0 h-[400px] w-[500px] overflow-hidden opacity-50">
@@ -237,5 +239,6 @@ export default function UsersPageClient({ users }: Props) {
         <NewUserModal onClose={() => setShowAddModal(false)} />
       )}
     </div>
+    </RequireAdmin>
   );
 }

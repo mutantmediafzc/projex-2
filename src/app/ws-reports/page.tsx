@@ -505,36 +505,86 @@ export default function WSReportsPage() {
           <h2 className="text-lg font-semibold text-slate-900">Daily Usage Trend</h2>
         </div>
         <div className="p-5">
-          <div className="flex items-end gap-1 h-40">
-            {Object.entries(stats.byDay)
+          {(() => {
+            const sortedDays = Object.entries(stats.byDay)
               .sort((a, b) => a[0].localeCompare(b[0]))
-              .slice(-14)
-              .map(([day, prompts]) => {
-                const maxPrompts = Math.max(...Object.values(stats.byDay));
-                const height = maxPrompts > 0 ? (prompts / maxPrompts) * 100 : 0;
-                return (
-                  <div key={day} className="flex-1 flex flex-col items-center gap-1 group">
-                    <div className="relative w-full">
-                      <div
-                        className="w-full bg-gradient-to-t from-indigo-500 to-violet-400 rounded-t-lg transition-all group-hover:from-indigo-600 group-hover:to-violet-500"
-                        style={{ height: `${Math.max(height, 4)}%`, minHeight: 4 }}
-                      />
-                      <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                        {prompts.toLocaleString()} prompts
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-slate-500 truncate w-full text-center">
-                      {new Date(day).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
+              .slice(-14);
+            const maxPrompts = sortedDays.length > 0 ? Math.max(...sortedDays.map(([, p]) => p)) : 0;
+            const chartHeight = 160; // pixels
+            
+            // Calculate nice Y-axis values
+            const yAxisMax = maxPrompts > 0 ? Math.ceil(maxPrompts / 1000) * 1000 : 1000;
+            const yAxisMid = yAxisMax / 2;
+            
+            if (sortedDays.length === 0) {
+              return (
+                <div className="flex items-center justify-center h-40 text-sm text-slate-500">
+                  No data for selected period
+                </div>
+              );
+            }
+            
+            return (
+              <div className="flex gap-4">
+                {/* Y-axis labels */}
+                <div className="flex flex-col justify-between text-right text-xs text-slate-400 py-1" style={{ height: chartHeight }}>
+                  <span>{yAxisMax.toLocaleString()}</span>
+                  <span>{yAxisMid.toLocaleString()}</span>
+                  <span>0</span>
+                </div>
+                
+                {/* Chart area */}
+                <div className="flex-1 relative">
+                  {/* Grid lines */}
+                  <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+                    <div className="border-b border-slate-100" />
+                    <div className="border-b border-slate-100" />
+                    <div className="border-b border-slate-200" />
                   </div>
-                );
-              })}
-            {Object.keys(stats.byDay).length === 0 && (
-              <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
-                No data for selected period
+                  
+                  {/* Bars */}
+                  <div className="relative flex items-end gap-1" style={{ height: chartHeight }}>
+                    {sortedDays.map(([day, prompts]) => {
+                      const barHeight = yAxisMax > 0 ? (prompts / yAxisMax) * chartHeight : 0;
+                      return (
+                        <div key={day} className="flex-1 flex flex-col items-center group cursor-pointer">
+                          <div className="w-full flex items-end justify-center" style={{ height: chartHeight }}>
+                            <div
+                              className="w-full max-w-[40px] bg-gradient-to-t from-amber-400 to-amber-300 rounded-t transition-all duration-300 group-hover:from-amber-500 group-hover:to-amber-400 relative"
+                              style={{ height: Math.max(barHeight, 2) }}
+                            >
+                              {/* Tooltip */}
+                              <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs px-2 py-1.5 rounded-lg whitespace-nowrap z-10 shadow-lg">
+                                <div className="font-semibold">{prompts.toLocaleString()} prompts</div>
+                                <div className="text-slate-300 text-[10px]">AED {calculateCost(prompts).toFixed(2)}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* X-axis labels */}
+                  <div className="flex mt-2">
+                    {sortedDays.map(([day], idx) => (
+                      <div key={day} className="flex-1 text-center">
+                        {idx === 0 || idx === sortedDays.length - 1 || sortedDays.length <= 7 ? (
+                          <span className="text-[10px] text-slate-500">
+                            {new Date(day).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        ) : idx === Math.floor(sortedDays.length / 2) ? (
+                          <span className="text-[10px] text-slate-500">
+                            {new Date(day).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       </div>
 

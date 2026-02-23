@@ -294,6 +294,19 @@ export default function RootLayout({
                   </span>
                   <span>Dischat</span>
                 </Link>
+
+                {/* WS Reports - Windsurf Credits Tracking */}
+                <Link
+                  href="/ws-reports"
+                  className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition-all hover:bg-gradient-to-r hover:from-purple-50 hover:to-indigo-50 hover:text-slate-900 hover:shadow-sm"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-600 shadow-sm transition-all group-hover:from-purple-500 group-hover:to-indigo-500 group-hover:text-white group-hover:shadow-lg group-hover:shadow-purple-500/25">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  </span>
+                  <span>WS Reports</span>
+                </Link>
               </nav>
             </aside>
             </ShellSidebar>

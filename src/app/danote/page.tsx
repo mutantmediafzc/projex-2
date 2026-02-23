@@ -242,7 +242,7 @@ export default function DanotePage() {
 
       {/* New Board Modal */}
       {showNewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Create New Board</h2>
             <div className="space-y-4">
@@ -292,7 +292,7 @@ export default function DanotePage() {
 
       {/* Link to Project Modal */}
       {showLinkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Link Board to Project</h2>
             <p className="mb-4 text-sm text-slate-500">Connect this board to a project for better organization.</p>

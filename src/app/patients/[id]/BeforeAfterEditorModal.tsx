@@ -220,7 +220,7 @@ export default function BeforeAfterEditorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 py-6">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 px-4 py-6">
       <div className="relative flex h-[80vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-slate-50 shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/80 px-4 py-2 text-xs">
           <div className="flex items-center gap-2">

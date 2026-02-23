@@ -199,7 +199,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 overflow-y-auto py-4">
+    <div className="fixed inset-0 z-[99999] flex items-start justify-center bg-black/50 overflow-y-auto py-4">
       <div className="flex w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
         {/* Left: Image/Video Preview Area */}
         <div className="w-48 bg-slate-100 flex-shrink-0 flex flex-col items-center justify-center p-4 border-r border-slate-200">
@@ -547,7 +547,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
 
       {/* Video Preview Modal */}
       {showVideoPreview && videoUrl && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70" onClick={() => setShowVideoPreview(false)}>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70" onClick={() => setShowVideoPreview(false)}>
           <div className="bg-white rounded-xl p-4 max-w-2xl w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-slate-900">Video Preview</h3>

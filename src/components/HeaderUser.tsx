@@ -130,19 +130,29 @@ export default function HeaderUser() {
       </button>
 
       {confirmOpen ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/30 backdrop-blur-sm">
-          <div className="w-full max-w-xs rounded-2xl border border-white/70 bg-white/95 p-4 text-xs shadow-[0_18px_40px_rgba(15,23,42,0.25)]">
-            <h2 className="text-sm font-semibold text-slate-900">Sign out</h2>
-            <p className="mt-1 text-xs text-slate-500">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm" onClick={() => setConfirmOpen(false)}>
+          <div className="relative w-full max-w-xs rounded-2xl border border-white/70 bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              className="absolute top-3 right-3 flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-base font-semibold text-slate-900">Sign out</h2>
+            <p className="mt-2 text-sm text-slate-500">
               Are you sure you want to log out?
             </p>
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setConfirmOpen(false)}
-                className="inline-flex items-center rounded-full border border-slate-200/80 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm hover:bg-slate-50"
+                className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm hover:bg-slate-50"
               >
-                No
+                Cancel
               </button>
               <button
                 type="button"
@@ -150,9 +160,9 @@ export default function HeaderUser() {
                   setConfirmOpen(false);
                   await confirmLogout();
                 }}
-                className="inline-flex items-center rounded-full border border-sky-200/80 bg-sky-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-[0_8px_20px_rgba(15,23,42,0.25)] hover:bg-sky-700"
+                className="inline-flex items-center rounded-xl bg-red-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-red-500/25 hover:bg-red-600"
               >
-                Yes
+                Sign out
               </button>
             </div>
           </div>

@@ -170,7 +170,7 @@ export default function LeadsAttributionTab({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Add Lead</h2>
             <div className="space-y-4">

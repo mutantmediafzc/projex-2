@@ -590,7 +590,7 @@ export default function ProjectDetailsCard({
 
       {/* Social Calendar Selection Modal */}
       {showCalendarModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 bg-gradient-to-r from-pink-50 to-fuchsia-50 px-5 py-4">

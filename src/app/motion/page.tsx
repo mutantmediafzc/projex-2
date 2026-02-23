@@ -1235,7 +1235,7 @@ function TaskModal({
   onDelete?: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-2xl border border-slate-200/50 bg-white shadow-2xl">
         {/* Header */}
         <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-fuchsia-500 via-purple-500 to-violet-500 px-6 py-5">

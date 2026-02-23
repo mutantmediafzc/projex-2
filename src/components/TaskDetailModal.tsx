@@ -166,7 +166,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
         <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-4 shadow-2xl">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
           <span className="text-sm text-slate-600">Loading task...</span>
@@ -177,7 +177,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
 
   if (!task) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
         <div className="rounded-2xl bg-white p-6 shadow-2xl">
           <p className="text-sm text-slate-600">Task not found</p>
           <button onClick={onClose} className="mt-4 rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200">
@@ -193,7 +193,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
   const project = task.project as { id: string; name: string } | null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-6">
+    <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-6">
       <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full sm:max-w-xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden rounded-t-2xl sm:rounded-2xl border-0 sm:border border-slate-200/50 bg-white shadow-2xl safe-area-inset-bottom">
         {/* Header with gradient */}

@@ -482,7 +482,7 @@ export default function VideoCall({ channelId, serverId, channelName, currentUse
 
       {/* Invite Modal */}
       {showInviteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
           <div className="w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Invite to Call</h3>

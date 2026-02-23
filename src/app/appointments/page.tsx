@@ -1807,7 +1807,7 @@ export default function CalendarPage() {
           </div>
         )}
         {editModalOpen && editingAppointment ? (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white/95 p-4 text-xs shadow-[0_24px_60px_rgba(15,23,42,0.75)]">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="text-sm font-semibold text-slate-900">Edit Meeting</h2>

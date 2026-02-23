@@ -314,7 +314,7 @@ function EditClientModal({ client, onClose, onSave }: { client: AccountClient; o
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
         <button onClick={onClose} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600">
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

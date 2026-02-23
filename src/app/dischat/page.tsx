@@ -2719,7 +2719,7 @@ export default function DischatPage() {
 
       {/* Invite User Modal */}
       {showInviteUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
           <div className="w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">Invite Users</h2>
@@ -2802,7 +2802,7 @@ export default function DischatPage() {
 
       {/* New DM Modal */}
       {showNewDMModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
           <div className="w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white">New Message</h2>
@@ -2973,7 +2973,7 @@ function CreateServerModal({
   const [name, setName] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl">
         <h2 className="text-xl font-bold text-white">Create a Server</h2>
         <p className="mt-2 text-sm text-slate-400">
@@ -3032,7 +3032,7 @@ function CreateChannelModal({
   ] as const;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-lg bg-slate-800 p-6 shadow-xl">
         <h2 className="text-xl font-bold text-white">Create Channel</h2>
 

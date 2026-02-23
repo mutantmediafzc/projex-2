@@ -318,7 +318,7 @@ export default function ProjectContextCard({
 
     {/* Project Brief Modal */}
     {briefModalOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
         <button type="button" className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setBriefModalOpen(false)} />
         <div className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
           {briefModalMode === "form" ? (
@@ -412,7 +412,7 @@ export default function ProjectContextCard({
 
     {/* Brand Guidelines Modal */}
     {brandModalOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
         <button type="button" className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setBrandModalOpen(false)} />
         <div className="relative z-10 max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
           {brandModalMode === "upload" ? (

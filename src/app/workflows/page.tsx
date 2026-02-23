@@ -372,7 +372,7 @@ function EmailBuilderModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4 py-6">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/50 px-4 py-6">
       <div className="flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <div>

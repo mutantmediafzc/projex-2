@@ -75,7 +75,7 @@ export default function NewUserModal({ onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-2xl border border-slate-200/50 bg-white shadow-2xl">
         {/* Header */}
         <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 px-6 py-5">

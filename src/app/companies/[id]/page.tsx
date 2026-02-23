@@ -975,7 +975,7 @@ export default function CompanyDetailPage() {
 
       {/* Edit Contact Modal */}
       {editingContact && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-slate-900">Edit Contact</h2>
@@ -1636,7 +1636,7 @@ function AddContactModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Gradient bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-violet-500 to-purple-500" />
@@ -1872,7 +1872,7 @@ function AddProjectModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col">
         {/* Gradient bar */}
         <div className="h-1.5 w-full bg-gradient-to-r from-emerald-500 to-teal-500 shrink-0" />

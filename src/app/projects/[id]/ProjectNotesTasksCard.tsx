@@ -2152,7 +2152,7 @@ export default function ProjectNotesTasksCard({
       )}
 
       {isTaskModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
           <button
             type="button"
             className="absolute inset-0 bg-slate-900/40"

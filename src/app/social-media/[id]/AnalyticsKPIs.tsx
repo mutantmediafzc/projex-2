@@ -200,7 +200,7 @@ function ReportModal({ report, projectId, selectedMonth, onClose, onSaved }: { r
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white p-6">
           <h2 className="text-lg font-semibold text-slate-900">{report ? "Edit Report" : "Add Report"} - {selectedMonth}</h2>

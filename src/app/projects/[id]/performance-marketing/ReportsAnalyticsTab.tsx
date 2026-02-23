@@ -249,7 +249,7 @@ export default function ReportsAnalyticsTab({
 
       {/* Generate Report Modal */}
       {showShareModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Generate Client Report</h2>
             {!publicToken ? (

@@ -15,7 +15,7 @@ type Props = {
 
 export default function InvoicePdfModal({ invoice, onClose }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
       <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-4xl h-[90vh] flex flex-col rounded-2xl bg-white shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">

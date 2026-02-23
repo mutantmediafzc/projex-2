@@ -312,7 +312,7 @@ export default function PublicViewPage({ params }: { params: Promise<{ token: st
 
       {/* Name Prompt Modal */}
       {showNamePrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-slate-900">Enter Your Name</h3>
             <input type="text" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Your name"
@@ -327,7 +327,7 @@ export default function PublicViewPage({ params }: { params: Promise<{ token: st
 
       {/* Comment Modal */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="mb-4 text-lg font-semibold text-slate-900">Request Changes</h3>
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4}

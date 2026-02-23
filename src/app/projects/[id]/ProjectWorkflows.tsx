@@ -121,7 +121,7 @@ function AssignmentModal({ userName, onClose }: { userName: string; onClose: () 
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div ref={ref} className="relative rounded-2xl bg-white p-6 shadow-2xl text-center max-w-sm mx-4">
         <button onClick={onClose} className="absolute top-3 right-3 text-slate-400 hover:text-slate-600">
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>

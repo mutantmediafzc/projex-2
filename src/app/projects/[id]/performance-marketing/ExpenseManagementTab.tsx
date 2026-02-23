@@ -206,7 +206,7 @@ export default function ExpenseManagementTab({
       )}
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Add Expense Entry</h2>
             <div className="space-y-4">
@@ -268,7 +268,7 @@ export default function ExpenseManagementTab({
       )}
 
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Import CSV</h2>
             {!csvFile ? (

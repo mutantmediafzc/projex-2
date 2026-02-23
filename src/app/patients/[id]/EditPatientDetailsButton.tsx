@@ -40,7 +40,7 @@ export default function EditPatientDetailsButton({
       </button>
       {open && mounted
         ? createPortal(
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
               <div className="relative w-full max-w-3xl rounded-2xl border border-slate-200/80 bg-slate-900/10 p-1 shadow-[0_24px_60px_rgba(15,23,42,0.65)]">
                 <div className="max-h-[80vh] overflow-y-auto rounded-xl bg-white/95 p-4">
                   <PatientDetailsWizard

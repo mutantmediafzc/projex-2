@@ -215,7 +215,7 @@ export default function ProfileSecurity() {
 
       {/* Crop Modal */}
       {showCropModal && selectedImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-semibold text-slate-900">Crop Photo</h3>
             <p className="mt-1 text-xs text-slate-500">Adjust the crop area for your profile photo.</p>

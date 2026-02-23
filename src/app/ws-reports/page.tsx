@@ -403,19 +403,21 @@ export default function WSReportsPage() {
           <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-1">
             <button
               onClick={() => setViewMode("table")}
-              className={`rounded-lg p-2 transition-all ${viewMode === "table" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`rounded-lg p-2.5 transition-all ${viewMode === "table" ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600 hover:bg-white/50"}`}
+              title="Table View"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M3 6h18M3 12h18M3 18h18" />
               </svg>
             </button>
             <button
               onClick={() => setViewMode("cards")}
-              className={`rounded-lg p-2 transition-all ${viewMode === "cards" ? "bg-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              className={`rounded-lg p-2.5 transition-all ${viewMode === "cards" ? "bg-white shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600 hover:bg-white/50"}`}
+              title="Card View"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
-                <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
               </svg>
             </button>
           </div>

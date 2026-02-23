@@ -560,11 +560,30 @@ export default function MessagesPage() {
                     </div>
                   </div>
 
-                  {/* Arrow */}
-                  <div className="shrink-0 text-slate-300 transition-transform group-hover:translate-x-1">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
+                  {/* Actions */}
+                  <div className="shrink-0 flex items-center gap-2">
+                    {isUnread && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMarkAsRead(mention);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-50 px-3 py-2 text-[11px] font-semibold text-violet-700 transition-all hover:bg-violet-100"
+                      >
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Mark read
+                      </button>
+                    )}
+                    <div className="text-slate-300 transition-transform group-hover:translate-x-1">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </div>
                   </div>
                 </Link>
               );

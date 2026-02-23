@@ -526,6 +526,23 @@ export default function NotificationsPage() {
 
                   {/* Actions */}
                   <div className="shrink-0 flex items-center gap-2">
+                    {isUnread && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleMarkNotificationRead(row);
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-orange-50 px-3 py-2 text-[11px] font-semibold text-orange-700 transition-all hover:bg-orange-100"
+                      >
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        Mark read
+                      </button>
+                    )}
                     {!isCompleted ? (
                       <button
                         type="button"

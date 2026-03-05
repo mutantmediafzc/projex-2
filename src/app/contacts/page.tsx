@@ -37,6 +37,8 @@ export default function ContactsPage() {
   const [filterPrimary, setFilterPrimary] = useState<"all" | "primary" | "secondary">("all");
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [saving, setSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
     loadContacts();
@@ -104,6 +106,18 @@ export default function ContactsPage() {
     });
   }, [contacts, search, filterPrimary]);
 
+  // Pagination
+  const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredContacts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredContacts, currentPage, ITEMS_PER_PAGE]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterPrimary]);
+
   return (
     <RequireAdmin>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 p-6 md:p-8">
@@ -170,7 +184,7 @@ export default function ContactsPage() {
 
         {/* Results count */}
         <p className="text-sm text-slate-500">
-          Showing {filteredContacts.length} of {contacts.length} contacts
+          Showing {paginatedContacts.length} of {filteredContacts.length} contacts
         </p>
 
         {/* Contacts Grid */}
@@ -190,8 +204,9 @@ export default function ContactsPage() {
             <p className="mt-1 text-[12px] text-slate-500">Try adjusting your search or filters</p>
           </div>
         ) : (
+          <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredContacts.map((contact) => {
+            {paginatedContacts.map((contact) => {
               const name = formatFullName(contact.first_name, contact.last_name) || "Unnamed";
               const initials = `${(contact.first_name || "?").charAt(0)}${(contact.last_name || "").charAt(0)}`.toUpperCase();
               
@@ -284,6 +299,86 @@ export default function ContactsPage() {
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-6">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m11 17-5-5 5-5" />
+                  <path d="m18 17-5-5 5-5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m15 18-6-6 6-6" />
+                </svg>
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-[13px] font-medium transition-colors ${
+                        currentPage === pageNum
+                          ? "bg-gradient-to-r from-rose-500 to-pink-500 text-white shadow-md"
+                          : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m13 17 5-5-5-5" />
+                  <path d="m6 17 5-5-5-5" />
+                </svg>
+              </button>
+              <span className="ml-2 text-[12px] text-slate-500">
+                Page {currentPage} of {totalPages}
+              </span>
+            </div>
+          )}
+          </>
         )}
       </div>
 

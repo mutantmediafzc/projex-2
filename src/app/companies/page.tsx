@@ -45,6 +45,8 @@ export default function CompaniesPage() {
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [industryFilter, setIndustryFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   useEffect(() => {
     let isMounted = true;
@@ -59,8 +61,7 @@ export default function CompaniesPage() {
           .select(
             "id, name, legal_name, website, email, phone, industry, size, town, country, created_at",
           )
-          .order("created_at", { ascending: false })
-          .limit(1000);
+          .order("created_at", { ascending: false });
 
         if (!isMounted) return;
 
@@ -119,6 +120,18 @@ export default function CompaniesPage() {
     
     return result;
   }, [companies, search, industryFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
+  const paginatedCompanies = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCompanies.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCompanies, currentPage, ITEMS_PER_PAGE]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, industryFilter]);
 
   const uniqueIndustries = [...new Set(companies.map((c) => c.industry).filter(Boolean))];
 
@@ -276,7 +289,7 @@ export default function CompaniesPage() {
           </button>
         )}
         <div className="ml-auto text-[12px] text-slate-500">
-          Showing {filteredCompanies.length} of {companies.length}
+          Showing {paginatedCompanies.length} of {filteredCompanies.length}
         </div>
       </div>
 
@@ -320,8 +333,9 @@ export default function CompaniesPage() {
           )}
         </div>
       ) : (
+        <>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredCompanies.map((company) => {
+          {paginatedCompanies.map((company) => {
             const location = [company.town, company.country].filter(Boolean).join(", ");
             const industryColor = INDUSTRY_COLORS[company.industry || ""] || "from-slate-400 to-slate-500";
 
@@ -399,6 +413,86 @@ export default function CompaniesPage() {
             );
           })}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-4">
+            <button
+              type="button"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m11 17-5-5 5-5" />
+                <path d="m18 17-5-5 5-5" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    type="button"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`inline-flex h-8 min-w-[2rem] items-center justify-center rounded-lg px-2 text-[13px] font-medium transition-colors ${
+                      currentPage === pageNum
+                        ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-md"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m13 17 5-5-5-5" />
+                <path d="m6 17 5-5-5-5" />
+              </svg>
+            </button>
+            <span className="ml-2 text-[12px] text-slate-500">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+        )}
+        </>
       )}
     </div>
     </RequireAdmin>

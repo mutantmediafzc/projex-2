@@ -60,7 +60,7 @@ export default function CompaniesPage() {
             "id, name, legal_name, website, email, phone, industry, size, town, country, created_at",
           )
           .order("created_at", { ascending: false })
-          .limit(100);
+          .limit(1000);
 
         if (!isMounted) return;
 

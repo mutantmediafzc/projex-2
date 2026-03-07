@@ -464,9 +464,7 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
     setData(updated); await save(updated);
   }
 
-  if (projectType !== "website") {
-    return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><h3 className="text-lg font-semibold text-slate-900">Workflow Not Available</h3><p className="mt-2 text-sm text-slate-500">Workflows are only available for Website projects.</p></div>;
-  }
+  // Removed restriction - workflows are now available for all project types via the wrapper
 
   const completedSteps = data.steps.filter(s => s.status === "completed").length;
   const totalSteps = data.steps.length;

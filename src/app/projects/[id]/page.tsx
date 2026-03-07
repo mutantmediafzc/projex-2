@@ -6,7 +6,7 @@ import ProjectNotesTasksCard from "./ProjectNotesTasksCard";
 import ProjectContextCard from "./ProjectContextCard";
 import ProjectDetailsCard from "./ProjectDetailsCard";
 import InvoiceManagement from "./InvoiceManagement";
-import ProjectWorkflows from "./ProjectWorkflows";
+import ProjectWorkflowsWrapper from "./ProjectWorkflowsWrapper";
 import ProjectDanoteButton from "./ProjectDanoteButton";
 import PerformanceMarketingButton from "./PerformanceMarketingButton";
 
@@ -292,6 +292,23 @@ export default async function ProjectPage({
           </div>
 
           <ProjectNotesTasksCard projectId={project.id} />
+
+          {/* Workflows Section - Available to all users */}
+          <div className="mt-6">
+            <div className="rounded-lg border border-slate-200/80 bg-white shadow-sm">
+              <div className="border-b border-slate-200 px-4 py-3">
+                <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  <svg className="h-4 w-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                  Project Workflow
+                </h3>
+              </div>
+              <div className="p-4">
+                <ProjectWorkflowsWrapper projectId={project.id} projectType={project.project_type} />
+              </div>
+            </div>
+          </div>
         </>
       ) : (
         <div className="space-y-5">
@@ -364,7 +381,7 @@ export default async function ProjectPage({
               ) : null}
 
               {adminTab === "workflows" ? (
-                <ProjectWorkflows projectId={project.id} projectType={project.project_type} />
+                <ProjectWorkflowsWrapper projectId={project.id} projectType={project.project_type} />
               ) : null}
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type TaskStatus = "not_started" | "in_progress" | "completed";
 type TaskPriority = "low" | "medium" | "high";
@@ -48,6 +49,9 @@ function formatTaskStatusLabel(status: TaskStatus | null): string {
 }
 
 export default function TaskDetailModal({ taskId, onClose, onStatusChange }: TaskDetailModalProps) {
+  const { role } = useUserRole();
+  const isAdmin = role === "admin";
+  
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [checklist, setChecklist] = useState<TaskChecklistItem[]>([]);
@@ -56,6 +60,14 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
   const [newComment, setNewComment] = useState("");
   const [commentSaving, setCommentSaving] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editPriority, setEditPriority] = useState<TaskPriority>("low");
+  const [editActivityDate, setEditActivityDate] = useState("");
+  const [editAssignedUserName, setEditAssignedUserName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     async function loadTask() {
@@ -81,6 +93,11 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
 
         if (!taskRes.error && taskRes.data) {
           setTask(taskRes.data);
+          setEditName(taskRes.data.name || "");
+          setEditContent(taskRes.data.content || "");
+          setEditPriority(taskRes.data.priority || "low");
+          setEditActivityDate(taskRes.data.activity_date || "");
+          setEditAssignedUserName(taskRes.data.assigned_user_name || "");
         }
         if (!checklistRes.error && checklistRes.data) {
           setChecklist(checklistRes.data as TaskChecklistItem[]);
@@ -128,6 +145,49 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
         onStatusChange?.(taskId, status);
       }
     } catch {}
+  }
+
+  async function handleSaveTask() {
+    if (!editName.trim()) return;
+    
+    try {
+      setSaving(true);
+      const { error } = await supabaseClient
+        .from("tasks")
+        .update({
+          name: editName.trim(),
+          content: editContent.trim() || null,
+          priority: editPriority,
+          activity_date: editActivityDate || null,
+          assigned_user_name: editAssignedUserName.trim() || null,
+        })
+        .eq("id", taskId);
+
+      if (!error) {
+        setTask((prev: any) => ({
+          ...prev,
+          name: editName.trim(),
+          content: editContent.trim() || null,
+          priority: editPriority,
+          activity_date: editActivityDate || null,
+          assigned_user_name: editAssignedUserName.trim() || null,
+        }));
+        setIsEditMode(false);
+      }
+    } catch (err) {
+      console.error("Error saving task:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditName(task.name || "");
+    setEditContent(task.content || "");
+    setEditPriority(task.priority || "low");
+    setEditActivityDate(task.activity_date || "");
+    setEditAssignedUserName(task.assigned_user_name || "");
+    setIsEditMode(false);
   }
 
   async function handleSubmitComment() {
@@ -216,70 +276,178 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
                 </p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 text-white backdrop-blur-sm transition-all hover:bg-white/30">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M18 6 6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && !isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditMode(true)}
+                  className="flex h-8 items-center gap-1.5 rounded-lg bg-white/20 px-3 text-white backdrop-blur-sm transition-all hover:bg-white/30"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  <span className="text-xs font-medium">Edit</span>
+                </button>
+              )}
+              <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 text-white backdrop-blur-sm transition-all hover:bg-white/30">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
-          {/* Description */}
-          {task.content && (
-            <div className="mb-4 rounded-xl bg-slate-50 p-4">
-              <p className="text-[12px] text-slate-700 leading-relaxed">{task.content}</p>
-            </div>
-          )}
-
-          {/* Info Cards */}
-          <div className="mb-5 grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Due Date</p>
-              <p className="mt-1 text-[13px] font-semibold text-slate-800">{formatDate(task.activity_date ?? task.created_at)}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Priority</p>
-              <p className={`mt-1 text-[13px] font-semibold ${task.priority === "high" ? "text-red-600" : task.priority === "medium" ? "text-amber-600" : "text-slate-600"}`}>
-                {(task.priority as string).charAt(0).toUpperCase() + (task.priority as string).slice(1)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
-              <p className="mt-1 text-[13px] font-semibold text-slate-800">{task.assigned_user_name || "Unassigned"}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Status</p>
-              <div className="relative mt-1">
-                <button
-                  type="button"
-                  onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold shadow-sm transition-all hover:scale-105 ${taskStatusPillClasses(task.status)}`}
-                >
-                  {formatTaskStatusLabel(task.status)}
-                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-                {statusDropdownOpen && (
-                  <div className="absolute left-0 top-full z-20 mt-2 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                    {(["not_started", "in_progress", "completed"] as TaskStatus[]).map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => handleChangeStatus(s)}
-                        className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[11px] font-medium text-slate-700 transition-all hover:bg-slate-50"
-                      >
-                        <span className={`h-2 w-2 rounded-full ${s === "completed" ? "bg-emerald-500" : s === "in_progress" ? "bg-amber-500" : "bg-red-400"}`} />
-                        {formatTaskStatusLabel(s)}
-                      </button>
-                    ))}
+          {isEditMode ? (
+            <>
+              {/* Edit Mode */}
+              <div className="mb-4 space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Task Name *</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Task name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Description</label>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[12px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Task description"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Due Date</label>
+                    <input
+                      type="date"
+                      value={editActivityDate}
+                      onChange={(e) => setEditActivityDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
                   </div>
-                )}
+                  <div>
+                    <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Priority</label>
+                    <select
+                      value={editPriority}
+                      onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">Assigned To</label>
+                  <input
+                    type="text"
+                    value={editAssignedUserName}
+                    onChange={(e) => setEditAssignedUserName(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[12px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Assignee name"
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveTask}
+                    disabled={saving || !editName.trim()}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M5 12l5 5L20 7" />
+                        </svg>
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    disabled={saving}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              {/* View Mode */}
+              {task.content && (
+                <div className="mb-4 rounded-xl bg-slate-50 p-4">
+                  <p className="text-[12px] text-slate-700 leading-relaxed">{task.content}</p>
+                </div>
+              )}
+
+              {/* Info Cards */}
+              <div className="mb-5 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Due Date</p>
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">{formatDate(task.activity_date ?? task.created_at)}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Priority</p>
+                  <p className={`mt-1 text-[13px] font-semibold ${task.priority === "high" ? "text-red-600" : task.priority === "medium" ? "text-amber-600" : "text-slate-600"}`}>
+                    {(task.priority as string).charAt(0).toUpperCase() + (task.priority as string).slice(1)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
+                  <p className="mt-1 text-[13px] font-semibold text-slate-800">{task.assigned_user_name || "Unassigned"}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Status</p>
+                  <div className="relative mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setStatusDropdownOpen((prev) => !prev)}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold shadow-sm transition-all hover:scale-105 ${taskStatusPillClasses(task.status)}`}
+                    >
+                      {formatTaskStatusLabel(task.status)}
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {statusDropdownOpen && (
+                      <div className="absolute left-0 top-full z-20 mt-2 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
+                        {(["not_started", "in_progress", "completed"] as TaskStatus[]).map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleChangeStatus(s)}
+                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[11px] font-medium text-slate-700 transition-all hover:bg-slate-50"
+                          >
+                            <span className={`h-2 w-2 rounded-full ${s === "completed" ? "bg-emerald-500" : s === "in_progress" ? "bg-amber-500" : "bg-red-400"}`} />
+                            {formatTaskStatusLabel(s)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Patient Info if exists */}
           {patientName && (

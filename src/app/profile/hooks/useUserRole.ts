@@ -41,8 +41,20 @@ export function useUserRole(): UseUserRoleResult {
         if (metaRole === "admin" || metaRole === "hr") {
           setRole(metaRole as UserRole);
         } else {
-          // Default to employee
-          setRole("employee");
+          // Fallback: check users table for role
+          const { data: dbUser } = await supabaseClient
+            .from("users")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+          const dbRole = (dbUser?.role as string)?.toLowerCase();
+          if (dbRole === "admin" || dbRole === "hr") {
+            setRole(dbRole as UserRole);
+          } else {
+            // Default to employee
+            setRole("employee");
+          }
         }
       } catch (error) {
         console.error("Error fetching user role:", error);

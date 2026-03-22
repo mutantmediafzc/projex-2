@@ -102,6 +102,7 @@ export default function ContentCalendar2026() {
   const [showFilters, setShowFilters] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [sidebarView, setSidebarView] = useState<"brands" | "calendars">("brands");
   
   // Edit modal
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -563,59 +564,85 @@ export default function ContentCalendar2026() {
       </div>
 
       <div className="flex">
-        {/* Brands Sidebar - Only show active brands */}
+        {/* Sidebar with Tab Switcher */}
         {showFilters && (
-          <div className="w-64 flex-shrink-0 border-r border-slate-200 bg-white p-4 overflow-y-auto max-h-[calc(100vh-160px)] sticky top-40">
-            <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-              <svg className="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
-              </svg>
-              Active Brands
-            </h3>
-            <div className="space-y-1">
+          <div className="w-64 flex-shrink-0 border-r border-slate-200 bg-white overflow-y-auto max-h-[calc(100vh-160px)] sticky top-40">
+            {/* Tab Switcher */}
+            <div className="flex border-b border-slate-200">
               <button
-                onClick={() => setSelectedBrands([])}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedBrands.length === 0
-                    ? "bg-pink-100 text-pink-700 font-medium"
-                    : "text-slate-600 hover:bg-slate-100"
+                onClick={() => setSidebarView("brands")}
+                className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
+                  sidebarView === "brands"
+                    ? "text-pink-600 border-b-2 border-pink-500 bg-pink-50/50"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                All Brands ({projects.length})
+                Brands
               </button>
-              {[...projects].sort((a, b) => {
-                const nameA = (a.company?.name || a.name).toLowerCase();
-                const nameB = (b.company?.name || b.name).toLowerCase();
-                return nameA.localeCompare(nameB);
-              }).map((project) => {
-                const postCount = posts.filter(p => p.project_id === project.id).length;
-                const isSelected = selectedBrands.includes(project.id);
-                return (
-                  <button
-                    key={project.id}
-                    onClick={() => {
-                      setSelectedBrands((prev) =>
+              <button
+                onClick={() => setSidebarView("calendars")}
+                className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
+                  sidebarView === "calendars"
+                    ? "text-purple-600 border-b-2 border-purple-500 bg-purple-50/50"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                Calendars
+              </button>
+            </div>
+            
+            <div className="p-3">
+              <div className="space-y-1">
+                <button
+                  onClick={() => setSelectedBrands([])}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedBrands.length === 0
+                      ? "bg-pink-100 text-pink-700 font-medium"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  All {sidebarView === "brands" ? "Brands" : "Calendars"} ({projects.length})
+                </button>
+                {[...projects].sort((a, b) => {
+                  const nameA = sidebarView === "brands" 
+                    ? (a.company?.name || a.name).toLowerCase()
+                    : a.name.toLowerCase();
+                  const nameB = sidebarView === "brands"
+                    ? (b.company?.name || b.name).toLowerCase()
+                    : b.name.toLowerCase();
+                  return nameA.localeCompare(nameB);
+                }).map((project) => {
+                  const postCount = posts.filter(p => p.project_id === project.id).length;
+                  const isSelected = selectedBrands.includes(project.id);
+                  const displayName = sidebarView === "brands" 
+                    ? (project.company?.name || project.name)
+                    : project.name;
+                  return (
+                    <button
+                      key={project.id}
+                      onClick={() => {
+                        setSelectedBrands((prev) =>
+                          isSelected
+                            ? prev.filter((id) => id !== project.id)
+                            : [...prev, project.id]
+                        );
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                         isSelected
-                          ? prev.filter((id) => id !== project.id)
-                          : [...prev, project.id]
-                      );
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                      isSelected
-                        ? "bg-pink-100 text-pink-700 font-medium"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: project.brand_color || "#ec4899" }}
-                    />
-                    <span className="truncate flex-1 text-xs">{project.company?.name || project.name}</span>
-                    <span className="text-[10px] text-slate-400">({postCount})</span>
-                  </button>
-                );
-              })}
+                          ? "bg-pink-100 text-pink-700 font-medium"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: project.brand_color || "#ec4899" }}
+                      />
+                      <span className="truncate flex-1 text-xs">{displayName}</span>
+                      <span className="text-[10px] text-slate-400">({postCount})</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -632,12 +659,12 @@ export default function ContentCalendar2026() {
               <table className="w-full min-w-[900px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Brand</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Subject</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-44">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-32">Subject</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Caption</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-36">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -664,12 +691,12 @@ export default function ContentCalendar2026() {
                               onClick={() => { setEditingPost(post); setShowPostModal(true); }}
                               className="hover:bg-slate-50 transition-colors cursor-pointer"
                             >
-                            <td className="px-4 py-3">
-                              <span className="text-sm text-slate-900">
-                                {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"}
+                            <td className="px-4 py-3 w-28">
+                              <span className="text-sm text-slate-900 whitespace-nowrap">
+                                {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "No date"}
                               </span>
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 w-44">
                               <div className="flex items-center gap-2">
                                 {post.project?.company?.logo_url ? (
                                   <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
@@ -678,13 +705,13 @@ export default function ContentCalendar2026() {
                                     {(post.project?.company?.name || post.project?.name || "?")[0]}
                                   </span>
                                 )}
-                                <span className="text-sm text-slate-700 whitespace-nowrap">
+                                <span className="text-sm text-slate-700 truncate max-w-[120px]">
                                   {post.project?.company?.name || post.project?.name || "Unknown"}
                                 </span>
                               </div>
                             </td>
-                            <td className="px-4 py-3">
-                              <p className="text-sm font-medium text-slate-900 whitespace-nowrap">
+                            <td className="px-4 py-3 w-32">
+                              <p className="text-sm font-medium text-slate-900 truncate max-w-[100px]">
                                 {post.subject || "—"}
                               </p>
                             </td>

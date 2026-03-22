@@ -57,6 +57,7 @@ const STATUS_OPTIONS = [
   "Quotation",
   "Invoice",
   "Project Started",
+  "Project Ongoing",
   "Project Delivered",
   "Closed",
   "Abandoned",

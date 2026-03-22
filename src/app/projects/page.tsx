@@ -66,6 +66,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Quotation": "from-indigo-500 to-blue-500",
   "Invoice": "from-emerald-500 to-teal-500",
   "Project Started": "from-lime-500 to-green-500",
+  "Project Ongoing": "from-cyan-500 to-blue-500",
   "Project Delivered": "from-green-500 to-emerald-500",
   "Closed": "from-slate-500 to-gray-500",
   "Abandoned": "from-red-500 to-rose-500",
@@ -914,6 +915,7 @@ function NewProjectModal({
                     <option value="Quotation">Quotation</option>
                     <option value="Invoice">Invoice</option>
                     <option value="Project Started">Project Started</option>
+                    <option value="Project Ongoing">Project Ongoing</option>
                     <option value="Project Delivered">Project Delivered</option>
                     <option value="Closed">Closed</option>
                     <option value="Abandoned">Abandoned</option>

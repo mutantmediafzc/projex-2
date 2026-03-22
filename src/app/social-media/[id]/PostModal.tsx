@@ -76,8 +76,8 @@ const CONTENT_TYPES = [
 ];
 
 export default function PostModal({ post, projectId, availablePlatforms, onClose, onSaved }: Props) {
-  // Basic fields
-  const [platforms, setPlatforms] = useState<string[]>(post?.platforms || []);
+  // Basic fields - auto-select IG and FB for new posts
+  const [platforms, setPlatforms] = useState<string[]>(post?.platforms || ["instagram", "facebook"]);
   const [subject, setSubject] = useState(post?.subject || "");
   const [caption, setCaption] = useState(post?.caption || "");
   const [scheduledDate, setScheduledDate] = useState(post?.scheduled_date ? post.scheduled_date.slice(0, 10) : "");
@@ -116,6 +116,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   const [showVideoPreview, setShowVideoPreview] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const captionRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
@@ -168,6 +169,19 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   };
 
   async function handleSubmit() {
+    // Validate mandatory fields
+    const errors: string[] = [];
+    if (!scheduledDate) errors.push("Date is required");
+    if (!contentType) errors.push("Content Type is required");
+    if (!subject.trim()) errors.push("Subject is required");
+    if (platforms.length === 0) errors.push("At least one platform is required");
+    
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setValidationErrors([]);
+    
     setSaving(true);
     const postData = {
       project_id: projectId,
@@ -315,7 +329,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               {/* Date & Time Row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-600">📅 Date</label>
+                  <label className="mb-1.5 block text-xs font-medium text-slate-600">📅 Date <span className="text-red-500">*</span></label>
                   <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
                 </div>
@@ -328,7 +342,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
 
               {/* Content Type */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">🎬 Content Type</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">🎬 Content Type <span className="text-red-500">*</span></label>
                 <select value={contentType} onChange={(e) => setContentType(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none">
                   <option value="">Select type...</option>
@@ -362,9 +376,9 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
 
               {/* Platforms with budget */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">📱 Platforms</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">📱 Platforms <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2">
-                  {availablePlatforms.map((p) => (
+                  {[...new Set([...availablePlatforms, "youtube", "whatsapp"])].map((p) => (
                     <button key={p} type="button" onClick={() => togglePlatform(p)}
                       className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
                         platforms.includes(p) 
@@ -381,7 +395,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
 
               {/* Subject */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">📌 Subject</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">📌 Subject <span className="text-red-500">*</span></label>
                 <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
                   placeholder="Short title for calendar display..."
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
@@ -573,20 +587,35 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
           </div>
 
           {/* Footer Actions */}
-          <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-between">
-            {post && (
-              <button type="button" onClick={handleDelete} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-              </button>
+          <div className="sticky bottom-0 bg-white border-t border-slate-200 px-6 py-4">
+            {/* Validation Errors */}
+            {validationErrors.length > 0 && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs font-medium text-red-700 mb-1">Please fix the following errors:</p>
+                <ul className="text-xs text-red-600 space-y-0.5">
+                  {validationErrors.map((error, i) => (
+                    <li key={i} className="flex items-center gap-1">
+                      <span>•</span> {error}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
-            <div className="ml-auto flex items-center gap-3">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
-                Cancel
-              </button>
-              <button type="button" onClick={handleSubmit} disabled={saving}
-                className="px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 shadow-lg shadow-purple-500/25">
-                {saving ? "Saving..." : "Save"}
-              </button>
+            <div className="flex items-center justify-between">
+              {post && (
+                <button type="button" onClick={handleDelete} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              )}
+              <div className="ml-auto flex items-center gap-3">
+                <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSubmit} disabled={saving}
+                  className="px-5 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 shadow-lg shadow-purple-500/25">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

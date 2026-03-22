@@ -570,16 +570,16 @@ export default function ContentCalendar2026() {
             </div>
           ) : viewMode === "list" ? (
             /* List View */
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+              <table className="w-full min-w-[900px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Brand</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Content</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Platforms</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Subject</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Caption</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -614,35 +614,31 @@ export default function ContentCalendar2026() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
                                 {post.project?.company?.logo_url ? (
-                                  <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                  <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
                                 ) : (
-                                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: brandColor }}>
+                                  <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: brandColor }}>
                                     {(post.project?.company?.name || post.project?.name || "?")[0]}
                                   </span>
                                 )}
-                                <span className="text-sm text-slate-700 truncate max-w-[150px]">
+                                <span className="text-sm text-slate-700 whitespace-nowrap">
                                   {post.project?.company?.name || post.project?.name || "Unknown"}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <p className="text-sm font-medium text-slate-900 line-clamp-1 max-w-[200px]">
-                                {post.subject || post.caption?.slice(0, 30) || "No subject"}
+                              <p className="text-sm font-medium text-slate-900 whitespace-nowrap">
+                                {post.subject || "—"}
                               </p>
                             </td>
                             <td className="px-4 py-3">
-                              <span className="text-xs text-slate-600">
-                                {post.content_type || "-"}
-                              </span>
+                              <p className="text-sm text-slate-600 line-clamp-1 max-w-[250px]">
+                                {post.caption || "No caption"}
+                              </p>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="flex gap-1">
-                                {(post.platforms || []).slice(0, 3).map((p) => (
-                                  <span key={p} className="text-sm">
-                                    {PLATFORM_ICONS[p.toLowerCase()] || "📱"}
-                                  </span>
-                                ))}
-                              </div>
+                              <span className="text-xs text-slate-600 whitespace-nowrap">
+                                {post.content_type || "-"}
+                              </span>
                             </td>
                             <td className="px-4 py-3">
                               <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>

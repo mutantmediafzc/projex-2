@@ -99,6 +99,7 @@ export default function ContentCalendar2026() {
   // UI
   const [showFilters, setShowFilters] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
 
   useEffect(() => {
     loadData();
@@ -362,97 +363,104 @@ export default function ContentCalendar2026() {
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
                 </svg>
-                Filters
+                Brands
               </button>
+              {/* View Mode Toggle */}
+              <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+                <button
+                  onClick={() => setViewMode("calendar")}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === "calendar"
+                      ? "bg-pink-500 text-white"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <path d="M16 2v4M8 2v4M3 10h18" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === "list"
+                      ? "bg-pink-500 text-white"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="8" y1="6" x2="21" y2="6" />
+                    <line x1="8" y1="12" x2="21" y2="12" />
+                    <line x1="8" y1="18" x2="21" y2="18" />
+                    <line x1="3" y1="6" x2="3.01" y2="6" />
+                    <line x1="3" y1="12" x2="3.01" y2="12" />
+                    <line x1="3" y1="18" x2="3.01" y2="18" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex">
-        {/* Filters Sidebar */}
-        {showFilters && (
-          <div className="w-72 flex-shrink-0 border-r border-slate-200 bg-white p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-80px)] sticky top-20">
-            {/* Brand Filter */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                  <line x1="7" y1="7" x2="7.01" y2="7" />
-                </svg>
-                Brands
-              </h3>
-              <div className="space-y-1.5">
+        {/* Top Filter Bar - Workflow Status & Content Types */}
+        <div className="px-4 sm:px-6 lg:px-8 py-3 border-b border-slate-100 bg-slate-50/50">
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Workflow Status Pills */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500">Status:</span>
+              <div className="flex flex-wrap gap-1">
                 <button
-                  onClick={() => setSelectedBrands([])}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    selectedBrands.length === 0
-                      ? "bg-pink-100 text-pink-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-100"
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                    statusFilter === "all"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  All Brands ({projects.length})
+                  All
                 </button>
-                {projects.map((project) => {
-                  const postCount = posts.filter(p => p.project_id === project.id).length;
-                  const isSelected = selectedBrands.includes(project.id);
+                {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
+                  const colors = WORKFLOW_COLORS[status];
+                  const count = filteredPosts.filter(p => p.workflow_status === status).length;
                   return (
                     <button
-                      key={project.id}
-                      onClick={() => {
-                        setSelectedBrands((prev) =>
-                          isSelected
-                            ? prev.filter((id) => id !== project.id)
-                            : [...prev, project.id]
-                        );
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                        isSelected
-                          ? "bg-pink-100 text-pink-700 font-medium"
-                          : "text-slate-600 hover:bg-slate-100"
+                      key={status}
+                      onClick={() => setStatusFilter(status)}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                        statusFilter === status
+                          ? `${colors.bg} ${colors.text}`
+                          : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
                     >
-                      <span
-                        className="w-3 h-3 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: project.brand_color || "#ec4899" }}
-                      />
-                      <span className="truncate flex-1">{project.company?.name || project.name}</span>
-                      <span className="text-xs text-slate-400">({postCount})</span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
+                      {WORKFLOW_LABELS[status]}
+                      <span className="text-slate-400">({count})</span>
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Content Type Filter */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
-                  <line x1="7" y1="2" x2="7" y2="22" />
-                  <line x1="17" y1="2" x2="17" y2="22" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <line x1="2" y1="7" x2="7" y2="7" />
-                  <line x1="2" y1="17" x2="7" y2="17" />
-                  <line x1="17" y1="17" x2="22" y2="17" />
-                  <line x1="17" y1="7" x2="22" y2="7" />
-                </svg>
-                Content Format
-              </h3>
-              <div className="space-y-1.5">
+            <div className="h-4 w-px bg-slate-200" />
+
+            {/* Content Type Pills */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500">Format:</span>
+              <div className="flex flex-wrap gap-1">
                 <button
                   onClick={() => setSelectedContentTypes([])}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                     selectedContentTypes.length === 0
-                      ? "bg-purple-100 text-purple-700 font-medium"
-                      : "text-slate-600 hover:bg-slate-100"
+                      ? "bg-purple-600 text-white"
+                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  All Formats
+                  All
                 </button>
                 {CONTENT_TYPES.map((type) => {
                   const count = contentTypeCounts[type] || 0;
                   const isSelected = selectedContentTypes.includes(type);
+                  const shortName = type.split(" ")[0] + (type.includes("(") ? " " + type.match(/\([^)]+\)/)?.[0] : "");
                   const icon = type === "Reel (9:16)" ? "🎬"
                     : type === "Static Post (4:5)" ? "🖼️" 
                     : type === "Static Post (4:5) + Story (9:16)" ? "📱"
@@ -472,100 +480,165 @@ export default function ContentCalendar2026() {
                             : [...prev, type]
                         );
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
                         isSelected
-                          ? "bg-purple-100 text-purple-700 font-medium"
-                          : "text-slate-600 hover:bg-slate-100"
+                          ? "bg-purple-100 text-purple-700 border border-purple-300"
+                          : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
                       }`}
+                      title={type}
                     >
                       <span>{icon}</span>
-                      <span className="flex-1">{type}</span>
-                      <span className="text-xs text-slate-400">({count})</span>
+                      <span className="text-slate-400">({count})</span>
                     </button>
                   );
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Workflow Status Filter */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-                Workflow Status
-              </h3>
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => setStatusFilter("all")}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                    statusFilter === "all"
-                      ? "bg-slate-800 text-white font-medium"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  All Status
-                </button>
-                {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
-                  const colors = WORKFLOW_COLORS[status];
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => setStatusFilter(status)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center gap-2 ${
-                        statusFilter === status
-                          ? `${colors.bg} ${colors.text} font-medium`
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                      {WORKFLOW_LABELS[status]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Shoot Status Filter */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                <svg className="w-4 h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-                Shoot Status
-                {postsWithShootPending > 0 && (
-                  <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                    {postsWithShootPending} pending
-                  </span>
-                )}
-              </h3>
-              <div className="space-y-1.5">
-                {["all", "pending", "scheduled", "completed"].map((status) => (
+      <div className="flex">
+        {/* Brands Sidebar - Only show active brands */}
+        {showFilters && (
+          <div className="w-64 flex-shrink-0 border-r border-slate-200 bg-white p-4 overflow-y-auto max-h-[calc(100vh-160px)] sticky top-40">
+            <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+              Active Brands
+            </h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => setSelectedBrands([])}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                  selectedBrands.length === 0
+                    ? "bg-pink-100 text-pink-700 font-medium"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                All Brands ({projects.length})
+              </button>
+              {projects.map((project) => {
+                const postCount = posts.filter(p => p.project_id === project.id).length;
+                const isSelected = selectedBrands.includes(project.id);
+                return (
                   <button
-                    key={status}
-                    onClick={() => setShootFilter(status as any)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors capitalize ${
-                      shootFilter === status
-                        ? "bg-amber-100 text-amber-700 font-medium"
+                    key={project.id}
+                    onClick={() => {
+                      setSelectedBrands((prev) =>
+                        isSelected
+                          ? prev.filter((id) => id !== project.id)
+                          : [...prev, project.id]
+                      );
+                    }}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+                      isSelected
+                        ? "bg-pink-100 text-pink-700 font-medium"
                         : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    {status === "all" ? "All Shoots" : status}
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: project.brand_color || "#ec4899" }}
+                    />
+                    <span className="truncate flex-1 text-xs">{project.company?.name || project.name}</span>
+                    <span className="text-[10px] text-slate-400">({postCount})</span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Calendar Grid */}
+        {/* Calendar/List View */}
         <div className="flex-1 p-4 sm:p-6 overflow-x-auto">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500 border-t-transparent" />
             </div>
+          ) : viewMode === "list" ? (
+            /* List View */
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Content</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Type</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Platforms</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredPosts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                        No posts found matching your filters
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPosts
+                      .sort((a, b) => {
+                        if (!a.scheduled_date && !b.scheduled_date) return 0;
+                        if (!a.scheduled_date) return 1;
+                        if (!b.scheduled_date) return -1;
+                        return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+                      })
+                      .map((post) => {
+                        const style = getWorkflowStyle(post.workflow_status);
+                        const brandColor = post.project?.brand_color || "#ec4899";
+                        return (
+                          <tr key={post.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3">
+                              <span className="text-sm text-slate-900">
+                                {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
+                                <span className="text-sm text-slate-700 truncate max-w-[150px]">
+                                  {post.project?.company?.name || post.project?.name || "Unknown"}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-sm text-slate-900 line-clamp-1 max-w-[200px]">
+                                {post.caption || "No caption"}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-xs text-slate-600">
+                                {post.content_type || "-"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1">
+                                {(post.platforms || []).slice(0, 3).map((p) => (
+                                  <span key={p} className="text-sm">
+                                    {PLATFORM_ICONS[p.toLowerCase()] || "📱"}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${style.bg} ${style.text}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
+                                {WORKFLOW_LABELS[post.workflow_status || "captions"]}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                  )}
+                </tbody>
+              </table>
+            </div>
           ) : (
+            /* Calendar View */
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm min-w-[800px]">
               {/* Weekday Headers */}
               <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50">

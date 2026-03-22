@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-type WorkflowStatus = "new" | "creatives_approval" | "captions" | "client_approval" | "approved" | "posted";
+type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
   id: string;
@@ -44,30 +44,29 @@ type Project = {
 };
 
 const CONTENT_TYPES = [
-  "Reel",
-  "Single Image Post",
-  "Carousel Post (Images only)",
-  "Carousel Post (Videos only)",
-  "Carousel Post (Images and Videos)",
-  "Long-Form Video",
+  "Static Post (4:5)",
+  "Static Post (4:5) + Story (9:16)",
+  "Story (9:16)",
+  "Carousel Post (4:5)",
+  "Long-Form Video (16:9)",
+  "WhatsApp (1:1)",
+  "Ad Creatives (Check dimensions on notes)",
 ];
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
-  new: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
+  captions: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
   creatives_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
-  captions: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300", dot: "bg-blue-500" },
-  client_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
-  approved: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
-  posted: { bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-300", dot: "bg-pink-500" },
+  final_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
+  for_publishing: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
+  published: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-300", dot: "bg-emerald-500" },
 };
 
 const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
-  new: "New",
-  creatives_approval: "Creatives",
   captions: "Captions",
-  client_approval: "Client",
-  approved: "Approved",
-  posted: "Posted",
+  creatives_approval: "Creatives",
+  final_approval: "Final",
+  for_publishing: "Publishing",
+  published: "Published",
 };
 
 const PLATFORM_ICONS: Record<string, string> = {
@@ -234,7 +233,7 @@ export default function ContentCalendar2026() {
   };
 
   const getWorkflowStyle = (status: WorkflowStatus | undefined) => {
-    return WORKFLOW_COLORS[status || "new"];
+    return WORKFLOW_COLORS[status || "captions"];
   };
 
   const monthNames = [
@@ -453,12 +452,13 @@ export default function ContentCalendar2026() {
                 {CONTENT_TYPES.map((type) => {
                   const count = contentTypeCounts[type] || 0;
                   const isSelected = selectedContentTypes.includes(type);
-                  const icon = type === "Reel" ? "🎬" 
-                    : type === "Single Image Post" ? "🖼️"
-                    : type === "Carousel Post (Images only)" ? "�"
-                    : type === "Carousel Post (Videos only)" ? "🎥"
-                    : type === "Carousel Post (Images and Videos)" ? "📱"
-                    : type === "Long-Form Video" ? "🎞️"
+                  const icon = type === "Static Post (4:5)" ? "🖼️" 
+                    : type === "Static Post (4:5) + Story (9:16)" ? "�"
+                    : type === "Story (9:16)" ? "📲"
+                    : type === "Carousel Post (4:5)" ? "🎠"
+                    : type === "Long-Form Video (16:9)" ? "�"
+                    : type === "WhatsApp (1:1)" ? "�"
+                    : type === "Ad Creatives (Check dimensions on notes)" ? "📢"
                     : "📝";
                   return (
                     <button
@@ -665,14 +665,15 @@ export default function ContentCalendar2026() {
                                   {/* Content type */}
                                   {post.content_type && (
                                     <span className="ml-auto text-[9px] text-slate-400 truncate max-w-[40px]">
-                                      {post.content_type === "Reel" ? "🎬" : 
-                                       post.content_type.includes("Carousel") ? "📱" : ""}
+                                      {post.content_type?.includes("Static") ? "🖼️" : 
+                                       post.content_type?.includes("Carousel") ? "🎠" : 
+                                       post.content_type?.includes("Video") ? "🎬" : ""}
                                     </span>
                                   )}
                                   {/* Status dot */}
                                   <span
                                     className={`w-1.5 h-1.5 rounded-full ${style.dot}`}
-                                    title={WORKFLOW_LABELS[post.workflow_status || "new"]}
+                                    title={WORKFLOW_LABELS[post.workflow_status || "captions"]}
                                   />
                                 </div>
                                 <div className={`line-clamp-1 text-[10px] ${style.text}`}>
@@ -692,7 +693,7 @@ export default function ContentCalendar2026() {
                                   <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                     {post.content_type && <span>{post.content_type}</span>}
                                     <span>•</span>
-                                    <span>{WORKFLOW_LABELS[post.workflow_status || "new"]}</span>
+                                    <span>{WORKFLOW_LABELS[post.workflow_status || "captions"]}</span>
                                   </div>
                                 </div>
                               )}

@@ -294,12 +294,45 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                               className={`cursor-grab active:cursor-grabbing rounded-lg overflow-hidden border ${style.border} ${style.bg} transition-all hover:scale-105 hover:shadow-md ${
                                 draggedPost?.id === post.id ? "opacity-50 ring-2 ring-pink-400" : ""
                               }`}>
-                              {/* Image Preview */}
-                              {post.image_asset_url && (
-                                <div className="h-12 w-full overflow-hidden">
-                                  <img src={getImageUrl(post.image_asset_url)} alt="" className="w-full h-full object-cover" />
+                              {/* Image Preview or Placeholder */}
+                              <div className="h-12 w-full overflow-hidden bg-slate-100 relative">
+                                {post.image_asset_url ? (
+                                  <img 
+                                    src={getImageUrl(post.image_asset_url)} 
+                                    alt="" 
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                {/* No image placeholder */}
+                                <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 ${post.image_asset_url ? 'hidden' : ''}`}>
+                                  <div className="flex flex-col items-center gap-0.5 text-slate-400">
+                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                                      <circle cx="8.5" cy="8.5" r="1.5" />
+                                      <path d="M21 15l-5-5L5 21" />
+                                    </svg>
+                                    <span className="text-[8px] font-medium">No image</span>
+                                  </div>
                                 </div>
-                              )}
+                                {/* Broken image placeholder */}
+                                {post.image_asset_url && (
+                                  <div className="hidden absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+                                    <div className="flex flex-col items-center gap-0.5 text-orange-400">
+                                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                      </svg>
+                                      <span className="text-[8px] font-medium">Missing</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                               <div className="px-2 py-1">
                                 <div className="flex items-center gap-1 mb-0.5">
                                   {(post.platforms || []).slice(0, 2).map((p) => <span key={p} className="opacity-70 text-[10px]">{PLATFORM_ICONS[p.toLowerCase()]}</span>)}
@@ -334,12 +367,45 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
               <div key={post.id} onClick={() => { setEditingPost(post); setShowPostModal(true); }}
                 className={`cursor-pointer rounded-2xl border ${style.border} bg-white overflow-hidden transition-all hover:shadow-lg`}>
                 <div className="flex">
-                  {/* Image Preview */}
-                  {post.image_asset_url && (
-                    <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
-                      <img src={getImageUrl(post.image_asset_url)} alt="" className="w-full h-full object-cover" />
+                  {/* Image Preview or Placeholder */}
+                  <div className="w-24 h-24 flex-shrink-0 overflow-hidden bg-slate-100 relative">
+                    {post.image_asset_url ? (
+                      <img 
+                        src={getImageUrl(post.image_asset_url)} 
+                        alt="" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    {/* No image placeholder */}
+                    <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 ${post.image_asset_url ? 'hidden' : ''}`}>
+                      <div className="flex flex-col items-center gap-1 text-slate-400">
+                        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <path d="M21 15l-5-5L5 21" />
+                        </svg>
+                        <span className="text-[10px] font-medium">No image</span>
+                      </div>
                     </div>
-                  )}
+                    {/* Broken image placeholder */}
+                    {post.image_asset_url && (
+                      <div className="hidden absolute inset-0 flex items-center justify-center bg-gradient-to-br from-red-50 to-orange-50">
+                        <div className="flex flex-col items-center gap-1 text-orange-400">
+                          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <span className="text-[10px] font-medium">Missing</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <div className="flex-1 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       {(post.platforms || []).map((p) => <span key={p} className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-600">{PLATFORM_ICONS[p.toLowerCase()]}</span>)}

@@ -206,6 +206,12 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
         .delete()
         .eq("project_id", project.id);
       
+      // Unlink this calendar from any projects that reference it
+      await supabaseClient
+        .from("projects")
+        .update({ social_calendar_id: null })
+        .eq("social_calendar_id", project.id);
+      
       // Then delete the social project itself
       const { error } = await supabaseClient
         .from("social_projects")

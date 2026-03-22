@@ -201,6 +201,26 @@ export default function ProjectDetailsCard({
         return;
       }
 
+      // Auto-sync: Update linked social calendar status based on project status
+      if (project.social_calendar_id) {
+        const closedStatuses = ["Closed", "Abandoned"];
+        const activeStatuses = ["Project Started", "Project Ongoing", "Project Delivered", "Invoice", "Quotation", "Proposal", "Discovery", "Processed", "New Lead"];
+        
+        if (closedStatuses.includes(status)) {
+          // Project is closed/abandoned → mark social calendar as completed
+          await supabaseClient
+            .from("social_projects")
+            .update({ status: "completed" })
+            .eq("id", project.social_calendar_id);
+        } else if (activeStatuses.includes(status)) {
+          // Project is active → ensure social calendar is active
+          await supabaseClient
+            .from("social_projects")
+            .update({ status: "active" })
+            .eq("id", project.social_calendar_id);
+        }
+      }
+
       setIsEditing(false);
       setSaving(false);
       router.refresh();
@@ -224,6 +244,14 @@ export default function ProjectDetailsCard({
         setError(updateError.message);
         setArchiving(false);
         return;
+      }
+
+      // Auto-sync: Update linked social calendar when archiving/unarchiving
+      if (project.social_calendar_id) {
+        await supabaseClient
+          .from("social_projects")
+          .update({ status: !isArchived ? "archived" : "active" })
+          .eq("id", project.social_calendar_id);
       }
 
       setArchiving(false);

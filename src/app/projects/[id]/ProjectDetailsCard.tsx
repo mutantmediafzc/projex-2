@@ -28,9 +28,15 @@ type ProjectDetails = {
 };
 
 const PROJECT_TYPE_OPTIONS = [
-  { value: "social_media", label: "Social Media", color: "from-pink-500 to-fuchsia-500", bgColor: "bg-pink-50", textColor: "text-pink-700" },
-  { value: "website", label: "Website", color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-50", textColor: "text-blue-700" },
-  { value: "branding", label: "Branding", color: "from-purple-500 to-violet-500", bgColor: "bg-purple-50", textColor: "text-purple-700" },
+  { value: "social_media_seo", label: "Social Media Marketing & SEO", color: "from-pink-500 to-fuchsia-500", bgColor: "bg-pink-50", textColor: "text-pink-700", icon: "📱", hasCalendar: true },
+  { value: "app_design", label: "App Design & Development", color: "from-violet-500 to-purple-500", bgColor: "bg-violet-50", textColor: "text-violet-700", icon: "📲", hasCalendar: false },
+  { value: "brand_development", label: "Brand Development", color: "from-amber-500 to-orange-500", bgColor: "bg-amber-50", textColor: "text-amber-700", icon: "🎨", hasCalendar: false },
+  { value: "content_creation", label: "Content Creation", color: "from-rose-500 to-pink-500", bgColor: "bg-rose-50", textColor: "text-rose-700", icon: "✍️", hasCalendar: false },
+  { value: "digital_marketing", label: "Digital Marketing", color: "from-cyan-500 to-blue-500", bgColor: "bg-cyan-50", textColor: "text-cyan-700", icon: "📊", hasCalendar: false },
+  { value: "event_services", label: "Event Services", color: "from-emerald-500 to-teal-500", bgColor: "bg-emerald-50", textColor: "text-emerald-700", icon: "🎪", hasCalendar: false },
+  { value: "studio_rental", label: "Studio Rental / Production / Editing", color: "from-indigo-500 to-violet-500", bgColor: "bg-indigo-50", textColor: "text-indigo-700", icon: "🎬", hasCalendar: false },
+  { value: "technical_assistance", label: "Technical Assistance & Configuration", color: "from-slate-500 to-gray-600", bgColor: "bg-slate-50", textColor: "text-slate-700", icon: "🔧", hasCalendar: false },
+  { value: "web_design", label: "Web Design & Development", color: "from-blue-500 to-cyan-500", bgColor: "bg-blue-50", textColor: "text-blue-700", icon: "🌐", hasCalendar: false },
 ] as const;
 
 function formatMoney(value: number | null): string {
@@ -380,16 +386,19 @@ export default function ProjectDetailsCard({
                 <div className="mb-4">
                   <div className={`inline-flex items-center gap-2 rounded-xl ${typeOption.bgColor} px-3 py-2`}>
                     <div className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${typeOption.color} text-white text-sm shadow-md`}>
-                      {typeOption.value === "social_media" ? "📱" : typeOption.value === "website" ? "🌐" : "🎨"}
+                      {typeOption.icon}
                     </div>
-                    <span className={`text-[12px] font-semibold ${typeOption.textColor}`}>{typeOption.label} Project</span>
+                    <span className={`text-[12px] font-semibold ${typeOption.textColor}`}>{typeOption.label}</span>
+                    {typeOption.hasCalendar && (
+                      <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[9px] font-medium text-pink-600">📅 Calendar</span>
+                    )}
                   </div>
                 </div>
               );
             })()}
 
-            {/* Social Media Calendar Link - Only show for social_media projects */}
-            {project.project_type === "social_media" && (
+            {/* Social Media Calendar Link - Only show for social_media_seo projects */}
+            {project.project_type === "social_media_seo" && (
               <div className="mb-4 rounded-xl border border-pink-200 bg-gradient-to-br from-pink-50 to-fuchsia-50/50 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -518,9 +527,12 @@ export default function ProjectDetailsCard({
                     }`}
                   >
                     <div className={`flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br ${type.color} text-white text-xs shadow`}>
-                      {type.value === "social_media" ? "📱" : type.value === "website" ? "🌐" : "🎨"}
+                      {type.icon}
                     </div>
                     <span className="text-[9px] font-semibold text-slate-600">{type.label}</span>
+                    {type.hasCalendar && (
+                      <span className="rounded-full bg-pink-100 px-1 py-0.5 text-[7px] font-medium text-pink-600">📅</span>
+                    )}
                   </button>
                 ))}
               </div>

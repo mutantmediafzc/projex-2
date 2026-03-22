@@ -28,9 +28,15 @@ type Project = {
 };
 
 const PROJECT_TYPE_OPTIONS = [
-  { value: "social_media", label: "Social Media", color: "from-pink-500 to-fuchsia-500", icon: "📱" },
-  { value: "website", label: "Website", color: "from-blue-500 to-cyan-500", icon: "🌐" },
-  { value: "branding", label: "Branding", color: "from-purple-500 to-violet-500", icon: "🎨" },
+  { value: "social_media_seo", label: "Social Media Marketing & SEO", color: "from-pink-500 to-fuchsia-500", icon: "📱", hasCalendar: true },
+  { value: "app_design", label: "App Design & Development", color: "from-violet-500 to-purple-500", icon: "📲", hasCalendar: false },
+  { value: "brand_development", label: "Brand Development", color: "from-amber-500 to-orange-500", icon: "🎨", hasCalendar: false },
+  { value: "content_creation", label: "Content Creation", color: "from-rose-500 to-pink-500", icon: "✍️", hasCalendar: false },
+  { value: "digital_marketing", label: "Digital Marketing", color: "from-cyan-500 to-blue-500", icon: "📊", hasCalendar: false },
+  { value: "event_services", label: "Event Services", color: "from-emerald-500 to-teal-500", icon: "🎪", hasCalendar: false },
+  { value: "studio_rental", label: "Studio Rental / Production / Editing", color: "from-indigo-500 to-violet-500", icon: "🎬", hasCalendar: false },
+  { value: "technical_assistance", label: "Technical Assistance & Configuration", color: "from-slate-500 to-gray-600", icon: "🔧", hasCalendar: false },
+  { value: "web_design", label: "Web Design & Development", color: "from-blue-500 to-cyan-500", icon: "�", hasCalendar: false },
 ] as const;
 
 type Company = {
@@ -90,6 +96,9 @@ export default function ProjectsPage() {
   const [showArchived, setShowArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [projectTypeFilter, setProjectTypeFilter] = useState<string>("");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [typeSearchQuery, setTypeSearchQuery] = useState("");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const router = useRouter();
@@ -162,6 +171,9 @@ export default function ProjectsPage() {
 
     // Status filter
     if (statusFilter && project.status !== statusFilter) return false;
+
+    // Project type filter
+    if (projectTypeFilter && project.project_type !== projectTypeFilter) return false;
 
     // Search filter
     if (searchQuery) {
@@ -323,7 +335,7 @@ export default function ProjectsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 sm:h-9 flex-1 sm:flex-none rounded-lg border border-slate-200 bg-white px-3 text-[14px] sm:text-[13px] text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            className="h-10 sm:h-9 flex-1 sm:flex-none rounded-lg border border-slate-200 bg-white px-3 text-[14px] sm:text-[13px] text-black shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
           >
             <option value="">All Statuses</option>
             {uniqueStatuses.map((status) => (
@@ -333,12 +345,104 @@ export default function ProjectsPage() {
             ))}
           </select>
         </div>
-        {(searchQuery || statusFilter) && (
+        
+        {/* Project Type Filter - Searchable Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+            className={`h-10 sm:h-9 inline-flex items-center gap-2 rounded-lg border px-3 text-[14px] sm:text-[13px] shadow-sm transition-all ${
+              projectTypeFilter 
+                ? "border-emerald-300 bg-emerald-50 text-emerald-700" 
+                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            {projectTypeFilter ? (
+              <>
+                <span>{PROJECT_TYPE_OPTIONS.find(t => t.value === projectTypeFilter)?.icon}</span>
+                <span className="max-w-[120px] truncate">{PROJECT_TYPE_OPTIONS.find(t => t.value === projectTypeFilter)?.label}</span>
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>Project Type</span>
+              </>
+            )}
+            <svg className={`h-4 w-4 transition-transform ${showTypeDropdown ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
+          
+          {showTypeDropdown && (
+            <div className="absolute top-full left-0 z-50 mt-1 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+              <div className="relative mb-2">
+                <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                <input
+                  type="text"
+                  value={typeSearchQuery}
+                  onChange={(e) => setTypeSearchQuery(e.target.value)}
+                  placeholder="Search project types..."
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-3 text-[13px] text-black placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-[240px] overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProjectTypeFilter("");
+                    setShowTypeDropdown(false);
+                    setTypeSearchQuery("");
+                  }}
+                  className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
+                    !projectTypeFilter ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-sm">✨</span>
+                  <span>All Project Types</span>
+                </button>
+                {PROJECT_TYPE_OPTIONS
+                  .filter(type => type.label.toLowerCase().includes(typeSearchQuery.toLowerCase()))
+                  .map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => {
+                        setProjectTypeFilter(type.value);
+                        setShowTypeDropdown(false);
+                        setTypeSearchQuery("");
+                      }}
+                      className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] transition-colors ${
+                        projectTypeFilter === type.value ? "bg-emerald-50 text-emerald-700" : "text-slate-600 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className={`flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br ${type.color} text-sm text-white`}>
+                        {type.icon}
+                      </span>
+                      <span className="flex-1">{type.label}</span>
+                      {type.hasCalendar && (
+                        <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-medium text-pink-600">📅 Calendar</span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {(searchQuery || statusFilter || projectTypeFilter) && (
           <button
             type="button"
             onClick={() => {
               setSearchQuery("");
               setStatusFilter("");
+              setProjectTypeFilter("");
+              setShowTypeDropdown(false);
             }}
             className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-200"
           >

@@ -102,7 +102,7 @@ export default function ContentCalendar2026() {
   const [showFilters, setShowFilters] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
-  const [sidebarView, setSidebarView] = useState<"brands" | "calendars">("brands");
+  const [sidebarView, setSidebarView] = useState<"calendars">("calendars");
   
   // Edit modal
   const [editingPost, setEditingPost] = useState<Post | null>(null);
@@ -567,28 +567,12 @@ export default function ContentCalendar2026() {
         {/* Sidebar with Tab Switcher */}
         {showFilters && (
           <div className="w-64 flex-shrink-0 border-r border-slate-200 bg-white overflow-y-auto max-h-[calc(100vh-160px)] sticky top-40">
-            {/* Tab Switcher */}
-            <div className="flex border-b border-slate-200">
-              <button
-                onClick={() => setSidebarView("brands")}
-                className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
-                  sidebarView === "brands"
-                    ? "text-pink-600 border-b-2 border-pink-500 bg-pink-50/50"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                Brands
-              </button>
-              <button
-                onClick={() => setSidebarView("calendars")}
-                className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors ${
-                  sidebarView === "calendars"
-                    ? "text-purple-600 border-b-2 border-purple-500 bg-purple-50/50"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
+            {/* Sidebar Header */}
+            <div className="px-3 py-2.5 border-b border-slate-200 bg-gradient-to-r from-pink-50 to-purple-50">
+              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                <span className="text-pink-500">📅</span>
                 Calendars
-              </button>
+              </h3>
             </div>
             
             <div className="p-3">
@@ -601,22 +585,16 @@ export default function ContentCalendar2026() {
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  All {sidebarView === "brands" ? "Brands" : "Calendars"} ({projects.length})
+                  All Calendars ({projects.length})
                 </button>
                 {[...projects].sort((a, b) => {
-                  const nameA = sidebarView === "brands" 
-                    ? (a.company?.name || a.name).toLowerCase()
-                    : a.name.toLowerCase();
-                  const nameB = sidebarView === "brands"
-                    ? (b.company?.name || b.name).toLowerCase()
-                    : b.name.toLowerCase();
+                  const nameA = a.name.toLowerCase();
+                  const nameB = b.name.toLowerCase();
                   return nameA.localeCompare(nameB);
                 }).map((project) => {
                   const postCount = posts.filter(p => p.project_id === project.id).length;
                   const isSelected = selectedBrands.includes(project.id);
-                  const displayName = sidebarView === "brands" 
-                    ? (project.company?.name || project.name)
-                    : project.name;
+                  const displayName = project.name;
                   return (
                     <button
                       key={project.id}

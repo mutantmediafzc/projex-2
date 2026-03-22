@@ -74,8 +74,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Project Started": "from-lime-500 to-green-500",
   "Project Ongoing": "from-cyan-500 to-blue-500",
   "Project Delivered": "from-green-500 to-emerald-500",
-  "Closed": "from-slate-500 to-gray-500",
-  "Abandoned": "from-red-500 to-rose-500",
+  "Project Lost": "from-red-500 to-rose-500",
 };
 
 const INDUSTRY_COLORS: Record<string, string> = {
@@ -107,6 +106,10 @@ export default function ProjectsPage() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [showMergeModal, setShowMergeModal] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const handleProjectClick = (e: React.MouseEvent, projectId: string) => {
     e.preventDefault();
@@ -192,6 +195,18 @@ export default function ProjectsPage() {
   const totalValue = filteredProjects.reduce((sum, p) => sum + (p.value || 0), 0);
 
   const uniqueStatuses = [...new Set(projects.map((p) => p.status).filter(Boolean))];
+  
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProjects.length / ITEMS_PER_PAGE);
+  const paginatedProjects = filteredProjects.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, projectTypeFilter, showArchived]);
 
   return (
     <div className="space-y-6">
@@ -482,7 +497,7 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => {
+          {paginatedProjects.map((project) => {
             const isSelected = selectedProjects.includes(project.id);
             
             return (
@@ -612,6 +627,65 @@ export default function ProjectsPage() {
             </button>
           );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-4">
+          <button
+            type="button"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(page => {
+                if (totalPages <= 7) return true;
+                if (page === 1 || page === totalPages) return true;
+                if (Math.abs(page - currentPage) <= 1) return true;
+                return false;
+              })
+              .map((page, idx, arr) => (
+                <span key={page} className="flex items-center">
+                  {idx > 0 && arr[idx - 1] !== page - 1 && (
+                    <span className="px-1 text-slate-400">...</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`inline-flex h-9 min-w-[36px] items-center justify-center rounded-lg px-3 text-[13px] font-medium transition-all ${
+                      currentPage === page
+                        ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                </span>
+              ))}
+          </div>
+          
+          <button
+            type="button"
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+          
+          <span className="ml-2 text-[12px] text-slate-500">
+            Page {currentPage} of {totalPages} ({filteredProjects.length} projects)
+          </span>
         </div>
       )}
 
@@ -1021,8 +1095,7 @@ function NewProjectModal({
                     <option value="Project Started">Project Started</option>
                     <option value="Project Ongoing">Project Ongoing</option>
                     <option value="Project Delivered">Project Delivered</option>
-                    <option value="Closed">Closed</option>
-                    <option value="Abandoned">Abandoned</option>
+                    <option value="Project Lost">Project Lost</option>
                   </select>
                 </div>
 

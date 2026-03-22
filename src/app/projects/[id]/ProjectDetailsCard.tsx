@@ -65,8 +65,7 @@ const STATUS_OPTIONS = [
   "Project Started",
   "Project Ongoing",
   "Project Delivered",
-  "Closed",
-  "Abandoned",
+  "Project Lost",
 ];
 
 export default function ProjectDetailsCard({
@@ -209,11 +208,11 @@ export default function ProjectDetailsCard({
 
       // Auto-sync: Update linked social calendar status based on project status
       if (project.social_calendar_id) {
-        const closedStatuses = ["Closed", "Abandoned"];
+        const lostStatuses = ["Project Lost"];
         const activeStatuses = ["Project Started", "Project Ongoing", "Project Delivered", "Invoice", "Quotation", "Proposal", "Discovery", "Processed", "New Lead"];
         
-        if (closedStatuses.includes(status)) {
-          // Project is closed/abandoned → mark social calendar as completed
+        if (lostStatuses.includes(status)) {
+          // Project is lost → mark social calendar as completed
           await supabaseClient
             .from("social_projects")
             .update({ status: "completed" })

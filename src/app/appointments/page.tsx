@@ -82,7 +82,8 @@ function generateGoogleMeetLink(): string {
 
 type CalendarAppointment = {
   id: string;
-  patient_id: string;
+  patient_id: string | null;
+  contact_id: string | null;
   provider_id: string | null;
   start_time: string;
   end_time: string | null;
@@ -90,6 +91,7 @@ type CalendarAppointment = {
   reason: string | null;
   location: string | null;
   patient: AppointmentPatient | null;
+  contact: AppointmentPatient | null;
   provider: {
     id: string;
     name: string | null;
@@ -1049,7 +1051,8 @@ export default function CalendarPage() {
       const { data, error } = await supabaseClient
         .from("appointments")
         .insert({
-          patient_id: createPatientId,
+          contact_id: createPatientId,
+          patient_id: null,
           start_time: startIso,
           end_time: endIso,
           reason,
@@ -1057,7 +1060,7 @@ export default function CalendarPage() {
           source: "manual",
         })
         .select(
-          "id, patient_id, provider_id, start_time, end_time, status, reason, location, patient:patients(id, first_name, last_name, email, phone), provider:providers(id, name)",
+          "id, patient_id, contact_id, provider_id, start_time, end_time, status, reason, location, patient:patients(id, first_name, last_name, email, phone), contact:contacts(id, first_name, last_name, email, phone), provider:providers(id, name)",
         )
         .single();
 

@@ -385,7 +385,7 @@ export default function CompanyDetailPage() {
 
   // Calculate stats
   const totalProjectsValue = projects.reduce((sum, p) => sum + (p.value || 0), 0);
-  const activeProjects = projects.filter(p => !["Closed", "Abandoned"].includes(p.status || "")).length;
+  const activeProjects = projects.filter(p => !["Project Lost"].includes(p.status || "")).length;
 
   return (
     <div className="space-y-6">
@@ -1291,8 +1291,7 @@ const STATUS_COLORS: Record<string, string> = {
   "Project Started": "from-lime-500 to-green-500",
   "Project Ongoing": "from-cyan-500 to-blue-500",
   "Project Delivered": "from-emerald-500 to-green-500",
-  "Closed": "from-slate-600 to-gray-600",
-  "Abandoned": "from-red-500 to-rose-500",
+  "Project Lost": "from-red-500 to-rose-500",
 };
 
 // Beautiful Projects Display Component
@@ -2044,8 +2043,7 @@ function AddProjectModal({
                 <option value="Project Started">Project Started</option>
                 <option value="Project Ongoing">Project Ongoing</option>
                 <option value="Project Delivered">Project Delivered</option>
-                <option value="Closed">Closed</option>
-                <option value="Abandoned">Abandoned</option>
+                <option value="Project Lost">Project Lost</option>
               </select>
             </div>
             

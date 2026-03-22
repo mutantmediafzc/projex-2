@@ -141,17 +141,23 @@ export default function SocialMediaPage() {
     setCompanies(data || []);
   }
 
-  const filteredProjects = projects.filter((project) => {
-    if (statusFilter && project.status !== statusFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesName = project.name.toLowerCase().includes(query);
-      const matchesCompany = project.company?.name?.toLowerCase().includes(query);
-      const matchesDescription = project.description?.toLowerCase().includes(query);
-      if (!matchesName && !matchesCompany && !matchesDescription) return false;
-    }
-    return true;
-  });
+  const filteredProjects = projects
+    .filter((project) => {
+      if (statusFilter && project.status !== statusFilter) return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesName = project.name.toLowerCase().includes(query);
+        const matchesCompany = project.company?.name?.toLowerCase().includes(query);
+        const matchesDescription = project.description?.toLowerCase().includes(query);
+        if (!matchesName && !matchesCompany && !matchesDescription) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">

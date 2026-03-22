@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Project = {
@@ -88,6 +89,14 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
+  const router = useRouter();
+
+  const handleProjectClick = (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    setOpeningProjectId(projectId);
+    router.push(`/projects/${projectId}`);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -330,11 +339,28 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
-            <Link
+            <button
+              type="button"
               key={project.id}
-              href={`/projects/${project.id}`}
-              className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:shadow-slate-200/50"
+              onClick={(e) => handleProjectClick(e, project.id)}
+              className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:shadow-slate-200/50 text-left w-full"
             >
+              {/* Loading overlay */}
+              {openingProjectId === project.id && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-xl">
+                  <div className="relative">
+                    <div className="h-12 w-12 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <svg className="h-5 w-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-slate-700">Opening Project File...</p>
+                  <p className="mt-1 text-xs text-slate-500">Please wait</p>
+                </div>
+              )}
+
               {/* Status gradient bar */}
               <div
                 className={`absolute left-0 top-0 h-1 w-full bg-gradient-to-r ${
@@ -404,7 +430,7 @@ export default function ProjectsPage() {
                   {project.description}
                 </p>
               )}
-            </Link>
+            </button>
           ))}
         </div>
       )}

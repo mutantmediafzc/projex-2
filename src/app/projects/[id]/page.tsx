@@ -113,6 +113,8 @@ async function getProjectWithRelations(id: string): Promise<{
 
     let primaryContact: ContactSummary | null = null;
     const primaryContactId = projectAny.primary_contact_id as string | null | undefined;
+    
+    // First try to get primary contact from project
     if (primaryContactId) {
       const { data: contactData } = await supabaseClient
         .from("contacts")
@@ -122,6 +124,20 @@ async function getProjectWithRelations(id: string): Promise<{
 
       if (contactData) {
         primaryContact = contactData as ContactSummary;
+      }
+    }
+    
+    // If no primary contact on project, try to get from company's contacts
+    if (!primaryContact && companyId) {
+      const { data: companyContacts } = await supabaseClient
+        .from("contacts")
+        .select("id, first_name, last_name, email, phone, job_title")
+        .eq("company_id", companyId)
+        .order("created_at", { ascending: true })
+        .limit(1);
+
+      if (companyContacts && companyContacts.length > 0) {
+        primaryContact = companyContacts[0] as ContactSummary;
       }
     }
 

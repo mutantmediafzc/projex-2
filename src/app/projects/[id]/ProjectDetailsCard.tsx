@@ -359,8 +359,8 @@ export default function ProjectDetailsCard({
               );
             })()}
 
-            {/* Social Media Calendar Link */}
-            {(project.project_type === "social_media" || linkedCalendar) && (
+            {/* Social Media Calendar Link - Only show for social_media projects */}
+            {project.project_type === "social_media" && (
               <div className="mb-4 rounded-xl border border-pink-200 bg-gradient-to-br from-pink-50 to-fuchsia-50/50 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

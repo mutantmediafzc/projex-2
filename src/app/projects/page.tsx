@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
+import MergeProjectsModal from "@/components/MergeProjectsModal";
 
 type Project = {
   id: string;
@@ -91,6 +92,11 @@ export default function ProjectsPage() {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const router = useRouter();
+  
+  // Merge functionality
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   const handleProjectClick = (e: React.MouseEvent, projectId: string) => {
     e.preventDefault();
@@ -200,6 +206,39 @@ export default function ProjectsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            {/* Merge Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectMode(!selectMode);
+                setSelectedProjects([]);
+              }}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+                selectMode
+                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
+              {selectMode ? "Cancel" : "Merge"}
+            </button>
+            
+            {/* Merge Button */}
+            {selectMode && selectedProjects.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => setShowMergeModal(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-[13px] font-medium text-white shadow-lg shadow-amber-500/25 hover:shadow-xl"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16" />
+                </svg>
+                Merge {selectedProjects.length}
+              </button>
+            )}
+            
             <button
               type="button"
               onClick={() => setShowArchived(!showArchived)}
@@ -338,15 +377,50 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
+          {filteredProjects.map((project) => {
+            const isSelected = selectedProjects.includes(project.id);
+            
+            return (
             <button
               type="button"
               key={project.id}
-              onClick={(e) => handleProjectClick(e, project.id)}
-              className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:shadow-slate-200/50 text-left w-full"
+              onClick={(e) => {
+                if (selectMode) {
+                  e.preventDefault();
+                  setSelectedProjects((prev) =>
+                    isSelected
+                      ? prev.filter((id) => id !== project.id)
+                      : [...prev, project.id]
+                  );
+                } else {
+                  handleProjectClick(e, project.id);
+                }
+              }}
+              className={`group relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm transition-all text-left w-full ${
+                selectMode && isSelected
+                  ? "border-amber-400 ring-2 ring-amber-200 shadow-amber-100"
+                  : "border-slate-200/80 hover:shadow-lg hover:shadow-slate-200/50"
+              }`}
             >
+              {/* Selection checkbox in merge mode */}
+              {selectMode && (
+                <div className="absolute right-3 top-3 z-10">
+                  <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                    isSelected 
+                      ? "bg-amber-500 border-amber-500" 
+                      : "border-slate-300 bg-white"
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               {/* Loading overlay */}
-              {openingProjectId === project.id && (
+              {openingProjectId === project.id && !selectMode && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-xl">
                   <div className="relative">
                     <div className="h-12 w-12 rounded-full border-4 border-emerald-100 border-t-emerald-500 animate-spin" />
@@ -431,8 +505,23 @@ export default function ProjectsPage() {
                 </p>
               )}
             </button>
-          ))}
+          );
+          })}
         </div>
+      )}
+
+      {/* Merge Projects Modal */}
+      {showMergeModal && (
+        <MergeProjectsModal
+          projects={projects.filter((p) => selectedProjects.includes(p.id))}
+          onClose={() => setShowMergeModal(false)}
+          onMergeComplete={() => {
+            setShowMergeModal(false);
+            setSelectMode(false);
+            setSelectedProjects([]);
+            window.location.reload();
+          }}
+        />
       )}
 
       {/* New Project Modal */}

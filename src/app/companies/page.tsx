@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import RequireAdmin from "@/components/RequireAdmin";
+import MergeCompaniesModal from "@/components/MergeCompaniesModal";
 
 type CompanyRow = {
   id: string;
@@ -49,6 +50,11 @@ export default function CompaniesPage() {
   const [industryFilter, setIndustryFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 15;
+  
+  // Merge functionality
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [showMergeModal, setShowMergeModal] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -172,33 +178,68 @@ export default function CompaniesPage() {
               </div>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowForm(!showForm)}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium shadow-lg transition-all ${
-              showForm
-                ? "bg-slate-100 text-slate-700 shadow-slate-200/50 hover:bg-slate-200"
-                : "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30"
-            }`}
-          >
-            {showForm ? (
-              <>
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 6 6 18" />
-                  <path d="m6 6 12 12" />
+          <div className="flex items-center gap-2">
+            {/* Merge Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectMode(!selectMode);
+                setSelectedCompanies([]);
+              }}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium transition-all ${
+                selectMode
+                  ? "bg-amber-100 text-amber-700 hover:bg-amber-200"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
+              {selectMode ? "Cancel Selection" : "Merge"}
+            </button>
+            
+            {/* Merge Button (shown when companies selected) */}
+            {selectMode && selectedCompanies.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => setShowMergeModal(true)}
+                className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-[13px] font-medium text-white shadow-lg shadow-amber-500/25 hover:shadow-xl"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 8l4 4-4 4M7 8l-4 4 4 4M14 4l-4 16" />
                 </svg>
-                Cancel
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14" />
-                  <path d="M5 12h14" />
-                </svg>
-                New Company
-              </>
+                Merge {selectedCompanies.length} Companies
+              </button>
             )}
-          </button>
+            
+            <button
+              type="button"
+              onClick={() => setShowForm(!showForm)}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium shadow-lg transition-all ${
+                showForm
+                  ? "bg-slate-100 text-slate-700 shadow-slate-200/50 hover:bg-slate-200"
+                  : "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30"
+              }`}
+            >
+              {showForm ? (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
+                  </svg>
+                  New Company
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -340,15 +381,29 @@ export default function CompaniesPage() {
           {paginatedCompanies.map((company) => {
             const location = [company.town, company.country].filter(Boolean).join(", ");
             const industryColor = INDUSTRY_COLORS[company.industry || ""] || "from-slate-400 to-slate-500";
+            const isSelected = selectedCompanies.includes(company.id);
 
-            return (
-              <Link
-                key={company.id}
-                href={`/companies/${company.id}`}
-                className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:shadow-violet-100/50 hover:border-violet-200"
-              >
+            const cardContent = (
+              <>
                 {/* Industry gradient bar */}
                 <div className={`absolute left-0 top-0 h-1 w-full bg-gradient-to-r ${industryColor}`} />
+                
+                {/* Selection checkbox in merge mode */}
+                {selectMode && (
+                  <div className="absolute right-3 top-3 z-10">
+                    <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                      isSelected 
+                        ? "bg-amber-500 border-amber-500" 
+                        : "border-slate-300 bg-white"
+                    }`}>
+                      {isSelected && (
+                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex items-start gap-3">
                   {/* Company avatar/logo */}
@@ -374,6 +429,86 @@ export default function CompaniesPage() {
                     )}
                   </div>
                 </div>
+              </>
+            );
+
+            // In select mode, use a div with click handler instead of Link
+            if (selectMode) {
+              return (
+                <div
+                  key={company.id}
+                  onClick={() => {
+                    setSelectedCompanies((prev) =>
+                      isSelected
+                        ? prev.filter((id) => id !== company.id)
+                        : [...prev, company.id]
+                    );
+                  }}
+                  className={`group relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm transition-all cursor-pointer ${
+                    isSelected
+                      ? "border-amber-400 ring-2 ring-amber-200 shadow-amber-100"
+                      : "border-slate-200/80 hover:shadow-lg hover:shadow-violet-100/50 hover:border-violet-200"
+                  }`}
+                >
+                  {cardContent}
+
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
+                    {company.industry && (
+                      <span className={`inline-flex rounded-full bg-gradient-to-r px-2 py-0.5 text-[10px] font-semibold text-white ${industryColor}`}>
+                        {company.industry}
+                      </span>
+                    )}
+                    {location && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                        <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        {location}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="rounded-lg bg-slate-50 px-2 py-1.5">
+                      <span className="text-slate-400">Email</span>
+                      <p className="font-medium text-slate-700 truncate">{company.email || "—"}</p>
+                    </div>
+                    <div className="rounded-lg bg-slate-50 px-2 py-1.5">
+                      <span className="text-slate-400">Phone</span>
+                      <p className="font-medium text-slate-700 truncate">{company.phone || "—"}</p>
+                    </div>
+                  </div>
+
+                  {company.website && (
+                    <div className="mt-2 flex items-center gap-1 text-[11px] text-violet-600">
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M2 12h20" />
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                      </svg>
+                      <span className="truncate">{company.website.replace(/^https?:\/\//, "")}</span>
+                    </div>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
+                    <span className="text-[10px] text-slate-400">Added {formatShortDate(company.created_at)}</span>
+                    <span className="text-[10px] font-medium text-amber-500">
+                      Click to select
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+
+            // Normal mode - use Link
+            return (
+              <Link
+                key={company.id}
+                href={`/companies/${company.id}`}
+                className="group relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-lg hover:shadow-violet-100/50 hover:border-violet-200"
+              >
+                {cardContent}
 
                 <div className="mt-3 flex items-center gap-2 flex-wrap">
                   {company.industry && (
@@ -504,6 +639,21 @@ export default function CompaniesPage() {
           </div>
         )}
         </>
+      )}
+
+      {/* Merge Companies Modal */}
+      {showMergeModal && (
+        <MergeCompaniesModal
+          companies={companies.filter((c) => selectedCompanies.includes(c.id))}
+          onClose={() => setShowMergeModal(false)}
+          onMergeComplete={() => {
+            setShowMergeModal(false);
+            setSelectMode(false);
+            setSelectedCompanies([]);
+            // Reload companies
+            window.location.reload();
+          }}
+        />
       )}
     </div>
     </RequireAdmin>

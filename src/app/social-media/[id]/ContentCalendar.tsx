@@ -67,6 +67,7 @@ const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
 };
 
 const CONTENT_TYPES = [
+  "Reel (9:16)",
   "Static Post (4:5)",
   "Static Post (4:5) + Story (9:16)",
   "Story (9:16)",
@@ -77,12 +78,13 @@ const CONTENT_TYPES = [
 ];
 
 const CONTENT_TYPE_ICONS: Record<string, string> = {
+  "Reel (9:16)": "🎬",
   "Static Post (4:5)": "🖼️",
   "Static Post (4:5) + Story (9:16)": "📱",
   "Story (9:16)": "📲",
   "Carousel Post (4:5)": "🎠",
-  "Long-Form Video (16:9)": "�",
-  "WhatsApp (1:1)": "�",
+  "Long-Form Video (16:9)": "🎞️",
+  "WhatsApp (1:1)": "💬",
   "Ad Creatives (Check dimensions on notes)": "📢",
 };
 

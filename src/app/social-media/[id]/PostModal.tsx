@@ -65,6 +65,7 @@ const WORKFLOW_STEPS: { key: WorkflowStatus; label: string }[] = [
 ];
 
 const CONTENT_TYPES = [
+  "Reel (9:16)",
   "Static Post (4:5)",
   "Static Post (4:5) + Story (9:16)",
   "Story (9:16)",
@@ -262,17 +263,45 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
             
             {/* Workflow Status Tabs */}
             <div className="flex gap-1 overflow-x-auto pb-1">
-              {WORKFLOW_STEPS.map((step) => (
-                <button key={step.key} onClick={() => setWorkflowStatus(step.key)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
-                    workflowStatus === step.key 
-                      ? "bg-purple-600 text-white" 
-                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  }`}>
-                  {step.label}
-                </button>
-              ))}
+              {WORKFLOW_STEPS.map((step) => {
+                // Rule: Items in Captions cannot move if caption AND subject are blank
+                const cannotLeaveCaptions = workflowStatus === "captions" && step.key !== "captions" && !caption.trim() && !subject.trim();
+                // Rule: Boosted items in Publishing cannot move to Published if total boost is 0
+                const totalBudget = Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0);
+                const cannotPublishBoosted = workflowStatus === "for_publishing" && step.key === "published" && postType === "boosted" && totalBudget === 0;
+                const isDisabled = cannotLeaveCaptions || cannotPublishBoosted;
+                
+                return (
+                  <button 
+                    key={step.key} 
+                    onClick={() => !isDisabled && setWorkflowStatus(step.key)}
+                    disabled={isDisabled}
+                    title={cannotLeaveCaptions ? "Add caption or subject first" : cannotPublishBoosted ? "Set boost budget first" : ""}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
+                      workflowStatus === step.key 
+                        ? "bg-purple-600 text-white" 
+                        : isDisabled
+                        ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}>
+                    {step.label}
+                  </button>
+                );
+              })}
             </div>
+            {/* Validation warnings */}
+            {workflowStatus === "captions" && !caption.trim() && !subject.trim() && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Add caption or subject to move to other steps
+              </p>
+            )}
+            {workflowStatus === "for_publishing" && postType === "boosted" && Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0) === 0 && (
+              <p className="text-xs text-amber-600 flex items-center gap-1">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Set boost budget to publish boosted post
+              </p>
+            )}
           </div>
 
           <div className="p-6 space-y-5">

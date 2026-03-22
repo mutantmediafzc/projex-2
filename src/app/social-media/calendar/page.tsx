@@ -44,6 +44,7 @@ type Project = {
 };
 
 const CONTENT_TYPES = [
+  "Reel (9:16)",
   "Static Post (4:5)",
   "Static Post (4:5) + Story (9:16)",
   "Story (9:16)",
@@ -452,12 +453,13 @@ export default function ContentCalendar2026() {
                 {CONTENT_TYPES.map((type) => {
                   const count = contentTypeCounts[type] || 0;
                   const isSelected = selectedContentTypes.includes(type);
-                  const icon = type === "Static Post (4:5)" ? "🖼️" 
-                    : type === "Static Post (4:5) + Story (9:16)" ? "�"
+                  const icon = type === "Reel (9:16)" ? "🎬"
+                    : type === "Static Post (4:5)" ? "🖼️" 
+                    : type === "Static Post (4:5) + Story (9:16)" ? "📱"
                     : type === "Story (9:16)" ? "📲"
                     : type === "Carousel Post (4:5)" ? "🎠"
-                    : type === "Long-Form Video (16:9)" ? "�"
-                    : type === "WhatsApp (1:1)" ? "�"
+                    : type === "Long-Form Video (16:9)" ? "🎞️"
+                    : type === "WhatsApp (1:1)" ? "💬"
                     : type === "Ad Creatives (Check dimensions on notes)" ? "📢"
                     : "📝";
                   return (

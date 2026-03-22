@@ -143,6 +143,10 @@ export default function SocialMediaPage() {
 
   const filteredProjects = projects
     .filter((project) => {
+      // Hide completed and archived projects by default
+      if (!statusFilter && (project.status === "completed" || project.status === "archived")) {
+        return false;
+      }
       if (statusFilter && project.status !== statusFilter) return false;
       if (searchQuery) {
         const query = searchQuery.toLowerCase();

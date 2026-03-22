@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import ContentCalendar from "./ContentCalendar";
 import ArticlePlanner from "./ArticlePlanner";
@@ -146,12 +147,15 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; color: string; bg:
 
 export default function SocialProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const router = useRouter();
   const [project, setProject] = useState<SocialProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("calendar");
   const [showIdeasModal, setShowIdeasModal] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadProject();
@@ -190,6 +194,31 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       setProject({ ...project, name: editedName.trim() });
       setIsEditingName(false);
     }
+  }
+
+  async function handleDeleteCalendar() {
+    if (!project) return;
+    setDeleting(true);
+    try {
+      // First delete all posts for this project
+      await supabaseClient
+        .from("social_posts")
+        .delete()
+        .eq("project_id", project.id);
+      
+      // Then delete the social project itself
+      const { error } = await supabaseClient
+        .from("social_projects")
+        .delete()
+        .eq("id", project.id);
+      
+      if (!error) {
+        router.push("/social-media");
+      }
+    } catch (err) {
+      console.error("Failed to delete calendar:", err);
+    }
+    setDeleting(false);
   }
 
   if (loading) {
@@ -279,6 +308,18 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Delete Button */}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+              title="Delete Calendar"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2M10 11v6M14 11v6" />
+              </svg>
+              Delete
+            </button>
+            
             <button
               onClick={() => setShowIdeasModal(true)}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:shadow-violet-500/30"
@@ -351,6 +392,46 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           companyName={project.company?.name || ""}
           onClose={() => setShowIdeasModal(false)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <svg className="h-6 w-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Delete Calendar?</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              This will permanently delete <strong>{project.name}</strong> and all its posts. This action cannot be undone.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCalendar}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete Calendar"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

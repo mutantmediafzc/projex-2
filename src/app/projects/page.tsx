@@ -302,7 +302,7 @@ export default function ProjectsPage() {
         <div className="rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-purple-50 p-3 sm:p-4 shadow-sm">
           <p className="text-[10px] sm:text-[11px] font-medium text-violet-600 uppercase tracking-wide">In Progress</p>
           <p className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-violet-700">
-            {filteredProjects.filter((p) => p.status === "Project Started").length}
+            {filteredProjects.filter((p) => p.status === "Project Started" || p.status === "Project Ongoing").length}
           </p>
         </div>
         <div className="rounded-xl border border-amber-200/50 bg-gradient-to-br from-amber-50 to-orange-50 p-3 sm:p-4 shadow-sm">

@@ -295,13 +295,67 @@ export default function ContentCalendar2026() {
     );
   };
 
-  // Stats
+  // Calculate current 2-week period (bi-weekly starting from Saturday)
+  const getCurrentPeriod = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+    
+    // Find the most recent Saturday (start of current week in this context)
+    const daysSinceSaturday = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
+    const currentWeekSaturday = new Date(today);
+    currentWeekSaturday.setDate(today.getDate() - daysSinceSaturday);
+    currentWeekSaturday.setHours(0, 0, 0, 0);
+    
+    // Period starts on the Saturday of the previous week (2-week period)
+    const periodStart = new Date(currentWeekSaturday);
+    periodStart.setDate(periodStart.getDate() - 7);
+    
+    // Period ends on Friday of the current week (or today if before Friday)
+    const periodEnd = new Date(currentWeekSaturday);
+    periodEnd.setDate(periodEnd.getDate() + 6); // Friday
+    periodEnd.setHours(23, 59, 59, 999);
+    
+    // If today is before Friday, use today as the effective end
+    const effectiveEnd = today < periodEnd ? today : periodEnd;
+    
+    return { start: periodStart, end: effectiveEnd, displayEnd: periodEnd };
+  };
+  
+  const currentPeriod = getCurrentPeriod();
+  
+  // Filter posts for current period (independent of status filter for counts)
+  const periodPosts = posts.filter((post) => {
+    if (!post.scheduled_date) return false;
+    const postDate = new Date(post.scheduled_date);
+    // Apply brand filter if selected
+    if (selectedBrands.length > 0 && !selectedBrands.includes(post.project_id)) {
+      return false;
+    }
+    // Check if post is within current period
+    return postDate >= currentPeriod.start && postDate <= currentPeriod.end;
+  });
+  
+  // Stats based on period
   const totalPosts = filteredPosts.length;
+  const periodPostCount = periodPosts.length;
   const postsWithShootPending = filteredPosts.filter(p => p.shoot_status === "pending").length;
+  
+  // Status counts for period (not filtered by status)
+  const periodStatusCounts = (Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).reduce((acc, status) => {
+    acc[status] = periodPosts.filter(p => p.workflow_status === status).length;
+    return acc;
+  }, {} as Record<WorkflowStatus, number>);
+  
+  // Content type counts for period
   const contentTypeCounts = CONTENT_TYPES.reduce((acc, type) => {
-    acc[type] = filteredPosts.filter(p => p.content_type === type).length;
+    acc[type] = periodPosts.filter(p => p.content_type === type).length;
     return acc;
   }, {} as Record<string, number>);
+  
+  // Format period dates for display
+  const formatPeriodDate = (date: Date) => {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -324,10 +378,14 @@ export default function ContentCalendar2026() {
                     Content Calendar 2026
                   </span>
                   <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">
-                    {totalPosts} posts
+                    {periodPostCount} posts
                   </span>
                 </h1>
-                <p className="text-sm text-slate-500">Drag & drop content across dates • Filter by brand or format</p>
+                <p className="text-sm text-slate-500">
+                  <span className="font-medium text-pink-600">Period: {formatPeriodDate(currentPeriod.start)} - {formatPeriodDate(currentPeriod.displayEnd)}</span>
+                  <span className="mx-2">•</span>
+                  Drag & drop content across dates
+                </p>
               </div>
             </div>
 
@@ -427,7 +485,7 @@ export default function ContentCalendar2026() {
                 </button>
                 {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
                   const colors = WORKFLOW_COLORS[status];
-                  const count = filteredPosts.filter(p => p.workflow_status === status).length;
+                  const count = periodStatusCounts[status] || 0;
                   return (
                     <button
                       key={status}
@@ -440,7 +498,7 @@ export default function ContentCalendar2026() {
                     >
                       <span className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
                       {WORKFLOW_LABELS[status]}
-                      <span className="text-slate-400">({count})</span>
+                      <span className={statusFilter === status ? "opacity-75" : "text-slate-400"}>({count})</span>
                     </button>
                   );
                 })}

@@ -400,6 +400,11 @@ export default function CalendarPage() {
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [bookingStatus, setBookingStatus] = useState("");
   const [createDoctorCalendarId, setCreateDoctorCalendarId] = useState("");
+  const [staffSearch, setStaffSearch] = useState("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [companyOptions, setCompanyOptions] = useState<{id: string; name: string}[]>([]);
+  const [companySearch, setCompanySearch] = useState("");
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] =
     useState<CalendarAppointment | null>(null);
@@ -634,6 +639,23 @@ export default function CalendarPage() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Load companies for optional company tag
+  useEffect(() => {
+    let isMounted = true;
+    async function loadCompanies() {
+      const { data } = await supabaseClient
+        .from("companies")
+        .select("id, name")
+        .order("name", { ascending: true })
+        .limit(500);
+      if (isMounted && data) {
+        setCompanyOptions(data as {id: string; name: string}[]);
+      }
+    }
+    void loadCompanies();
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
@@ -945,10 +967,7 @@ export default function CalendarPage() {
       return;
     }
 
-    if (!selectedServiceId) {
-      setCreateError("Please select a service.");
-      return;
-    }
+    // Service is now optional - no validation needed
 
     if (!bookingStatus) {
       setCreateError("Please select a status.");
@@ -1352,20 +1371,31 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Doctor calendars */}
+        {/* Staff calendars */}
         <div className="space-y-2">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-            Doctor calendars
+            Staff Calendars
           </p>
-          <div className="space-y-1">
+          {doctorCalendars.length > 5 && (
+            <input
+              type="text"
+              value={staffSearch}
+              onChange={(e) => setStaffSearch(e.target.value)}
+              placeholder="Search staff..."
+              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] text-black placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+            />
+          )}
+          <div className="max-h-64 overflow-y-auto space-y-1">
             {providersLoading ? (
               <p className="text-[10px] text-slate-400">Loading providers...</p>
             ) : providersError ? (
               <p className="text-[10px] text-red-600">{providersError}</p>
             ) : doctorCalendars.length === 0 ? (
-              <p className="text-[10px] text-slate-400">No provider calendars yet.</p>
+              <p className="text-[10px] text-slate-400">No staff calendars yet.</p>
             ) : (
-              doctorCalendars.map((calendar) => (
+              doctorCalendars
+                .filter((c) => !staffSearch || c.name.toLowerCase().includes(staffSearch.toLowerCase()))
+                .map((calendar) => (
                 <label
                   key={calendar.id}
                   className="flex cursor-pointer items-center gap-2 text-[11px] text-slate-700"
@@ -2183,6 +2213,59 @@ export default function CalendarPage() {
                     className="w-full rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     placeholder="Add notes for this appointment"
                   />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-slate-600">Company <span className="text-slate-400">(optional)</span></p>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={companySearch}
+                      onChange={(e) => {
+                        setCompanySearch(e.target.value);
+                        setShowCompanySuggestions(true);
+                        if (!e.target.value) setSelectedCompanyId(null);
+                      }}
+                      onFocus={() => setShowCompanySuggestions(true)}
+                      placeholder="Tag a company..."
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                    {showCompanySuggestions && companySearch && (
+                      <div className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 text-xs shadow-lg">
+                        {companyOptions
+                          .filter((c) => c.name.toLowerCase().includes(companySearch.toLowerCase()))
+                          .slice(0, 8)
+                          .map((company) => (
+                            <button
+                              key={company.id}
+                              type="button"
+                              className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                              onClick={() => {
+                                setSelectedCompanyId(company.id);
+                                setCompanySearch(company.name);
+                                setShowCompanySuggestions(false);
+                              }}
+                            >
+                              <span className="text-[11px] font-medium text-slate-800">{company.name}</span>
+                            </button>
+                          ))}
+                        {companyOptions.filter((c) => c.name.toLowerCase().includes(companySearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-1.5 text-[11px] text-slate-500">No companies found</div>
+                        )}
+                      </div>
+                    )}
+                    {selectedCompanyId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCompanyId(null);
+                          setCompanySearch("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <svg className="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 5l10 10M15 5L5 15"/></svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
               {createError ? (

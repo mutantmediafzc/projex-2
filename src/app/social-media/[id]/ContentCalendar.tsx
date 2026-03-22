@@ -5,6 +5,15 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import PostModal from "./PostModal";
 import { PLATFORM_ICONS } from "./socialMediaUtils";
 
+// Helper to properly encode image URLs with spaces in path
+function getImageUrl(url: string | null): string {
+  if (!url) return "";
+  // If it's already a full URL (http/https) or a data URL, return as-is
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  // For local paths, ensure spaces are encoded
+  return url.split("/").map((segment, i) => i === 0 ? segment : encodeURIComponent(decodeURIComponent(segment))).join("/");
+}
+
 type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
@@ -286,7 +295,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                               {/* Image Preview */}
                               {post.image_asset_url && (
                                 <div className="h-12 w-full overflow-hidden">
-                                  <img src={post.image_asset_url} alt="" className="w-full h-full object-cover" />
+                                  <img src={getImageUrl(post.image_asset_url)} alt="" className="w-full h-full object-cover" />
                                 </div>
                               )}
                               <div className="px-2 py-1">
@@ -326,7 +335,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                   {/* Image Preview */}
                   {post.image_asset_url && (
                     <div className="w-24 h-24 flex-shrink-0 overflow-hidden">
-                      <img src={post.image_asset_url} alt="" className="w-full h-full object-cover" />
+                      <img src={getImageUrl(post.image_asset_url)} alt="" className="w-full h-full object-cover" />
                     </div>
                   )}
                   <div className="flex-1 p-4">

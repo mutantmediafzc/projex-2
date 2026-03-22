@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLATFORM_ICONS, EMOJI_LIST } from "./socialMediaUtils";
 
+// Helper to properly encode image URLs with spaces in path
+function getImageUrl(url: string | null): string {
+  if (!url) return "";
+  if (url.startsWith("http") || url.startsWith("data:")) return url;
+  return url.split("/").map((segment, i) => i === 0 ? segment : encodeURIComponent(decodeURIComponent(segment))).join("/");
+}
+
 type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 type PostType = "organic" | "boosted";
 type ShootStatus = "pending" | "scheduled" | "completed" | "cancelled";
@@ -208,7 +215,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
         <div className="w-48 bg-slate-100 flex-shrink-0 flex flex-col items-center justify-center p-4 border-r border-slate-200">
           {imageAssetUrl ? (
             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-white shadow">
-              <img src={imageAssetUrl} alt="Post asset" className="w-full h-full object-cover" />
+              <img src={getImageUrl(imageAssetUrl)} alt="Post asset" className="w-full h-full object-cover" />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button onClick={() => imageInputRef.current?.click()} className="p-1.5 bg-white rounded-lg shadow hover:bg-slate-50" title="Replace">
                   <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import RequireAdmin from "@/components/RequireAdmin";
 
@@ -17,6 +18,7 @@ type CompanyRow = {
   town: string | null;
   country: string | null;
   created_at: string | null;
+  logo_url: string | null;
 };
 
 function formatShortDate(value: string | null): string {
@@ -59,7 +61,7 @@ export default function CompaniesPage() {
         const { data, error: loadError } = await supabaseClient
           .from("companies")
           .select(
-            "id, name, legal_name, website, email, phone, industry, size, town, country, created_at",
+            "id, name, legal_name, website, email, phone, industry, size, town, country, created_at, logo_url",
           )
           .order("created_at", { ascending: false });
 
@@ -349,9 +351,18 @@ export default function CompaniesPage() {
                 <div className={`absolute left-0 top-0 h-1 w-full bg-gradient-to-r ${industryColor}`} />
                 
                 <div className="flex items-start gap-3">
-                  {/* Company avatar */}
+                  {/* Company avatar/logo */}
                   <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 text-violet-600 font-bold text-lg">
-                    {company.name.charAt(0).toUpperCase()}
+                    {company.logo_url ? (
+                      <Image
+                        src={company.logo_url}
+                        alt={company.name}
+                        fill
+                        className="object-contain p-1"
+                      />
+                    ) : (
+                      company.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">

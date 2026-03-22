@@ -13,8 +13,12 @@ if (fs.existsSync(envPath)) {
 const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 async function main() {
+  // Check social_posts count
+  const { count } = await sb.from("social_posts").select("*", { count: "exact", head: true });
+  console.log("Total social_posts:", count);
+
   const { data: sp } = await sb.from("social_projects").select("id, name, company_id");
-  console.log("Social Projects:", sp?.length);
+  console.log("\nSocial Projects:", sp?.length);
   sp?.forEach(p => console.log("-", p.name, "|", p.company_id));
 
   const { data: proj } = await sb.from("projects").select("id, name, project_type, social_calendar_id, company_id").eq("project_type", "social_media");

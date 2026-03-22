@@ -5,11 +5,12 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import PostModal from "./PostModal";
 import { PLATFORM_ICONS } from "./socialMediaUtils";
 
-type WorkflowStatus = "new" | "creatives_approval" | "captions" | "client_approval" | "approved" | "posted";
+type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
   id: string;
   platforms: string[];
+  subject: string | null;
   caption: string | null;
   media_urls: { url: string; type: "image" | "video" }[];
   scheduled_date: string | null;
@@ -41,39 +42,39 @@ type Props = {
 };
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
-  new: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
+  captions: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
   creatives_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
-  captions: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300", dot: "bg-blue-500" },
-  client_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
-  approved: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
-  posted: { bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-300", dot: "bg-pink-500" },
+  final_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
+  for_publishing: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
+  published: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-300", dot: "bg-emerald-500" },
 };
 
 const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
-  new: "New",
-  creatives_approval: "Creatives",
   captions: "Captions",
-  client_approval: "Client",
-  approved: "Approved",
-  posted: "Posted",
+  creatives_approval: "Creatives",
+  final_approval: "Final",
+  for_publishing: "Publishing",
+  published: "Published",
 };
 
 const CONTENT_TYPES = [
-  "Reel",
-  "Single Image Post",
-  "Carousel Post (Images only)",
-  "Carousel Post (Videos only)",
-  "Carousel Post (Images and Videos)",
-  "Long-Form Video",
+  "Static Post (4:5)",
+  "Static Post (4:5) + Story (9:16)",
+  "Story (9:16)",
+  "Carousel Post (4:5)",
+  "Long-Form Video (16:9)",
+  "WhatsApp (1:1)",
+  "Ad Creatives (Check dimensions on notes)",
 ];
 
 const CONTENT_TYPE_ICONS: Record<string, string> = {
-  "Reel": "🎬",
-  "Single Image Post": "�️",
-  "Carousel Post (Images only)": "�",
-  "Carousel Post (Videos only)": "🎥",
-  "Carousel Post (Images and Videos)": "📱",
-  "Long-Form Video": "🎞️",
+  "Static Post (4:5)": "🖼️",
+  "Static Post (4:5) + Story (9:16)": "📱",
+  "Story (9:16)": "📲",
+  "Carousel Post (4:5)": "🎠",
+  "Long-Form Video (16:9)": "�",
+  "WhatsApp (1:1)": "�",
+  "Ad Creatives (Check dimensions on notes)": "📢",
 };
 
 export default function ContentCalendar({ projectId, platforms, brandColor }: Props) {
@@ -146,7 +147,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
   const getWorkflowStyle = (status: WorkflowStatus | undefined) => {
-    return WORKFLOW_COLORS[status || "new"];
+    return WORKFLOW_COLORS[status || "captions"];
   };
 
   return (
@@ -296,9 +297,9 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                                       {CONTENT_TYPE_ICONS[post.content_type] || "📝"}
                                     </span>
                                   )}
-                                  <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} title={WORKFLOW_LABELS[post.workflow_status || "new"]} />
+                                  <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} title={WORKFLOW_LABELS[post.workflow_status || "captions"]} />
                                 </div>
-                                <div className={`line-clamp-1 text-[10px] ${style.text}`}>{post.caption || "No caption"}</div>
+                                <div className={`line-clamp-1 text-[10px] ${style.text}`}>{post.subject || post.caption?.slice(0, 50) || "No subject"}</div>
                               </div>
                             </div>
                           );
@@ -333,7 +334,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                       {(post.platforms || []).map((p) => <span key={p} className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-slate-600">{PLATFORM_ICONS[p.toLowerCase()]}</span>)}
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${style.bg} ${style.text}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-                        {WORKFLOW_LABELS[post.workflow_status || "new"]}
+                        {WORKFLOW_LABELS[post.workflow_status || "captions"]}
                       </span>
                       {post.post_type === "boosted" && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
@@ -341,7 +342,8 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                         </span>
                       )}
                     </div>
-                    <p className="mb-1 line-clamp-2 text-sm text-slate-900">{post.caption || "No caption"}</p>
+                    <p className="mb-1 text-sm font-medium text-slate-900">{post.subject || "No subject"}</p>
+                    <p className="mb-1 line-clamp-2 text-xs text-slate-600">{post.caption || "No caption"}</p>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span>{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "Not scheduled"}</span>
                       {post.content_type && <span className="text-slate-400">• {post.content_type}</span>}

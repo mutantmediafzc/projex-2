@@ -4,13 +4,14 @@ import { useState, useRef, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLATFORM_ICONS, EMOJI_LIST } from "./socialMediaUtils";
 
-type WorkflowStatus = "new" | "creatives_approval" | "captions" | "client_approval" | "approved" | "posted";
+type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 type PostType = "organic" | "boosted";
 type ShootStatus = "pending" | "scheduled" | "completed" | "cancelled";
 
 type Post = {
   id: string;
   platforms: string[];
+  subject: string | null;
   caption: string | null;
   media_urls: { url: string; type: "image" | "video" }[];
   scheduled_date: string | null;
@@ -49,31 +50,32 @@ type Props = {
 };
 
 const WORKFLOW_STEPS: { key: WorkflowStatus; label: string }[] = [
-  { key: "new", label: "New" },
-  { key: "creatives_approval", label: "Creatives Approval" },
   { key: "captions", label: "Captions" },
-  { key: "client_approval", label: "Client Approval" },
-  { key: "approved", label: "Approved" },
-  { key: "posted", label: "Posted" },
+  { key: "creatives_approval", label: "Creatives Approval" },
+  { key: "final_approval", label: "Final Approval" },
+  { key: "for_publishing", label: "For Publishing" },
+  { key: "published", label: "Published" },
 ];
 
 const CONTENT_TYPES = [
-  "Reel",
-  "Single Image Post",
-  "Carousel Post (Images only)",
-  "Carousel Post (Videos only)",
-  "Carousel Post (Images and Videos)",
-  "Long-Form Video",
+  "Static Post (4:5)",
+  "Static Post (4:5) + Story (9:16)",
+  "Story (9:16)",
+  "Carousel Post (4:5)",
+  "Long-Form Video (16:9)",
+  "WhatsApp (1:1)",
+  "Ad Creatives (Check dimensions on notes)",
 ];
 
 export default function PostModal({ post, projectId, availablePlatforms, onClose, onSaved }: Props) {
   // Basic fields
   const [platforms, setPlatforms] = useState<string[]>(post?.platforms || []);
+  const [subject, setSubject] = useState(post?.subject || "");
   const [caption, setCaption] = useState(post?.caption || "");
   const [scheduledDate, setScheduledDate] = useState(post?.scheduled_date ? post.scheduled_date.slice(0, 10) : "");
   const [scheduledTime, setScheduledTime] = useState(post?.scheduled_time || "12:00");
   const [status, setStatus] = useState<Post["status"]>(post?.status || "draft");
-  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(post?.workflow_status || "new");
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(post?.workflow_status || "captions");
   const [hashtags, setHashtags] = useState(post?.hashtags?.join(" ") || "");
   
   // New fields
@@ -162,6 +164,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
     const postData = {
       project_id: projectId,
       platforms,
+      subject: subject || null,
       caption,
       scheduled_date: scheduledDate ? new Date(scheduledDate).toISOString() : null,
       scheduled_time: scheduledTime || null,
@@ -308,14 +311,14 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               </div>
 
               {/* Platform budgets for boosted posts */}
-              {postType === "boosted" && platforms.length > 0 && (
+              {postType === "boosted" && (
                 <div className="bg-amber-50 rounded-lg p-3 space-y-2">
                   <label className="block text-xs font-medium text-amber-800">Platform Budgets</label>
-                  {platforms.map(p => (
+                  {[...platforms, "youtube", "google"].filter((p, i, arr) => arr.indexOf(p) === i).map(p => (
                     <div key={p} className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 w-20 capitalize">{p}</span>
                       <input type="number" value={platformBudgets[p] || 0} onChange={(e) => updatePlatformBudget(p, Number(e.target.value))}
-                        className="flex-1 rounded border border-amber-200 bg-white px-2 py-1 text-sm" placeholder="0" />
+                        className="flex-1 rounded border border-amber-200 bg-white px-2 py-1 text-sm text-black" placeholder="0" />
                     </div>
                   ))}
                 </div>
@@ -338,6 +341,14 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">📌 Subject</label>
+                <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
+                  placeholder="Short title for calendar display..."
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
               </div>
 
               {/* Caption */}

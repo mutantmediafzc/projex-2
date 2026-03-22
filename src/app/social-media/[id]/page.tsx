@@ -150,6 +150,8 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("calendar");
   const [showIdeasModal, setShowIdeasModal] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
   useEffect(() => {
     loadProject();
@@ -167,13 +169,27 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       .single();
 
     if (!error && data) {
-      setProject({
+      const proj = {
         ...data,
         platforms: data.platforms || [],
         company: Array.isArray(data.company) ? data.company[0] || null : data.company,
-      } as SocialProject);
+      } as SocialProject;
+      setProject(proj);
+      setEditedName(proj.name);
     }
     setLoading(false);
+  }
+
+  async function saveProjectName() {
+    if (!project || !editedName.trim()) return;
+    const { error } = await supabaseClient
+      .from("social_projects")
+      .update({ name: editedName.trim() })
+      .eq("id", project.id);
+    if (!error) {
+      setProject({ ...project, name: editedName.trim() });
+      setIsEditingName(false);
+    }
   }
 
   if (loading) {
@@ -225,8 +241,39 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
                 {project.name.charAt(0)}
               </div>
             )}
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">{project.name}</h1>
+            <div className="flex-1">
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    className="text-xl font-bold text-slate-900 border border-pink-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveProjectName();
+                      if (e.key === "Escape") { setIsEditingName(false); setEditedName(project.name); }
+                    }}
+                  />
+                  <button onClick={saveProjectName} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 13l4 4L19 7"/></svg>
+                  </button>
+                  <button onClick={() => { setIsEditingName(false); setEditedName(project.name); }} className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 group">
+                  <h1 className="text-xl font-bold text-slate-900">{project.name}</h1>
+                  <button 
+                    onClick={() => setIsEditingName(true)} 
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Edit project name"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                </div>
+              )}
               <p className="text-sm text-slate-500">{project.company?.name}</p>
             </div>
           </div>

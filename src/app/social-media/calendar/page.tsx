@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import PostModal from "../[id]/PostModal";
 
 type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 
@@ -10,6 +11,7 @@ type Post = {
   id: string;
   project_id: string;
   platforms: string[];
+  subject: string | null;
   caption: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
@@ -100,6 +102,10 @@ export default function ContentCalendar2026() {
   const [showFilters, setShowFilters] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  
+  // Edit modal
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [showPostModal, setShowPostModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -130,7 +136,7 @@ export default function ContentCalendar2026() {
     const { data: postsData } = await supabaseClient
       .from("social_posts")
       .select(`
-        id, project_id, platforms, caption, scheduled_date, scheduled_time,
+        id, project_id, platforms, subject, caption, scheduled_date, scheduled_time,
         status, workflow_status, content_type, image_asset_url,
         shoot_status, shoot_date, created_at,
         project:social_projects(id, name, brand_color, company:companies(id, name, logo_url))
@@ -520,7 +526,11 @@ export default function ContentCalendar2026() {
               >
                 All Brands ({projects.length})
               </button>
-              {projects.map((project) => {
+              {[...projects].sort((a, b) => {
+                const nameA = (a.company?.name || a.name).toLowerCase();
+                const nameB = (b.company?.name || b.name).toLowerCase();
+                return nameA.localeCompare(nameB);
+              }).map((project) => {
                 const postCount = posts.filter(p => p.project_id === project.id).length;
                 const isSelected = selectedBrands.includes(project.id);
                 return (
@@ -591,7 +601,11 @@ export default function ContentCalendar2026() {
                         const style = getWorkflowStyle(post.workflow_status);
                         const brandColor = post.project?.brand_color || "#ec4899";
                         return (
-                          <tr key={post.id} className="hover:bg-slate-50 transition-colors">
+                          <tr 
+                              key={post.id} 
+                              onClick={() => { setEditingPost(post); setShowPostModal(true); }}
+                              className="hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
                             <td className="px-4 py-3">
                               <span className="text-sm text-slate-900">
                                 {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "No date"}
@@ -599,15 +613,21 @@ export default function ContentCalendar2026() {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brandColor }} />
+                                {post.project?.company?.logo_url ? (
+                                  <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                                ) : (
+                                  <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: brandColor }}>
+                                    {(post.project?.company?.name || post.project?.name || "?")[0]}
+                                  </span>
+                                )}
                                 <span className="text-sm text-slate-700 truncate max-w-[150px]">
                                   {post.project?.company?.name || post.project?.name || "Unknown"}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <p className="text-sm text-slate-900 line-clamp-1 max-w-[200px]">
-                                {post.caption || "No caption"}
+                              <p className="text-sm font-medium text-slate-900 line-clamp-1 max-w-[200px]">
+                                {post.subject || post.caption?.slice(0, 30) || "No subject"}
                               </p>
                             </td>
                             <td className="px-4 py-3">
@@ -702,9 +722,10 @@ export default function ContentCalendar2026() {
                               draggable
                               onDragStart={(e) => handleDragStart(e, post)}
                               onDragEnd={handleDragEnd}
+                              onClick={() => { setEditingPost(post); setShowPostModal(true); }}
                               onMouseEnter={() => setHoveredPost(post.id)}
                               onMouseLeave={() => setHoveredPost(null)}
-                              className={`group cursor-grab active:cursor-grabbing rounded-lg overflow-hidden border transition-all ${
+                              className={`group cursor-pointer active:cursor-grabbing rounded-lg overflow-hidden border transition-all ${
                                 isHovered ? "scale-105 shadow-lg z-10 relative" : ""
                               } ${style.border} ${style.bg}`}
                               style={{
@@ -724,35 +745,34 @@ export default function ContentCalendar2026() {
                                 </div>
                               )}
                               <div className="px-1.5 py-1">
+                                {/* Account info with logo */}
                                 <div className="flex items-center gap-1 mb-0.5">
-                                  {/* Brand indicator */}
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                                    style={{ backgroundColor: brandColor }}
-                                    title={post.project?.company?.name || post.project?.name}
-                                  />
-                                  {/* Platforms */}
-                                  {(post.platforms || []).slice(0, 2).map((p) => (
-                                    <span key={p} className="text-[9px] opacity-70">
-                                      {PLATFORM_ICONS[p.toLowerCase()] || "📱"}
-                                    </span>
-                                  ))}
-                                  {/* Content type */}
-                                  {post.content_type && (
-                                    <span className="ml-auto text-[9px] text-slate-400 truncate max-w-[40px]">
-                                      {post.content_type?.includes("Static") ? "🖼️" : 
-                                       post.content_type?.includes("Carousel") ? "🎠" : 
-                                       post.content_type?.includes("Video") ? "🎬" : ""}
+                                  {post.project?.company?.logo_url ? (
+                                    <img 
+                                      src={post.project.company.logo_url} 
+                                      alt="" 
+                                      className="w-3.5 h-3.5 rounded-full object-cover flex-shrink-0"
+                                    />
+                                  ) : (
+                                    <span
+                                      className="w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
+                                      style={{ backgroundColor: brandColor }}
+                                    >
+                                      {(post.project?.company?.name || post.project?.name || "?")[0]}
                                     </span>
                                   )}
+                                  <span className="text-[9px] font-medium text-slate-700 truncate flex-1">
+                                    {post.project?.company?.name || post.project?.name || "Unknown"}
+                                  </span>
                                   {/* Status dot */}
                                   <span
-                                    className={`w-1.5 h-1.5 rounded-full ${style.dot}`}
+                                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`}
                                     title={WORKFLOW_LABELS[post.workflow_status || "captions"]}
                                   />
                                 </div>
-                                <div className={`line-clamp-1 text-[10px] ${style.text}`}>
-                                  {post.caption || "No caption"}
+                                {/* Subject */}
+                                <div className="text-[10px] font-medium text-slate-900 line-clamp-1">
+                                  {post.subject || post.caption?.slice(0, 30) || "No subject"}
                                 </div>
                               </div>
 
@@ -796,6 +816,17 @@ export default function ContentCalendar2026() {
           )}
         </div>
       </div>
+
+      {/* Post Edit Modal */}
+      {showPostModal && editingPost && (
+        <PostModal
+          post={editingPost as any}
+          projectId={editingPost.project_id}
+          availablePlatforms={["instagram", "facebook", "tiktok", "linkedin", "x", "youtube", "whatsapp"]}
+          onClose={() => { setShowPostModal(false); setEditingPost(null); }}
+          onSaved={() => { setShowPostModal(false); setEditingPost(null); loadData(); }}
+        />
+      )}
     </div>
   );
 }

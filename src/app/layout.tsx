@@ -70,7 +70,7 @@ export default function RootLayout({
               className="peer sr-only"
             />
             <ShellSidebar>
-              <aside className="hidden w-60 bg-gradient-to-b from-white/95 via-slate-50/90 to-slate-100/80 px-3 py-4 transition-all duration-200 ease-out sm:flex sm:flex-col peer-checked:sm:w-0 peer-checked:sm:px-0 peer-checked:sm:opacity-0 peer-checked:sm:pointer-events-none app-shell-sidebar relative overflow-hidden sticky top-0 h-screen overflow-y-auto">
+              <aside className="hidden w-60 bg-gradient-to-b from-white/95 via-slate-50/90 to-slate-100/80 px-3 py-4 transition-all duration-200 ease-out sm:flex sm:flex-col peer-checked:sm:w-0 peer-checked:sm:px-0 peer-checked:sm:opacity-0 peer-checked:sm:pointer-events-none app-shell-sidebar relative overflow-hidden shrink-0">
               {/* Decorative gradient orb */}
               <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-gradient-to-br from-violet-200/40 to-sky-200/30 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-10 -right-10 h-32 w-32 rounded-full bg-gradient-to-br from-amber-200/30 to-orange-200/20 blur-2xl" />

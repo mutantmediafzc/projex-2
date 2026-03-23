@@ -24,8 +24,11 @@ export default function ProfileSecurity() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const cropContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,6 +63,45 @@ export default function ProfileSecurity() {
     reader.readAsDataURL(file);
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    const maxOffset = 200 * zoom;
+    setCropPosition({
+      x: Math.max(-maxOffset, Math.min(maxOffset, newX)),
+      y: Math.max(-maxOffset, Math.min(maxOffset, newY)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX - cropPosition.x, y: touch.clientY - cropPosition.y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    const newX = touch.clientX - dragStart.x;
+    const newY = touch.clientY - dragStart.y;
+    const maxOffset = 200 * zoom;
+    setCropPosition({
+      x: Math.max(-maxOffset, Math.min(maxOffset, newX)),
+      y: Math.max(-maxOffset, Math.min(maxOffset, newY)),
+    });
+  };
+
   const handleCropSave = useCallback(async () => {
     if (!profile || !selectedImage || !canvasRef.current) return;
     setAvatarUploading(true);
@@ -77,15 +119,29 @@ export default function ProfileSecurity() {
         canvas.width = 256;
         canvas.height = 256;
         const size = Math.min(img.width, img.height) / zoom;
-        const sx = (img.width - size) / 2 + cropPosition.x;
-        const sy = (img.height - size) / 2 + cropPosition.y;
+        const scale = Math.min(img.width, img.height) / 256;
+        const sx = (img.width - size) / 2 - (cropPosition.x * scale / zoom);
+        const sy = (img.height - size) / 2 - (cropPosition.y * scale / zoom);
         ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256);
         canvas.toBlob(async (blob) => {
           if (!blob) { setAvatarError("Failed to process image"); setAvatarUploading(false); return; }
           const path = `${user.id}/${Date.now()}.webp`;
-          const { error: uploadError } = await supabaseClient.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/webp" });
-          if (uploadError) { setAvatarError(uploadError.message); setAvatarUploading(false); return; }
-          const { data: { publicUrl } } = supabaseClient.storage.from("avatars").getPublicUrl(path);
+          // Try 'avatars' bucket first, fallback to 'public' bucket
+          let uploadError = null;
+          let bucketName = "avatars";
+          const uploadResult = await supabaseClient.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/webp" });
+          if (uploadResult.error) {
+            // Try public bucket as fallback
+            const publicResult = await supabaseClient.storage.from("public").upload(`avatars/${path}`, blob, { upsert: true, contentType: "image/webp" });
+            if (publicResult.error) {
+              setAvatarError("Storage bucket not configured. Please contact admin.");
+              setAvatarUploading(false);
+              return;
+            }
+            bucketName = "public";
+          }
+          const finalPath = bucketName === "public" ? `avatars/${path}` : path;
+          const { data: { publicUrl } } = supabaseClient.storage.from(bucketName).getPublicUrl(finalPath);
           const { error: updateError } = await supabaseClient.auth.updateUser({ data: { avatar_url: publicUrl } });
           if (updateError) { setAvatarError(updateError.message); setAvatarUploading(false); return; }
           setProfile({ ...profile, avatarUrl: publicUrl });
@@ -219,15 +275,35 @@ export default function ProfileSecurity() {
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-semibold text-slate-900">Crop Photo</h3>
             <p className="mt-1 text-xs text-slate-500">Adjust the crop area for your profile photo.</p>
-            <div className="relative mt-4 flex h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
-              <img src={selectedImage} alt="Preview" className="max-h-full max-w-full object-contain" style={{ transform: `scale(${zoom})` }} />
+            <div 
+              ref={cropContainerRef}
+              className="relative mt-4 flex h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-900 cursor-move select-none"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleMouseUp}
+            >
+              <img 
+                src={selectedImage} 
+                alt="Preview" 
+                className="max-h-full max-w-full object-contain pointer-events-none" 
+                style={{ 
+                  transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${zoom})`,
+                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                }} 
+                draggable={false}
+              />
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <div className="h-48 w-48 rounded-full border-4 border-white/80 shadow-lg" />
+                <div className="h-48 w-48 rounded-full border-4 border-white/80 shadow-lg ring-[9999px] ring-black/40" />
               </div>
             </div>
-            <div className="mt-4">
+            <p className="mt-2 text-center text-[10px] text-slate-500">Drag to reposition • Use slider to zoom</p>
+            <div className="mt-3">
               <label className="block text-xs font-medium text-slate-700">Zoom</label>
-              <input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="mt-1 w-full" />
+              <input type="range" min="0.25" max="3" step="0.05" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="mt-1 w-full accent-violet-500" />
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>

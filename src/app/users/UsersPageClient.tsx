@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import NewUserModal from "./NewUserModal";
+import EditUserModal from "./EditUserModal";
 import RequireAdmin from "@/components/RequireAdmin";
 
 type WorkStatus = "available" | "on_leave" | "wfh";
@@ -15,6 +16,7 @@ type UserRow = {
   designation: string | null;
   createdAt: string | null;
   work_status: WorkStatus | null;
+  is_active?: boolean;
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -35,6 +37,7 @@ interface Props {
 export default function UsersPageClient({ users }: Props) {
   const [statusFilter, setStatusFilter] = useState<WorkStatus | "all">("all");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
 
   const adminCount = users.filter(u => u.role === "admin").length;
   const staffCount = users.filter(u => u.role !== "admin").length;
@@ -220,12 +223,38 @@ export default function UsersPageClient({ users }: Props) {
                     </div>
                     
                     {/* Date */}
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 mr-2">
                       <p className="text-[10px] text-slate-400">Joined</p>
                       <p className="text-[11px] font-medium text-slate-600">
                         {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
                       </p>
                     </div>
+
+                    {/* Active Status */}
+                    <div className="shrink-0 mr-2">
+                      {user.is_active === false ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                          Inactive
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          Active
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => setEditingUser(user)}
+                      className="shrink-0 rounded-lg border border-slate-200 bg-white p-2 text-slate-500 opacity-0 transition-all hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600 group-hover:opacity-100"
+                    >
+                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
+                    </button>
                   </div>
                 );
               })}
@@ -237,6 +266,11 @@ export default function UsersPageClient({ users }: Props) {
       {/* Add Member Modal */}
       {showAddModal && (
         <NewUserModal onClose={() => setShowAddModal(false)} />
+      )}
+
+      {/* Edit User Modal */}
+      {editingUser && (
+        <EditUserModal user={editingUser} onClose={() => setEditingUser(null)} />
       )}
     </div>
     </RequireAdmin>

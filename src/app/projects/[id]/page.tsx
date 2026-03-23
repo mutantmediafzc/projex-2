@@ -5,10 +5,10 @@ import ProjectModeToggle from "./ProjectModeToggle";
 import ProjectNotesTasksCard from "./ProjectNotesTasksCard";
 import ProjectContextCard from "./ProjectContextCard";
 import ProjectDetailsCard from "./ProjectDetailsCard";
-import InvoiceManagement from "./InvoiceManagement";
 import ProjectWorkflowsWrapper from "./ProjectWorkflowsWrapper";
 import ProjectDanoteButton from "./ProjectDanoteButton";
 import PerformanceMarketingButton from "./PerformanceMarketingButton";
+import AdminTabsClient from "./AdminTabsClient";
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
@@ -189,11 +189,7 @@ export default async function ProjectPage({
       ? (rawAdminTab as AdminTab)
       : "cockpit";
 
-  const adminTabs: { id: AdminTab; label: string }[] = [
-    { id: "cockpit", label: "Cockpit" },
-    { id: "invoice", label: "Quotes & Invoices" },
-    { id: "workflows", label: "Workflows" },
-  ];
+  // Admin tabs are now handled by AdminTabsClient component
 
   const statusDisplay = (() => {
     if (project.status === "Processed" && project.processed_outcome) {
@@ -351,55 +347,12 @@ export default async function ProjectPage({
 
           {/* Tab Navigation - More Formal Style */}
           <div className="rounded-lg border border-slate-200/80 bg-white shadow-sm">
-            <nav className="flex flex-wrap border-b border-slate-200 px-2">
-              {adminTabs.map((tab) => {
-                const isActive = tab.id === adminTab;
-                return (
-                  <Link
-                    key={tab.id}
-                    href={`/projects/${project.id}?mode=admin&tab=${tab.id}`}
-                    className={
-                      (isActive
-                        ? "border-slate-800 bg-slate-800 text-white"
-                        : "border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-800") +
-                      " relative inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-[11px] font-semibold tracking-wide transition-all"
-                    }
-                    style={isActive ? { borderRadius: '6px 6px 0 0', marginBottom: '-1px' } : {}}
-                  >
-                    {tab.id === "cockpit" && (
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                      </svg>
-                    )}
-                    {tab.id === "invoice" && (
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="5" width="20" height="14" rx="2" />
-                        <path d="M2 10h20" />
-                      </svg>
-                    )}
-                    {tab.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Tab Content Area */}
-            <div className="p-4">
-              {adminTab === "cockpit" ? (
-                <ProjectNotesTasksCard projectId={project.id} source="admin" />
-              ) : null}
-
-              {adminTab === "invoice" ? (
-                <InvoiceManagement 
-                  projectId={project.id} 
-                  projectName={project.name}
-                />
-              ) : null}
-
-              {adminTab === "workflows" ? (
-                <ProjectWorkflowsWrapper projectId={project.id} projectType={project.project_type} />
-              ) : null}
-            </div>
+            <AdminTabsClient
+              projectId={project.id}
+              projectName={project.name}
+              projectType={project.project_type}
+              activeTab={adminTab}
+            />
           </div>
         </div>
       )}

@@ -133,15 +133,16 @@ export default function ContentCalendar2026() {
       setProjects(transformed);
     }
 
-    // Load all posts with project info
+    // Load all posts with project info - only from active projects
     const { data: postsData } = await supabaseClient
       .from("social_posts")
       .select(`
         id, project_id, platforms, subject, caption, scheduled_date, scheduled_time,
         status, workflow_status, content_type, image_asset_url,
         shoot_status, shoot_date, created_at,
-        project:social_projects(id, name, brand_color, company:companies(id, name, logo_url))
+        project:social_projects!inner(id, name, brand_color, status, company:companies(id, name, logo_url))
       `)
+      .eq("project.status", "active")
       .order("scheduled_date", { ascending: true });
 
     if (postsData) {
@@ -638,7 +639,8 @@ export default function ContentCalendar2026() {
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-44">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-44">Calendar</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-16">Asset</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-32">Subject</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Caption</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-36">Type</th>
@@ -648,7 +650,7 @@ export default function ContentCalendar2026() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredPosts.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-500">
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
                         No posts found matching your filters
                       </td>
                     </tr>
@@ -687,6 +689,19 @@ export default function ContentCalendar2026() {
                                   {post.project?.company?.name || post.project?.name || "Unknown"}
                                 </span>
                               </div>
+                            </td>
+                            <td className="px-4 py-3 w-16">
+                              {post.image_asset_url ? (
+                                <img src={post.image_asset_url} alt="" className="w-10 h-10 rounded-lg object-cover border border-slate-200" />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                                  <svg className="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                    <circle cx="8.5" cy="8.5" r="1.5" />
+                                    <polyline points="21 15 16 10 5 21" />
+                                  </svg>
+                                </div>
+                              )}
                             </td>
                             <td className="px-4 py-3 w-32">
                               <p className="text-sm font-medium text-slate-900 truncate max-w-[100px]">

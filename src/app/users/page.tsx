@@ -12,6 +12,7 @@ type UserRow = {
   designation: string | null;
   createdAt: string | null;
   work_status: WorkStatus | null;
+  is_active?: boolean;
 };
 
 async function getUsers(): Promise<UserRow[]> {
@@ -25,22 +26,26 @@ async function getUsers(): Promise<UserRow[]> {
     return [];
   }
 
-  // Get user statuses from database
+  // Get user statuses and active status from database
   const userIds = data.users.map(u => u.id);
   const { data: statusData } = await supabaseAdmin
     .from("users")
-    .select("id, work_status")
+    .select("id, work_status, is_active")
     .in("id", userIds);
 
-  const statusMap = new Map<string, WorkStatus>();
+  const statusMap = new Map<string, { work_status: WorkStatus; is_active: boolean }>();
   if (statusData) {
     statusData.forEach((row: any) => {
-      statusMap.set(row.id, row.work_status || "available");
+      statusMap.set(row.id, {
+        work_status: row.work_status || "available",
+        is_active: row.is_active !== false,
+      });
     });
   }
 
   return data.users.map((user) => {
     const meta = (user.user_metadata || {}) as Record<string, unknown>;
+    const dbData = statusMap.get(user.id);
 
     return {
       id: user.id,
@@ -50,7 +55,8 @@ async function getUsers(): Promise<UserRow[]> {
       lastName: (meta["last_name"] as string) ?? null,
       designation: (meta["designation"] as string) ?? null,
       createdAt: (user as any).created_at ?? null,
-      work_status: statusMap.get(user.id) || "available",
+      work_status: dbData?.work_status || "available",
+      is_active: dbData?.is_active !== false,
     };
   });
 }

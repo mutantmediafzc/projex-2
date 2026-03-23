@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 import MergeProjectsModal from "@/components/MergeProjectsModal";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type Project = {
   id: string;
@@ -89,6 +90,8 @@ const INDUSTRY_COLORS: Record<string, string> = {
 };
 
 export default function ProjectsPage() {
+  const { role } = useUserRole();
+  const isAdmin = role === "admin";
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -305,15 +308,17 @@ export default function ProjectsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 sm:grid-cols-4">
+      <div className={`grid grid-cols-2 gap-2 sm:gap-4 ${isAdmin ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         <div className="rounded-xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50 to-teal-50 p-3 sm:p-4 shadow-sm">
           <p className="text-[10px] sm:text-[11px] font-medium text-emerald-600 uppercase tracking-wide">Total Projects</p>
           <p className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-emerald-700">{filteredProjects.length}</p>
         </div>
-        <div className="rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-cyan-50 p-3 sm:p-4 shadow-sm">
-          <p className="text-[10px] sm:text-[11px] font-medium text-sky-600 uppercase tracking-wide">Total Value</p>
-          <p className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-sky-700 truncate">{formatMoney(totalValue)}</p>
-        </div>
+        {isAdmin && (
+          <div className="rounded-xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-cyan-50 p-3 sm:p-4 shadow-sm">
+            <p className="text-[10px] sm:text-[11px] font-medium text-sky-600 uppercase tracking-wide">Total Value</p>
+            <p className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-sky-700 truncate">{formatMoney(totalValue)}</p>
+          </div>
+        )}
         <div className="rounded-xl border border-violet-200/50 bg-gradient-to-br from-violet-50 to-purple-50 p-3 sm:p-4 shadow-sm">
           <p className="text-[10px] sm:text-[11px] font-medium text-violet-600 uppercase tracking-wide">In Progress</p>
           <p className="mt-0.5 sm:mt-1 text-xl sm:text-2xl font-bold text-violet-700">
@@ -608,11 +613,13 @@ export default function ProjectsPage() {
                 )}
               </div>
 
-              <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
-                <div className="rounded-lg bg-slate-50 px-2 py-1.5">
-                  <span className="text-slate-400">Value</span>
-                  <p className="font-semibold text-slate-700">{formatMoney(project.value)}</p>
-                </div>
+              <div className={`mt-3 grid gap-2 text-[11px] ${isAdmin ? "grid-cols-2" : "grid-cols-1"}`}>
+                {isAdmin && (
+                  <div className="rounded-lg bg-slate-50 px-2 py-1.5">
+                    <span className="text-slate-400">Value</span>
+                    <p className="font-semibold text-slate-700">{formatMoney(project.value)}</p>
+                  </div>
+                )}
                 <div className="rounded-lg bg-slate-50 px-2 py-1.5">
                   <span className="text-slate-400">Due</span>
                   <p className="font-semibold text-slate-700">{formatDate(project.due_date)}</p>

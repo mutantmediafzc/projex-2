@@ -280,6 +280,41 @@ export default function ProjectDetailsCard({
     setIsEditing(false);
   }
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDeleteProject() {
+    setDeleting(true);
+    setError(null);
+    try {
+      // Delete linked social calendar if exists
+      if (project.social_calendar_id) {
+        await supabaseClient
+          .from("social_projects")
+          .delete()
+          .eq("id", project.social_calendar_id);
+      }
+      
+      // Delete the project
+      const { error: deleteError } = await supabaseClient
+        .from("projects")
+        .delete()
+        .eq("id", project.id);
+
+      if (deleteError) {
+        setError(deleteError.message);
+        setDeleting(false);
+        return;
+      }
+
+      // Redirect to projects list
+      router.push("/projects");
+    } catch {
+      setError("Failed to delete project.");
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-gradient-to-br from-white via-white to-slate-50/80 p-4 text-sm shadow-[0_16px_40px_rgba(15,23,42,0.08)]">
       <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-sky-100/50 to-violet-100/30 blur-2xl" />
@@ -343,6 +378,18 @@ export default function ProjectDetailsCard({
                     )}
                   </svg>
                   {archiving ? "..." : isArchived ? "Unarchive" : "Archive"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] font-medium text-red-700 shadow-sm transition-all hover:bg-red-100"
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 6h18" />
+                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  </svg>
+                  Delete
                 </button>
               </>
             ) : (
@@ -709,6 +756,49 @@ export default function ProjectDetailsCard({
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+                <svg className="h-5 w-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Delete Project</h3>
+                <p className="text-sm text-slate-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-slate-600 mb-6">
+              Are you sure you want to delete <strong>{project.name}</strong>? All project data including linked social calendars will be permanently removed.
+            </p>
+            {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete Project"}
+              </button>
             </div>
           </div>
         </div>

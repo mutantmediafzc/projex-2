@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import NewUserModal from "./NewUserModal";
 import EditUserModal from "./EditUserModal";
 import RequireAdmin from "@/components/RequireAdmin";
@@ -17,6 +18,7 @@ type UserRow = {
   createdAt: string | null;
   work_status: WorkStatus | null;
   is_active?: boolean;
+  avatar_url?: string | null;
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -199,8 +201,18 @@ export default function UsersPageClient({ users }: Props) {
                     className="group flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-white hover:shadow-sm"
                   >
                     {/* Avatar */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-200 to-gray-200 text-sm font-semibold text-slate-600">
-                      {initials}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-slate-200 to-gray-200 text-sm font-semibold text-slate-600">
+                      {user.avatar_url ? (
+                        <Image
+                          src={user.avatar_url}
+                          alt={fullName || "User"}
+                          width={40}
+                          height={40}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        initials
+                      )}
                     </div>
                     
                     {/* Info */}

@@ -38,7 +38,19 @@ export default function HeaderUser() {
       const firstName = (meta["first_name"] as string) || "";
       const lastName = (meta["last_name"] as string) || "";
       const role = ((meta["role"] as string) || "Staff").toString();
-      const avatarUrl = (meta["avatar_url"] as string) || null;
+      
+      // Get avatar from users table (preferred) or fall back to auth metadata
+      let avatarUrl = (meta["avatar_url"] as string) || null;
+      try {
+        const { data: dbUser } = await supabaseClient
+          .from("users")
+          .select("avatar_url")
+          .eq("id", user.id)
+          .single();
+        if (dbUser?.avatar_url) {
+          avatarUrl = dbUser.avatar_url;
+        }
+      } catch {}
 
       const fullName =
         [firstName, lastName].filter(Boolean).join(" ") ||

@@ -13,6 +13,7 @@ type UserRow = {
   createdAt: string | null;
   work_status: WorkStatus | null;
   is_active?: boolean;
+  avatar_url?: string | null;
 };
 
 async function getUsers(): Promise<UserRow[]> {
@@ -30,15 +31,16 @@ async function getUsers(): Promise<UserRow[]> {
   const userIds = data.users.map(u => u.id);
   const { data: statusData } = await supabaseAdmin
     .from("users")
-    .select("id, work_status, is_active")
+    .select("id, work_status, is_active, avatar_url")
     .in("id", userIds);
 
-  const statusMap = new Map<string, { work_status: WorkStatus; is_active: boolean }>();
+  const statusMap = new Map<string, { work_status: WorkStatus; is_active: boolean; avatar_url: string | null }>();
   if (statusData) {
     statusData.forEach((row: any) => {
       statusMap.set(row.id, {
         work_status: row.work_status || "available",
         is_active: row.is_active !== false,
+        avatar_url: row.avatar_url || null,
       });
     });
   }
@@ -57,6 +59,7 @@ async function getUsers(): Promise<UserRow[]> {
       createdAt: (user as any).created_at ?? null,
       work_status: dbData?.work_status || "available",
       is_active: dbData?.is_active !== false,
+      avatar_url: dbData?.avatar_url || null,
     };
   });
 }

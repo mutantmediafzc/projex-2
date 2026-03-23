@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
 // GET user by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     
     const { data: { user }, error } = await supabaseAdmin.auth.admin.getUserById(id);
     
@@ -42,10 +46,10 @@ export async function GET(
 // PATCH update user
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
     const { firstName, lastName, role, designation, is_active } = body;
 
@@ -96,10 +100,10 @@ export async function PATCH(
 // DELETE user (deactivate, not actually delete)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const { id } = params;
+    const { id } = await context.params;
 
     // Soft delete - just deactivate the user
     const { error } = await supabaseAdmin

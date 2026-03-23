@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { supabaseClient } from "@/lib/supabaseClient";
 
 type UserRow = {
   id: string;
@@ -11,6 +13,7 @@ type UserRow = {
   lastName: string | null;
   designation: string | null;
   is_active?: boolean;
+  avatar_url?: string | null;
 };
 
 interface Props {
@@ -29,6 +32,151 @@ export default function EditUserModal({ user, onClose }: Props) {
   const [designation, setDesignation] = useState(user.designation || "");
   const [role, setRole] = useState(user.role || "staff");
   const [isActive, setIsActive] = useState(user.is_active !== false);
+
+  // Profile photo state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Load user's avatar on mount
+  useEffect(() => {
+    async function loadAvatar() {
+      try {
+        const response = await fetch(`/api/users/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvatarUrl(data.avatar_url || null);
+        }
+      } catch (err) {
+        console.error("Failed to load avatar:", err);
+      }
+    }
+    loadAvatar();
+  }, [user.id]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setAvatarError("Please select a JPG, PNG, or WEBP image");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setSelectedImage(ev.target?.result as string);
+      setShowCropModal(true);
+      setCropPosition({ x: 0, y: 0 });
+      setZoom(1);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - cropPosition.x, y: e.clientY - cropPosition.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    const maxOffset = 200 * zoom;
+    setCropPosition({
+      x: Math.max(-maxOffset, Math.min(maxOffset, newX)),
+      y: Math.max(-maxOffset, Math.min(maxOffset, newY)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleCropSave = useCallback(async () => {
+    if (!selectedImage || !canvasRef.current) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.onload = async () => {
+        canvas.width = 256;
+        canvas.height = 256;
+        const size = Math.min(img.width, img.height) / zoom;
+        const scale = Math.min(img.width, img.height) / 256;
+        const sx = (img.width - size) / 2 - (cropPosition.x * scale / zoom);
+        const sy = (img.height - size) / 2 - (cropPosition.y * scale / zoom);
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, 256, 256);
+        canvas.toBlob(async (blob) => {
+          if (!blob) { setAvatarError("Failed to process image"); setAvatarUploading(false); return; }
+          const path = `${user.id}/${Date.now()}.webp`;
+          const uploadResult = await supabaseClient.storage.from("user-avatar").upload(path, blob, { upsert: true, contentType: "image/webp" });
+          if (uploadResult.error) {
+            setAvatarError(`Upload failed: ${uploadResult.error.message}`);
+            setAvatarUploading(false);
+            return;
+          }
+          const { data: { publicUrl } } = supabaseClient.storage.from("user-avatar").getPublicUrl(path);
+          
+          // Update user's avatar via API
+          const response = await fetch(`/api/users/${user.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ avatar_url: publicUrl }),
+          });
+          
+          if (!response.ok) {
+            setAvatarError("Failed to save avatar");
+            setAvatarUploading(false);
+            return;
+          }
+          
+          setAvatarUrl(publicUrl);
+          setShowCropModal(false);
+          setSelectedImage(null);
+          setAvatarUploading(false);
+          setSuccess("Profile photo updated!");
+          setTimeout(() => setSuccess(null), 2000);
+        }, "image/webp", 0.85);
+      };
+      img.src = selectedImage;
+    } catch (err) {
+      setAvatarError("Unexpected error uploading avatar");
+      setAvatarUploading(false);
+    }
+  }, [selectedImage, zoom, cropPosition, user.id]);
+
+  const handleRemovePhoto = async () => {
+    setAvatarUploading(true);
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar_url: null }),
+      });
+      if (!response.ok) {
+        setAvatarError("Failed to remove photo");
+        return;
+      }
+      setAvatarUrl(null);
+      setSuccess("Profile photo removed");
+      setTimeout(() => setSuccess(null), 2000);
+    } catch (err) {
+      setAvatarError("Failed to remove photo");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -154,6 +302,39 @@ export default function EditUserModal({ user, onClose }: Props) {
             </button>
           </div>
 
+          {/* Profile Photo */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-medium text-slate-900 mb-3">Profile Photo</p>
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border-2 border-slate-200 bg-gradient-to-br from-violet-100 to-purple-100 text-xl font-bold text-violet-600">
+                  {avatarUrl ? (
+                    <Image src={avatarUrl} alt={`${firstName} ${lastName}`} width={64} height={64} className="h-full w-full object-cover" />
+                  ) : (
+                    <span>{(firstName || user.firstName || "U").charAt(0).toUpperCase()}{(lastName || user.lastName || "").charAt(0).toUpperCase()}</span>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 ${avatarUploading ? "cursor-not-allowed opacity-50" : ""}`}>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                    {avatarUploading ? "Uploading..." : "Upload"}
+                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleFileSelect} disabled={avatarUploading} />
+                  </label>
+                  {avatarUrl && (
+                    <button type="button" onClick={handleRemovePhoto} disabled={avatarUploading} className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50">
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {avatarError && <p className="text-[10px] text-red-600">{avatarError}</p>}
+                <p className="text-[10px] text-slate-400">JPG, PNG, or WEBP. Max 5MB.</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <label htmlFor="first_name" className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wide">
@@ -261,7 +442,50 @@ export default function EditUserModal({ user, onClose }: Props) {
             </button>
           </div>
         </form>
+        <canvas ref={canvasRef} className="hidden" />
       </div>
+
+      {/* Crop Modal */}
+      {showCropModal && selectedImage && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-slate-900">Crop Photo</h3>
+            <p className="mt-1 text-xs text-slate-500">Adjust the crop area for the profile photo.</p>
+            <div 
+              className="relative mt-4 flex h-64 items-center justify-center overflow-hidden rounded-xl bg-slate-900 cursor-move select-none"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              <img 
+                src={selectedImage} 
+                alt="Preview" 
+                className="max-h-full max-w-full object-contain pointer-events-none" 
+                style={{ 
+                  transform: `translate(${cropPosition.x}px, ${cropPosition.y}px) scale(${zoom})`,
+                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
+                }} 
+                draggable={false}
+              />
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <div className="h-48 w-48 rounded-full border-4 border-white/80 shadow-lg ring-[9999px] ring-black/40" />
+              </div>
+            </div>
+            <p className="mt-2 text-center text-[10px] text-slate-500">Drag to reposition • Use slider to zoom</p>
+            <div className="mt-3">
+              <label className="block text-xs font-medium text-slate-700">Zoom</label>
+              <input type="range" min="0.25" max="3" step="0.05" value={zoom} onChange={(e) => setZoom(parseFloat(e.target.value))} className="mt-1 w-full accent-violet-500" />
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => { setShowCropModal(false); setSelectedImage(null); }} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              <button type="button" onClick={handleCropSave} disabled={avatarUploading} className="rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:from-violet-600 hover:to-purple-600 disabled:opacity-50">
+                {avatarUploading ? "Saving..." : "Save Photo"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

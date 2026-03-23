@@ -62,7 +62,6 @@ const STATUS_OPTIONS = [
   "Proposal",
   "Quotation",
   "Invoice",
-  "Project Started",
   "Project Ongoing",
   "Project Delivered",
   "Project Lost",
@@ -209,7 +208,7 @@ export default function ProjectDetailsCard({
       // Auto-sync: Update linked social calendar status based on project status
       if (project.social_calendar_id) {
         const lostStatuses = ["Project Lost"];
-        const activeStatuses = ["Project Started", "Project Ongoing", "Project Delivered", "Invoice", "Quotation", "Proposal", "Discovery", "Processed", "New Lead"];
+        const activeStatuses = ["Project Ongoing", "Project Delivered", "Invoice", "Quotation", "Proposal", "Discovery", "Processed", "New Lead"];
         
         if (lostStatuses.includes(status)) {
           // Project is lost → mark social calendar as completed

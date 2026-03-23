@@ -24,7 +24,7 @@ export async function GET(
     // Get additional data from users table
     const { data: dbUser } = await supabaseAdmin
       .from("users")
-      .select("is_active, work_status")
+      .select("is_active, work_status, avatar_url")
       .eq("id", id)
       .single();
 
@@ -35,6 +35,7 @@ export async function GET(
       lastName: meta.last_name || "",
       role: meta.role || "staff",
       designation: meta.designation || "",
+      avatar_url: dbUser?.avatar_url || meta.avatar_url || null,
       is_active: dbUser?.is_active ?? true,
       work_status: dbUser?.work_status || "available",
     });
@@ -51,7 +52,7 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { firstName, lastName, role, designation, is_active } = body;
+    const { firstName, lastName, role, designation, is_active, avatar_url } = body;
 
     // Update auth user metadata
     const updateData: Record<string, unknown> = {};
@@ -75,6 +76,7 @@ export async function PATCH(
     if (role !== undefined) dbUpdate.role = role;
     if (designation !== undefined) dbUpdate.designation = designation;
     if (is_active !== undefined) dbUpdate.is_active = is_active;
+    if (avatar_url !== undefined) dbUpdate.avatar_url = avatar_url;
     if (firstName !== undefined || lastName !== undefined) {
       const fullName = [firstName, lastName].filter(Boolean).join(" ");
       dbUpdate.full_name = fullName || null;

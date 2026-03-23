@@ -297,30 +297,30 @@ export default function ContentCalendar2026() {
     );
   };
 
-  // Calculate current 2-week period (bi-weekly starting from Saturday)
+  // Calculate 2-week period from today to a fixed Sunday endpoint
+  // The endpoint is always the same Sunday 2 weeks out, regardless of which day you run it
+  // Sunday: +14 days, Monday: +13 days, Tuesday: +12 days, Wednesday: +11 days,
+  // Thursday: +10 days, Friday: +9 days, Saturday: +8 days
   const getCurrentPeriod = () => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
     
-    // Find the most recent Saturday (start of current week in this context)
-    const daysSinceSaturday = dayOfWeek === 6 ? 0 : dayOfWeek + 1;
-    const currentWeekSaturday = new Date(today);
-    currentWeekSaturday.setDate(today.getDate() - daysSinceSaturday);
-    currentWeekSaturday.setHours(0, 0, 0, 0);
+    // Calculate days to add to reach the fixed Sunday endpoint (end of 2-week cycle)
+    // If today is Sunday (0), add 14 days
+    // If today is Monday (1), add 13 days
+    // If today is Saturday (6), add 8 days
+    const daysToAdd = dayOfWeek === 0 ? 14 : (14 - dayOfWeek);
     
-    // Period starts on the Saturday of the previous week (2-week period)
-    const periodStart = new Date(currentWeekSaturday);
-    periodStart.setDate(periodStart.getDate() - 7);
+    // Period starts from today
+    const periodStart = new Date(today);
     
-    // Period ends on Friday of the current week (or today if before Friday)
-    const periodEnd = new Date(currentWeekSaturday);
-    periodEnd.setDate(periodEnd.getDate() + 6); // Friday
+    // Period ends on the fixed Sunday (2 weeks out, aligned to week cycle)
+    const periodEnd = new Date(today);
+    periodEnd.setDate(today.getDate() + daysToAdd);
     periodEnd.setHours(23, 59, 59, 999);
     
-    // If today is before Friday, use today as the effective end
-    const effectiveEnd = today < periodEnd ? today : periodEnd;
-    
-    return { start: periodStart, end: effectiveEnd, displayEnd: periodEnd };
+    return { start: periodStart, end: periodEnd, displayEnd: periodEnd };
   };
   
   const currentPeriod = getCurrentPeriod();

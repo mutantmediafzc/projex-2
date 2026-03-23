@@ -126,22 +126,14 @@ export default function ProfileSecurity() {
         canvas.toBlob(async (blob) => {
           if (!blob) { setAvatarError("Failed to process image"); setAvatarUploading(false); return; }
           const path = `${user.id}/${Date.now()}.webp`;
-          // Try 'avatars' bucket first, fallback to 'public' bucket
-          let uploadError = null;
-          let bucketName = "avatars";
-          const uploadResult = await supabaseClient.storage.from("avatars").upload(path, blob, { upsert: true, contentType: "image/webp" });
+          // Upload to 'user-avatar' bucket
+          const uploadResult = await supabaseClient.storage.from("user-avatar").upload(path, blob, { upsert: true, contentType: "image/webp" });
           if (uploadResult.error) {
-            // Try public bucket as fallback
-            const publicResult = await supabaseClient.storage.from("public").upload(`avatars/${path}`, blob, { upsert: true, contentType: "image/webp" });
-            if (publicResult.error) {
-              setAvatarError("Storage bucket not configured. Please contact admin.");
-              setAvatarUploading(false);
-              return;
-            }
-            bucketName = "public";
+            setAvatarError(`Upload failed: ${uploadResult.error.message}`);
+            setAvatarUploading(false);
+            return;
           }
-          const finalPath = bucketName === "public" ? `avatars/${path}` : path;
-          const { data: { publicUrl } } = supabaseClient.storage.from(bucketName).getPublicUrl(finalPath);
+          const { data: { publicUrl } } = supabaseClient.storage.from("user-avatar").getPublicUrl(path);
           const { error: updateError } = await supabaseClient.auth.updateUser({ data: { avatar_url: publicUrl } });
           if (updateError) { setAvatarError(updateError.message); setAvatarUploading(false); return; }
           setProfile({ ...profile, avatarUrl: publicUrl });

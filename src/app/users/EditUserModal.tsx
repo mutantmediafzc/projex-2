@@ -33,6 +33,11 @@ export default function EditUserModal({ user, onClose }: Props) {
   const [role, setRole] = useState(user.role || "staff");
   const [isActive, setIsActive] = useState(user.is_active !== false);
 
+  // Password reset state
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+
   // Profile photo state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -45,21 +50,52 @@ export default function EditUserModal({ user, onClose }: Props) {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Load user's avatar on mount
+  // Load user's avatar and current user role on mount
   useEffect(() => {
-    async function loadAvatar() {
+    async function loadData() {
       try {
+        // Load avatar
         const response = await fetch(`/api/users/${user.id}`);
         if (response.ok) {
           const data = await response.json();
           setAvatarUrl(data.avatar_url || null);
         }
+        
+        // Load current user's role
+        const { data: { user: currentUser } } = await supabaseClient.auth.getUser();
+        if (currentUser) {
+          const meta = (currentUser.user_metadata || {}) as Record<string, unknown>;
+          setCurrentUserRole((meta.role as string) || "staff");
+        }
       } catch (err) {
-        console.error("Failed to load avatar:", err);
+        console.error("Failed to load data:", err);
       }
     }
-    loadAvatar();
+    loadData();
   }, [user.id]);
+
+  const handleResetPassword = async () => {
+    setResettingPassword(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/users/${user.id}/reset-password`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      
+      if (!response.ok) {
+        setError(data.error || "Failed to reset password");
+      } else {
+        setSuccess("Password reset to 000000");
+        setShowResetConfirm(false);
+        setTimeout(() => setSuccess(null), 3000);
+      }
+    } catch (err) {
+      setError("Network error while resetting password");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -301,6 +337,57 @@ export default function EditUserModal({ user, onClose }: Props) {
               />
             </button>
           </div>
+
+          {/* Reset Password (Admin Only) */}
+          {currentUserRole === "admin" && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-amber-900">Reset Password</p>
+                  <p className="text-xs text-amber-700">Reset user&apos;s password to default (000000)</p>
+                </div>
+                {!showResetConfirm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirm(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-200 transition-colors"
+                  >
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    Reset
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetConfirm(false)}
+                      disabled={resettingPassword}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetPassword}
+                      disabled={resettingPassword}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                    >
+                      {resettingPassword ? (
+                        <>
+                          <div className="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Resetting...
+                        </>
+                      ) : (
+                        "Confirm Reset"
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Profile Photo */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">

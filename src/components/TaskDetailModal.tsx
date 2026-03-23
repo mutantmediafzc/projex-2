@@ -48,6 +48,32 @@ function formatTaskStatusLabel(status: TaskStatus | null): string {
   return "Not started";
 }
 
+// Convert URLs in text to clickable links
+function linkifyText(text: string): React.ReactNode {
+  const urlRegex = /(https?:\/\/[^\s<>"{}|\\^\[\]`]+)/gi;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      // Reset regex lastIndex
+      urlRegex.lastIndex = 0;
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sky-600 hover:text-sky-700 underline break-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export default function TaskDetailModal({ taskId, onClose, onStatusChange }: TaskDetailModalProps) {
   const { role } = useUserRole();
   const isAdmin = role === "admin";
@@ -277,7 +303,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin && !isEditMode && (
+              {!isEditMode && (
                 <button
                   type="button"
                   onClick={() => setIsEditMode(true)}
@@ -395,7 +421,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
               {/* View Mode */}
               {task.content && (
                 <div className="mb-4 rounded-xl bg-slate-50 p-4">
-                  <p className="text-[12px] text-slate-700 leading-relaxed">{task.content}</p>
+                  <p className="text-[12px] text-slate-700 leading-relaxed whitespace-pre-wrap">{linkifyText(task.content)}</p>
                 </div>
               )}
 
@@ -536,7 +562,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
                         <span className="ml-2 text-[10px] text-slate-400">{formatDate(comment.created_at)}</span>
                       </div>
                     </div>
-                    <p className="pl-9 text-[11px] text-slate-600 leading-relaxed">{comment.body}</p>
+                    <p className="pl-9 text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap">{linkifyText(comment.body)}</p>
                   </div>
                 ))}
               </div>

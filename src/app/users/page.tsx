@@ -1,6 +1,10 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import UsersPageClient from "./UsersPageClient";
 
+// Disable caching for this page to always get fresh data
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type WorkStatus = "available" | "on_leave" | "wfh";
 
 type UserRow = {

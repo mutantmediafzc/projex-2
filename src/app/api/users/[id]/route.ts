@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 interface RouteContext {
@@ -93,6 +94,9 @@ export async function PATCH(
       }
     }
 
+    // Revalidate the users page to reflect changes
+    revalidatePath("/users");
+
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
@@ -116,6 +120,9 @@ export async function DELETE(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    // Revalidate the users page to reflect changes
+    revalidatePath("/users");
 
     return NextResponse.json({ success: true });
   } catch (error) {

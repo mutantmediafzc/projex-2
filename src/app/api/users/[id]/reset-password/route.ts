@@ -1,10 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
+}
+
+async function verifySession(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.replace("Bearer ", "") || request.cookies.get("sb-access-token")?.value;
+  
+  if (!token) {
+    const cookieHeader = request.headers.get("cookie") || "";
+    const match = cookieHeader.match(/sb-[^-]+-auth-token=([^;]+)/);
+    if (match) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(match[1]));
+        if (parsed?.[0]?.access_token) {
+          const { data } = await supabaseAdmin.auth.getUser(parsed[0].access_token);
+          return data.user;
+        }
+      } catch {}
+    }
+    return null;
+  }
+  
+  const { data } = await supabaseAdmin.auth.getUser(token);
+  return data.user;
 }
 
 // POST reset user password to "000000"
@@ -16,9 +37,7 @@ export async function POST(
     const { id: targetUserId } = await context.params;
     
     // Verify the requesting user is an admin
-    const cookieStore = await cookies();
-    const supabase = createServerComponentClient({ cookies: () => cookieStore });
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const currentUser = await verifySession(request);
     
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

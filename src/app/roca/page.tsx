@@ -10,10 +10,12 @@ import LandingPagesSection from "./components/LandingPagesSection";
 import PricingSection from "./components/PricingSection";
 import TimelineSection from "./components/TimelineSection";
 import ResultsSection from "./components/ResultsSection";
+import WebSection from "./components/WebSection";
 
 export default function RocaProposalPage() {
   const [activeSection, setActiveSection] = useState("hero");
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState<"main" | "web">("main");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,56 +65,103 @@ export default function RocaProposalPage() {
         />
       </div>
 
-      {/* Floating Nav */}
-      <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-40 hidden lg:flex items-center gap-1 rounded-full bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-2 py-2 shadow-2xl">
-        {navItems.map((item) => (
+      {/* Floating Nav - Only show on main tab */}
+      {activeTab === "main" && (
+        <nav className="fixed top-4 left-1/2 -translate-x-1/2 z-40 hidden lg:flex items-center gap-1 rounded-full bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-2 py-2 shadow-2xl">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToSection(item.id)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                activeSection === item.id
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* Mobile Nav - Only show on main tab */}
+      {activeTab === "main" && (
+        <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden flex items-center justify-center gap-1 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 px-3 py-3 shadow-2xl overflow-x-auto">
+          {navItems.slice(0, 5).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToSection(item.id)}
+              className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                activeSection === item.id
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                  : "text-slate-400"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* Header with Mutant Logo and Tab Switcher */}
+      <header className="fixed top-4 left-4 right-4 z-50 flex items-center justify-between">
+        <div className="rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-4 py-3 shadow-2xl">
+          <Image src="/logos/mutant-logo.avif" alt="Mutant" width={100} height={32} className="h-7 w-auto invert" />
+        </div>
+        
+        {/* Main Tab Switcher */}
+        <div className="rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 p-1.5 shadow-2xl flex gap-1">
           <button
-            key={item.id}
-            onClick={() => scrollToSection(item.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-              activeSection === item.id
+            onClick={() => {
+              setActiveTab("main");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "main"
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
                 : "text-slate-400 hover:text-white hover:bg-slate-800"
             }`}
           >
-            {item.label}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+            </svg>
+            <span className="hidden sm:inline">Marketing</span>
           </button>
-        ))}
-      </nav>
-
-      {/* Mobile Nav */}
-      <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden flex items-center justify-center gap-1 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 px-3 py-3 shadow-2xl overflow-x-auto">
-        {navItems.slice(0, 5).map((item) => (
           <button
-            key={item.id}
-            onClick={() => scrollToSection(item.id)}
-            className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-              activeSection === item.id
-                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-                : "text-slate-400"
+            onClick={() => {
+              setActiveTab("web");
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "web"
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/25"
+                : "text-slate-400 hover:text-white hover:bg-slate-800"
             }`}
           >
-            {item.label}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            <span className="hidden sm:inline">Website</span>
           </button>
-        ))}
-      </nav>
-
-      {/* Header with Mutant Logo */}
-      <header className="fixed top-4 left-4 z-50">
-        <div className="rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-4 py-3 shadow-2xl">
-          <Image src="/logos/mutant-logo.avif" alt="Mutant" width={100} height={32} className="h-7 w-auto invert" />
         </div>
       </header>
 
       {/* Main Content */}
       <main>
-        <HeroSection />
-        <ServicesSection />
-        <SEOAuditSection />
-        <LandingPagesSection />
-        <PricingSection />
-        <TimelineSection />
-        <ResultsSection />
+        {activeTab === "main" ? (
+          <>
+            <HeroSection />
+            <ServicesSection />
+            <SEOAuditSection />
+            <LandingPagesSection />
+            <PricingSection />
+            <TimelineSection />
+            <ResultsSection />
+          </>
+        ) : (
+          <WebSection />
+        )}
       </main>
 
       {/* Footer */}

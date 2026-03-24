@@ -99,9 +99,8 @@ export default function RocaProposalPage() {
 
       {/* Header with Mutant Logo */}
       <header className="fixed top-4 left-4 z-50">
-        <div className="flex items-center gap-3 rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-4 py-3 shadow-2xl">
-          <Image src="/logos/mutant-logo.avif" alt="Mutant" width={32} height={32} className="w-8 h-8" />
-          <span className="text-white font-bold text-lg tracking-tight">MUTANT</span>
+        <div className="rounded-2xl bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 px-4 py-3 shadow-2xl">
+          <Image src="/logos/mutant-logo.avif" alt="Mutant" width={100} height={32} className="h-7 w-auto invert" />
         </div>
       </header>
 
@@ -120,9 +119,8 @@ export default function RocaProposalPage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 py-12 px-6">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Image src="/logos/mutant-logo.avif" alt="Mutant" width={40} height={40} />
-            <span className="text-white font-bold text-xl">MUTANT</span>
+          <div className="flex items-center justify-center mb-4">
+            <Image src="/logos/mutant-logo.avif" alt="Mutant" width={120} height={40} className="h-8 w-auto invert" />
           </div>
           <p className="text-slate-500 text-sm">
             © {new Date().getFullYear()} Mutant Digital Agency. Prepared exclusively for Roca Real Estate.

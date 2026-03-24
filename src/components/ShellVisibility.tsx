@@ -3,9 +3,16 @@
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+// Routes that should hide the app shell (sidebar, header)
+const headlessRoutes = ["/login", "/roca"];
+
+function isHeadlessRoute(pathname: string) {
+  return headlessRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
+}
+
 export function ShellSidebar({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/login") {
+  if (isHeadlessRoute(pathname)) {
     return null;
   }
   return <>{children}</>;
@@ -13,7 +20,7 @@ export function ShellSidebar({ children }: { children: ReactNode }) {
 
 export function ShellHeader({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  if (pathname === "/login") {
+  if (isHeadlessRoute(pathname)) {
     return null;
   }
   return <>{children}</>;
@@ -28,6 +35,11 @@ export function ShellFrame({ children }: { children: ReactNode }) {
         {children}
       </div>
     );
+  }
+
+  // For /roca and other headless routes, render without app shell wrapper
+  if (isHeadlessRoute(pathname)) {
+    return <>{children}</>;
   }
 
   return (

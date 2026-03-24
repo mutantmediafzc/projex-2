@@ -217,77 +217,78 @@ export default function TimelineSection() {
   const getServiceInfo = (key: ServiceKey) => services.find(s => s.key === key)!;
 
   return (
-    <section id="timeline" className="py-24 px-6">
+    <section id="timeline" className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <span className="inline-block text-amber-400 text-sm font-semibold uppercase tracking-widest mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <span className="inline-block text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4">
             Detailed Project Timeline
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             12-Month Implementation Roadmap
           </h2>
-          <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+          <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto px-2">
             Week-by-week breakdown of onboarding, implementation, optimization, and scaling phases across all services for Roca Real Estate.
           </p>
         </div>
 
         {/* Phase Legend */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 sm:mb-8">
           {Object.entries(phaseColors).map(([key, value]) => (
-            <div key={key} className={`flex items-center gap-2 px-4 py-2 rounded-full ${value.bg} border ${value.border}`}>
-              <div className={`w-2 h-2 rounded-full ${value.text.replace("text-", "bg-")}`} />
-              <span className={`text-sm font-medium ${value.text}`}>{value.label}</span>
+            <div key={key} className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full ${value.bg} border ${value.border}`}>
+              <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${value.text.replace("text-", "bg-")}`} />
+              <span className={`text-xs sm:text-sm font-medium ${value.text}`}>{value.label}</span>
             </div>
           ))}
         </div>
 
         {/* Service Filter */}
-        <div className="flex flex-wrap justify-center gap-2 mb-8">
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 mb-6 sm:mb-8">
           <button
             onClick={() => setFilterService("all")}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all ${
               filterService === "all"
                 ? "bg-white text-slate-900"
                 : "bg-slate-800/50 text-slate-400 hover:text-white"
             }`}
           >
-            All Services
+            All
           </button>
           {services.map((service) => (
             <button
               key={service.key}
               onClick={() => setFilterService(service.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all ${
                 filterService === service.key
                   ? `bg-gradient-to-r ${service.color} text-white`
                   : "bg-slate-800/50 text-slate-400 hover:text-white"
               }`}
             >
-              {service.icon}
-              {service.name}
+              <span className="hidden sm:inline">{service.icon}</span>
+              <span className="sm:hidden text-[10px]">{service.key.toUpperCase()}</span>
+              <span className="hidden sm:inline">{service.name}</span>
             </button>
           ))}
         </div>
 
         {/* Timeline Navigation */}
-        <div className="relative mb-8 overflow-x-auto pb-4">
-          <div className="flex gap-2 min-w-max">
+        <div className="relative mb-6 sm:mb-8 overflow-x-auto pb-2 sm:pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex gap-1.5 sm:gap-2 min-w-max">
             {timeline.map((item, i) => {
               const phase = phaseColors[item.phase];
               return (
                 <button
                   key={i}
                   onClick={() => setActiveWeek(i)}
-                  className={`relative px-4 py-3 rounded-xl transition-all min-w-[100px] ${
+                  className={`relative px-2.5 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all min-w-[70px] sm:min-w-[100px] ${
                     activeWeek === i
                       ? `${phase.bg} border-2 ${phase.border} ${phase.text}`
                       : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:text-white hover:border-slate-600"
                   }`}
                 >
-                  <div className="text-xs font-bold">{item.week}</div>
-                  <div className={`text-[10px] uppercase tracking-wider mt-1 ${activeWeek === i ? phase.text : "text-slate-500"}`}>
-                    {item.phase}
+                  <div className="text-[10px] sm:text-xs font-bold">{item.week}</div>
+                  <div className={`text-[8px] sm:text-[10px] uppercase tracking-wider mt-0.5 sm:mt-1 ${activeWeek === i ? phase.text : "text-slate-500"}`}>
+                    {item.phase.slice(0, 3)}
                   </div>
                 </button>
               );
@@ -296,36 +297,36 @@ export default function TimelineSection() {
         </div>
 
         {/* Active Week Details */}
-        <div className={`rounded-3xl ${phaseColors[timeline[activeWeek].phase].bg} border ${phaseColors[timeline[activeWeek].phase].border} p-6 md:p-8 mb-8`}>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className={`rounded-2xl sm:rounded-3xl ${phaseColors[timeline[activeWeek].phase].bg} border ${phaseColors[timeline[activeWeek].phase].border} p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-white">{timeline[activeWeek].week}</h3>
-              <span className={`text-sm font-medium ${phaseColors[timeline[activeWeek].phase].text}`}>
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{timeline[activeWeek].week}</h3>
+              <span className={`text-xs sm:text-sm font-medium ${phaseColors[timeline[activeWeek].phase].text}`}>
                 {phaseColors[timeline[activeWeek].phase].label} Phase
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-400 text-sm">{filteredTasks.length} tasks</span>
+              <span className="text-slate-400 text-xs sm:text-sm">{filteredTasks.length} tasks</span>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {filteredTasks.map((task, i) => {
               const service = getServiceInfo(task.service);
               return (
                 <div
                   key={i}
-                  className="rounded-xl bg-slate-900/80 border border-slate-700/50 p-4 hover:border-slate-600 transition-colors"
+                  className="rounded-lg sm:rounded-xl bg-slate-900/80 border border-slate-700/50 p-3 sm:p-4 hover:border-slate-600 transition-colors"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white flex-shrink-0`}>
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white flex-shrink-0`}>
                       {service.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className={`text-xs font-medium bg-gradient-to-r ${service.color} bg-clip-text text-transparent mb-1`}>
+                      <div className={`text-[10px] sm:text-xs font-medium bg-gradient-to-r ${service.color} bg-clip-text text-transparent mb-0.5 sm:mb-1`}>
                         {service.name}
                       </div>
-                      <p className="text-slate-300 text-sm leading-relaxed">{task.task}</p>
+                      <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">{task.task}</p>
                     </div>
                   </div>
                 </div>
@@ -334,27 +335,26 @@ export default function TimelineSection() {
           </div>
         </div>
 
-        {/* Gantt-style Overview */}
-        <div className="rounded-3xl bg-slate-800/30 border border-slate-700/50 p-6 md:p-8 mb-8">
-          <h3 className="text-xl font-bold text-white mb-6">Service Implementation Timeline</h3>
-          <div className="space-y-4">
+        {/* Gantt-style Overview - Hidden on mobile, shown on tablet+ */}
+        <div className="hidden sm:block rounded-2xl sm:rounded-3xl bg-slate-800/30 border border-slate-700/50 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
+          <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-4 sm:mb-6">Service Implementation Timeline</h3>
+          <div className="space-y-3 sm:space-y-4">
             {services.map((service) => (
-              <div key={service.key} className="flex items-center gap-4">
-                <div className="w-32 flex items-center gap-2 flex-shrink-0">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white`}>
+              <div key={service.key} className="flex items-center gap-2 sm:gap-4">
+                <div className="w-24 sm:w-32 flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                  <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white`}>
                     {service.icon}
                   </div>
-                  <span className="text-white text-sm font-medium">{service.name}</span>
+                  <span className="text-white text-xs sm:text-sm font-medium truncate">{service.name}</span>
                 </div>
-                <div className="flex-1 flex gap-1">
+                <div className="flex-1 flex gap-0.5 sm:gap-1">
                   {timeline.map((week, i) => {
                     const hasTask = week.tasks.some(t => t.service === service.key);
-                    const phase = phaseColors[week.phase];
                     return (
                       <div
                         key={i}
                         onClick={() => setActiveWeek(i)}
-                        className={`flex-1 h-8 rounded cursor-pointer transition-all ${
+                        className={`flex-1 h-6 sm:h-8 rounded cursor-pointer transition-all ${
                           hasTask
                             ? `bg-gradient-to-r ${service.color} opacity-80 hover:opacity-100`
                             : "bg-slate-800/50 hover:bg-slate-700/50"
@@ -367,7 +367,7 @@ export default function TimelineSection() {
               </div>
             ))}
           </div>
-          <div className="flex justify-between mt-4 text-xs text-slate-500">
+          <div className="flex justify-between mt-3 sm:mt-4 text-[10px] sm:text-xs text-slate-500">
             <span>Week 1</span>
             <span>Month 3</span>
             <span>Month 6</span>
@@ -376,19 +376,42 @@ export default function TimelineSection() {
           </div>
         </div>
 
+        {/* Mobile Gantt Alternative - Compact service summary */}
+        <div className="sm:hidden rounded-2xl bg-slate-800/30 border border-slate-700/50 p-4 mb-6">
+          <h3 className="text-base font-bold text-white mb-4">Service Timeline</h3>
+          <div className="space-y-3">
+            {services.map((service) => {
+              const taskCount = timeline.reduce((acc, week) => 
+                acc + week.tasks.filter(t => t.service === service.key).length, 0
+              );
+              return (
+                <div key={service.key} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white`}>
+                      {service.icon}
+                    </div>
+                    <span className="text-white text-xs font-medium">{service.name}</span>
+                  </div>
+                  <span className="text-slate-400 text-xs">{taskCount} tasks</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Key Milestones */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {[
             { week: "Week 4", milestone: "Onboarding Complete", desc: "All audits, strategies & access ready", color: "from-blue-500 to-cyan-500" },
             { week: "Month 3", milestone: "Implementation Done", desc: "All services live & generating leads", color: "from-green-500 to-emerald-500" },
             { week: "Month 6", milestone: "Optimization Peak", desc: "90+ keywords Page 1, 3,800+ traffic", color: "from-amber-500 to-orange-500" },
             { week: "Month 12", milestone: "Market Leadership", desc: "12,500+ traffic, full automation", color: "from-purple-500 to-pink-500" },
           ].map((m, i) => (
-            <div key={i} className={`rounded-2xl bg-gradient-to-br ${m.color} p-[1px]`}>
-              <div className="rounded-2xl bg-slate-900 p-5 h-full">
-                <div className="text-amber-400 text-xs font-medium mb-1">{m.week}</div>
-                <div className="text-white font-bold mb-2">{m.milestone}</div>
-                <div className="text-slate-400 text-xs">{m.desc}</div>
+            <div key={i} className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${m.color} p-[1px]`}>
+              <div className="rounded-xl sm:rounded-2xl bg-slate-900 p-3 sm:p-5 h-full">
+                <div className="text-amber-400 text-[10px] sm:text-xs font-medium mb-0.5 sm:mb-1">{m.week}</div>
+                <div className="text-white font-bold text-xs sm:text-base mb-1 sm:mb-2">{m.milestone}</div>
+                <div className="text-slate-400 text-[10px] sm:text-xs leading-relaxed">{m.desc}</div>
               </div>
             </div>
           ))}

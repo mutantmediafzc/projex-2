@@ -120,53 +120,53 @@ export default function ResultsSection() {
   ];
 
   return (
-    <section id="results" className="py-24 px-6 bg-slate-900/50">
+    <section id="results" className="py-12 sm:py-16 lg:py-24 px-4 sm:px-6 bg-slate-900/50">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-12">
-          <span className="inline-block text-amber-400 text-sm font-semibold uppercase tracking-widest mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <span className="inline-block text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4">
             Research-Based Projections
           </span>
-          <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             Expected Traffic & Growth
           </h2>
-          <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+          <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto px-2">
             Projections based on real estate SEO case studies showing 220% traffic growth in 6 months, 
             with 90+ high-intent keywords reaching Page 1 and 180% increase in qualified inquiries.
           </p>
         </div>
 
         {/* Market Context Banner */}
-        <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-6 mb-12">
-          <h4 className="text-lg font-semibold text-white mb-4 text-center">Dubai Real Estate Market Context (2025)</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-amber-400">{marketContext.dubaiTransactions2025}</div>
-              <div className="text-slate-400 text-xs">Total Transactions</div>
+        <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/30 p-4 sm:p-6 mb-8 sm:mb-12">
+          <h4 className="text-base sm:text-lg font-semibold text-white mb-4 text-center">Dubai Real Estate Market Context (2025)</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 text-center">
+            <div className="col-span-2 sm:col-span-1">
+              <div className="text-lg sm:text-2xl font-bold text-amber-400">{marketContext.dubaiTransactions2025}</div>
+              <div className="text-slate-400 text-[10px] sm:text-xs">Total Transactions</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-green-400">{marketContext.totalDeals}</div>
-              <div className="text-slate-400 text-xs">Property Deals</div>
+              <div className="text-lg sm:text-2xl font-bold text-green-400">{marketContext.totalDeals}</div>
+              <div className="text-slate-400 text-[10px] sm:text-xs">Property Deals</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-blue-400">{marketContext.yoyGrowth}</div>
-              <div className="text-slate-400 text-xs">YoY Growth</div>
+              <div className="text-lg sm:text-2xl font-bold text-blue-400">{marketContext.yoyGrowth}</div>
+              <div className="text-slate-400 text-[10px] sm:text-xs">YoY Growth</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-purple-400">{marketContext.googleMarketShare}</div>
-              <div className="text-slate-400 text-xs">Google Market Share</div>
+              <div className="text-lg sm:text-2xl font-bold text-purple-400">{marketContext.googleMarketShare}</div>
+              <div className="text-slate-400 text-[10px] sm:text-xs">Google Market Share</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-cyan-400">{marketContext.internetPenetration}</div>
-              <div className="text-slate-400 text-xs">Internet Penetration</div>
+              <div className="text-lg sm:text-2xl font-bold text-cyan-400">{marketContext.internetPenetration}</div>
+              <div className="text-slate-400 text-[10px] sm:text-xs">Internet Penetration</div>
             </div>
           </div>
         </div>
 
         {/* Interactive Traffic Chart */}
-        <div className="rounded-3xl bg-slate-800/30 border border-slate-700/50 p-8 mb-12">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-            <h3 className="text-xl font-bold text-white">12-Month Traffic Projection</h3>
+        <div className="rounded-2xl sm:rounded-3xl bg-slate-800/30 border border-slate-700/50 p-4 sm:p-6 lg:p-8 mb-8 sm:mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <h3 className="text-lg sm:text-xl font-bold text-white">12-Month Traffic Projection</h3>
             <div className="flex gap-2">
               <button
                 onClick={() => setActiveMetric("total")}
@@ -192,8 +192,8 @@ export default function ResultsSection() {
           </div>
 
           {/* Chart */}
-          <div className="relative h-72 mb-6">
-            <div className="absolute inset-0 flex items-end gap-1 md:gap-2">
+          <div className="relative h-48 sm:h-64 lg:h-72 mb-4 sm:mb-6">
+            <div className="absolute inset-0 flex items-end gap-[2px] sm:gap-1 md:gap-2">
               {trafficData.map((point, i) => {
                 const value = activeMetric === "organic" ? point.organic : point.total;
                 const maxVal = activeMetric === "organic" 
@@ -204,8 +204,8 @@ export default function ResultsSection() {
                 return (
                   <div key={i} className="flex-1 flex flex-col items-center group">
                     <div className="w-full relative">
-                      {/* Tooltip */}
-                      <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
+                      {/* Tooltip - hidden on mobile, shown on hover for tablet+ */}
+                      <div className="hidden sm:block absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap pointer-events-none">
                         <div className="text-white font-bold text-sm">{value.toLocaleString()}</div>
                         <div className="text-slate-400 text-xs">{point.month}</div>
                         {activeMetric === "total" && (
@@ -217,15 +217,15 @@ export default function ResultsSection() {
                       
                       {/* Bar */}
                       <div
-                        className={`w-full rounded-t-lg transition-all duration-500 ${
+                        className={`w-full rounded-t transition-all duration-500 ${
                           activeMetric === "organic"
                             ? "bg-gradient-to-t from-green-600 to-emerald-400"
                             : "bg-gradient-to-t from-amber-600 to-orange-400"
                         }`}
-                        style={{ height: `${height * 2.5}px`, minHeight: "8px" }}
+                        style={{ height: `${height * 2.5}px`, minHeight: "4px" }}
                       />
                     </div>
-                    <div className="mt-2 text-slate-500 text-[10px] md:text-xs text-center truncate w-full">
+                    <div className="mt-1 sm:mt-2 text-slate-500 text-[8px] sm:text-[10px] md:text-xs text-center truncate w-full">
                       {point.month.replace("Month ", "M")}
                     </div>
                   </div>
@@ -235,46 +235,46 @@ export default function ResultsSection() {
           </div>
 
           {/* Legend */}
-          <div className="flex flex-wrap justify-center gap-6 pt-4 border-t border-slate-700/50">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-6 pt-3 sm:pt-4 border-t border-slate-700/50">
             {trafficSources.map((source) => (
-              <div key={source.key} className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${source.color}`} />
-                <span className="text-slate-400 text-sm">{source.label}</span>
+              <div key={source.key} className="flex items-center gap-1.5 sm:gap-2">
+                <div className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-gradient-to-r ${source.color}`} />
+                <span className="text-slate-400 text-xs sm:text-sm">{source.label}</span>
               </div>
             ))}
           </div>
 
           {/* Growth Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-700/50">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-700/50">
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">{trafficData[0].total.toLocaleString()}</div>
-              <div className="text-slate-500 text-sm">Current Monthly</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">{trafficData[0].total.toLocaleString()}</div>
+              <div className="text-slate-500 text-xs sm:text-sm">Current Monthly</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-amber-400">{trafficData[6].total.toLocaleString()}</div>
-              <div className="text-slate-500 text-sm">Month 6</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-amber-400">{trafficData[6].total.toLocaleString()}</div>
+              <div className="text-slate-500 text-xs sm:text-sm">Month 6</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-green-400">{trafficData[12].total.toLocaleString()}</div>
-              <div className="text-slate-500 text-sm">Month 12</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-green-400">{trafficData[12].total.toLocaleString()}</div>
+              <div className="text-slate-500 text-xs sm:text-sm">Month 12</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-purple-400">+1,817%</div>
-              <div className="text-slate-500 text-sm">Total Growth</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-400">+1,817%</div>
+              <div className="text-slate-500 text-xs sm:text-sm">Total Growth</div>
             </div>
           </div>
         </div>
 
         {/* KPI Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {kpis.map((kpi, i) => (
-            <div key={i} className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-6 hover:border-amber-500/30 transition-colors">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white">
+            <div key={i} className="rounded-xl sm:rounded-2xl bg-slate-800/30 border border-slate-700/50 p-4 sm:p-6 hover:border-amber-500/30 transition-colors">
+              <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white flex-shrink-0">
                   {kpi.icon}
                 </div>
-                <div>
-                  <h3 className="text-white font-semibold">{kpi.metric}</h3>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold text-sm sm:text-base truncate">{kpi.metric}</h3>
                   <span className={`text-xs font-bold ${
                     kpi.growth.includes("-") ? "text-green-400" : kpi.growth === "New Channel" ? "text-purple-400" : "text-green-400"
                   }`}>
@@ -282,21 +282,21 @@ export default function ResultsSection() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center mb-3">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center mb-3">
                 <div>
-                  <div className="text-slate-500 text-xs mb-1">Current</div>
-                  <div className="text-white font-bold text-sm">{kpi.current}</div>
+                  <div className="text-slate-500 text-[10px] sm:text-xs mb-1">Current</div>
+                  <div className="text-white font-bold text-xs sm:text-sm">{kpi.current}</div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-xs mb-1">Month 6</div>
-                  <div className="text-amber-400 font-bold text-sm">{kpi.month6}</div>
+                  <div className="text-slate-500 text-[10px] sm:text-xs mb-1">Month 6</div>
+                  <div className="text-amber-400 font-bold text-xs sm:text-sm">{kpi.month6}</div>
                 </div>
                 <div>
-                  <div className="text-slate-500 text-xs mb-1">Month 12</div>
-                  <div className="text-green-400 font-bold text-sm">{kpi.month12}</div>
+                  <div className="text-slate-500 text-[10px] sm:text-xs mb-1">Month 12</div>
+                  <div className="text-green-400 font-bold text-xs sm:text-sm">{kpi.month12}</div>
                 </div>
               </div>
-              <div className="text-xs text-slate-500 text-center pt-3 border-t border-slate-700/50">
+              <div className="text-[10px] sm:text-xs text-slate-500 text-center pt-2 sm:pt-3 border-t border-slate-700/50">
                 {kpi.benchmark}
               </div>
             </div>
@@ -304,15 +304,15 @@ export default function ResultsSection() {
         </div>
 
         {/* Research Sources */}
-        <div className="rounded-2xl bg-slate-800/20 border border-slate-700/30 p-6">
-          <h4 className="text-sm font-semibold text-slate-400 mb-3">Data Sources & Benchmarks</h4>
-          <div className="grid md:grid-cols-2 gap-4 text-xs text-slate-500">
-            <div>
+        <div className="rounded-xl sm:rounded-2xl bg-slate-800/20 border border-slate-700/30 p-4 sm:p-6">
+          <h4 className="text-xs sm:text-sm font-semibold text-slate-400 mb-2 sm:mb-3">Data Sources & Benchmarks</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-[10px] sm:text-xs text-slate-500">
+            <div className="space-y-1">
               <p>• Dubai Land Department 2025 transaction reports</p>
               <p>• Property Finder 2025 market analysis</p>
               <p>• Real estate SEO case studies (220% growth in 6 months)</p>
             </div>
-            <div>
+            <div className="space-y-1">
               <p>• Industry benchmarks: 90+ keywords on Page 1 in 6 months</p>
               <p>• Lead conversion rates: 3-5% for qualified traffic</p>
               <p>• Local search visibility improvements: 160% typical</p>

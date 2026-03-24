@@ -167,6 +167,7 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
   const [data, setData] = useState<WebsiteWorkflowData>(getDefault());
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activePickerStep, setActivePickerStep] = useState<string | null>(null);
   const [selected, setSelected] = useState<WebsiteProjectSubtype>(null);
   const [subtypeName, setSubtypeName] = useState("");
@@ -176,8 +177,11 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
   useEffect(() => { supabaseClient.from("users").select("id, full_name, email").order("full_name").then(({ data: u }) => u && setUsers(u)); }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
     supabaseClient.from("project_workflows").select("workflow_data").eq("project_id", projectId).single().then(({ data: d }) => {
-      if (d?.workflow_data) {
+      if (cancelled) return;
+      if (d?.workflow_data && (d.workflow_data as WebsiteWorkflowData).steps?.length > 0) {
         let loaded = d.workflow_data as WebsiteWorkflowData;
         
         // Migration: Add Financials step if missing (for existing workflows)
@@ -246,8 +250,12 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
         if (loaded.projectSubtype) setSelected(loaded.projectSubtype);
         if (loaded.subtypeName) setSubtypeName(loaded.subtypeName);
         if (loaded.needsFigma !== undefined) setNeedsFigma(loaded.needsFigma);
+      } else {
+        setData(getDefault());
       }
+      setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [projectId]);
 
   async function save(updated: WebsiteWorkflowData) {
@@ -465,6 +473,15 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
   }
 
   // Removed restriction - workflows are now available for all project types via the wrapper
+
+  // Guard: show loading while data is being fetched
+  if (loading || !data.steps || data.steps.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500" />
+      </div>
+    );
+  }
 
   const completedSteps = data.steps.filter(s => s.status === "completed").length;
   const totalSteps = data.steps.length;

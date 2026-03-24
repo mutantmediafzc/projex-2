@@ -1016,6 +1016,30 @@ create table if not exists social_projects (
 
 create index if not exists social_projects_company_id_idx on social_projects(company_id);
 
+-- Subscriptions and verification tracking for social projects
+alter table if exists social_projects
+  add column if not exists manychat_subscribers integer default 0,
+  add column if not exists meta_verified boolean default false,
+  add column if not exists whatsapp_subscribers integer default 0,
+  add column if not exists newsletter_subscribers integer default 0;
+
+-- Quarterly deliverables tracking for social projects
+create table if not exists social_quarterly_deliverables (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references social_projects(id) on delete cascade,
+  report_quarter text not null, -- e.g., '2026-Q1'
+  asset_type text not null, -- 'reel', 'static_post', 'story', 'carousel', 'long_form_video', 'article'
+  planned_count integer not null default 0,
+  delivered_count integer not null default 0,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(project_id, report_quarter, asset_type)
+);
+
+create index if not exists social_quarterly_deliverables_project_idx on social_quarterly_deliverables(project_id);
+create index if not exists social_quarterly_deliverables_quarter_idx on social_quarterly_deliverables(report_quarter);
+
 -- Social Posts (short-form content)
 do $$
 begin
@@ -1136,6 +1160,30 @@ create table if not exists social_public_links (
 );
 
 create unique index if not exists social_public_links_token_idx on social_public_links(token);
+
+-- Strategy links for public sharing of strategy/KPI data
+create table if not exists social_strategy_links (
+  id uuid primary key default gen_random_uuid(),
+  project_id uuid not null references social_projects(id) on delete cascade,
+  title text not null,
+  quarter text not null, -- e.g., '2026-Q1'
+  objectives text,
+  core_goals text,
+  theme text,
+  target_audience text,
+  content_pillars text[] default '{}',
+  kpi_targets jsonb default '{}'::jsonb,
+  notes text,
+  is_published boolean default false,
+  public_link_token text unique default gen_random_uuid()::text,
+  public_link_expires_at timestamptz,
+  created_by_user_id uuid references users(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists social_strategy_links_project_idx on social_strategy_links(project_id);
+create unique index if not exists social_strategy_links_token_idx on social_strategy_links(public_link_token) where public_link_token is not null;
 
 -- ============================================
 -- DANOTE - VISUAL COLLABORATION BOARDS

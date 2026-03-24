@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import QuarterlyDeliverables from "./QuarterlyDeliverables";
 
 type QuarterlyReport = {
   id: string;
@@ -286,6 +287,9 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
               </div>
             </div>
           )}
+
+          {/* Quarterly Deliverables */}
+          <QuarterlyDeliverables projectId={projectId} reportQuarter={currentQuarterKey} />
 
           {/* Boosted Summary */}
           {currentReport.boosted_summary && Object.keys(currentReport.boosted_summary).length > 0 && (

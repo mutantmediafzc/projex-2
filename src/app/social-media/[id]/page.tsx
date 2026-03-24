@@ -10,6 +10,8 @@ import ArticlePlanner from "./ArticlePlanner";
 import AnalyticsKPIs from "./AnalyticsKPIs";
 import ClientAccess from "./ClientAccess";
 import QuarterlyReports from "./QuarterlyReports";
+import SubscriptionsPanel from "./SubscriptionsPanel";
+import StrategyLinkManager from "./StrategyLinkManager";
 
 type SocialProject = {
   id: string;
@@ -20,6 +22,10 @@ type SocialProject = {
   status: string | null;
   platforms: string[];
   created_at: string | null;
+  manychat_subscribers: number;
+  meta_verified: boolean;
+  whatsapp_subscribers: number;
+  newsletter_subscribers: number;
   company: {
     id: string;
     name: string | null;
@@ -167,6 +173,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       .from("social_projects")
       .select(`
         id, name, description, brand_color, logo_url, status, platforms, created_at,
+        manychat_subscribers, meta_verified, whatsapp_subscribers, newsletter_subscribers,
         company:companies(id, name, logo_url)
       `)
       .eq("id", resolvedParams.id)
@@ -379,7 +386,20 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           <ArticlePlanner projectId={project.id} />
         )}
         {activeTab === "analytics" && (
-          <AnalyticsKPIs projectId={project.id} />
+          <div className="space-y-6">
+            <SubscriptionsPanel
+              projectId={project.id}
+              initialData={{
+                manychat_subscribers: project.manychat_subscribers || 0,
+                meta_verified: project.meta_verified || false,
+                whatsapp_subscribers: project.whatsapp_subscribers || 0,
+                newsletter_subscribers: project.newsletter_subscribers || 0,
+              }}
+              onUpdate={(data) => setProject({ ...project, ...data })}
+            />
+            <AnalyticsKPIs projectId={project.id} />
+            <StrategyLinkManager projectId={project.id} projectName={project.name} />
+          </div>
         )}
         {activeTab === "client" && (
           <ClientAccess projectId={project.id} projectName={project.name} />

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import PostModal from "./PostModal";
 import { PLATFORM_ICONS } from "./socialMediaUtils";
+import BoostedDownload from "./BoostedDownload";
 
 // Helper to properly encode image URLs with spaces in path
 function getImageUrl(url: string | null): string {
@@ -176,6 +177,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
           <button onClick={() => setCurrentDate(new Date())} className="ml-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Today</button>
         </div>
         <div className="flex items-center gap-3">
+          <BoostedDownload projectId={projectId} />
           <div className="flex rounded-lg border border-slate-200 bg-white p-0.5">
             <button onClick={() => setViewMode("calendar")} className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${viewMode === "calendar" ? "bg-pink-500 text-white shadow" : "text-slate-600 hover:text-slate-900"}`}>Calendar</button>
             <button onClick={() => setViewMode("list")} className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${viewMode === "list" ? "bg-pink-500 text-white shadow" : "text-slate-600 hover:text-slate-900"}`}>List</button>

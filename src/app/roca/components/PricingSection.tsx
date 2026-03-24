@@ -69,7 +69,7 @@ const addOns = [
   { name: "Influencer Campaign", price: 8000, unit: "per campaign" },
   { name: "PR & Media Coverage", price: 12000, unit: "per month" },
   { name: "WhatsApp Marketing Setup", price: 6000, unit: "one-time" },
-  { name: "CRM Integration", price: 4500, unit: "one-time" },
+  { name: "Ren CRM Integration", price: 4500, unit: "one-time" },
 ];
 
 export default function PricingSection() {

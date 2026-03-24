@@ -74,7 +74,7 @@ const proposedTechStack = [
   { name: "Vercel Edge Network", category: "Hosting", benefit: "Global CDN, edge caching, instant deploys", improvement: "+85%" },
   { name: "React 18", category: "JavaScript", benefit: "Concurrent rendering, Suspense, minimal bundle", improvement: "+65%" },
   { name: "Framer Motion", category: "Animations", benefit: "Lightweight, tree-shakeable, GPU-accelerated", improvement: "+40%" },
-  { name: "React Hook Form + Zod", category: "Forms", benefit: "Type-safe, CRM integration ready", improvement: "+50%" },
+  { name: "React Hook Form + Zod", category: "Forms", benefit: "Type-safe, Ren CRM integration ready", improvement: "+50%" },
   { name: "next/font", category: "Typography", benefit: "Zero layout shift, automatic optimization", improvement: "+35%" },
   { name: "next/image", category: "Media", benefit: "Auto WebP/AVIF, lazy loading, blur placeholders", improvement: "+78%" },
   { name: "ISR + SSG", category: "Rendering", benefit: "Pre-rendered pages, instant loads, perfect SEO", improvement: "+95%" },
@@ -160,8 +160,8 @@ const rebuildFeatures = [
   },
   {
     title: "Lead Generation Engine",
-    description: "Multi-step forms, WhatsApp integration, calendar booking, and CRM sync (HubSpot/Salesforce).",
-    metrics: ["WhatsApp API", "CRM Sync", "Lead Scoring"],
+    description: "Multi-step forms, WhatsApp integration, calendar booking, and sync with Ren - Mutant's specialized Real Estate CRM.",
+    metrics: ["WhatsApp API", "Ren CRM", "Lead Scoring"],
     icon: "📊",
   },
   {
@@ -284,7 +284,7 @@ const pricingOptions = [
       "Headless CMS (Sanity)",
       "Multi-language (AR/EN)",
       "WhatsApp Business API",
-      "HubSpot/Salesforce integration",
+      "Ren CRM integration (Mutant)",
       "Custom admin dashboard",
       "Advanced SEO + Schema",
       "Google Analytics 4 + GTM",

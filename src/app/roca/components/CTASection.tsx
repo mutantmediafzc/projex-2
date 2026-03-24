@@ -202,7 +202,7 @@ export default function CTASection() {
         <div className="mt-16 text-center">
           <p className="text-slate-500 text-sm mb-6">Trusted by leading brands in the UAE</p>
           <div className="flex flex-wrap items-center justify-center gap-8 opacity-50">
-            {["Google Partner", "Meta Business Partner", "HubSpot Certified", "Semrush Agency"].map((badge, i) => (
+            {["Google Partner", "Meta Business Partner", "Ren CRM", "Semrush Agency"].map((badge, i) => (
               <div key={i} className="px-6 py-3 rounded-xl bg-slate-800/30 border border-slate-700/30 text-slate-400 text-sm font-medium">
                 {badge}
               </div>

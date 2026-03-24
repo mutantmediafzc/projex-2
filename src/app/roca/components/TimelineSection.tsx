@@ -2,209 +2,394 @@
 
 import { useState } from "react";
 
-const phases = [
+type ServiceKey = "seo" | "aeo" | "social" | "ppc" | "landing";
+
+const services: { key: ServiceKey; name: string; color: string; icon: React.ReactNode }[] = [
   {
-    month: "Month 1",
-    phase: "Foundation & Setup",
-    color: "from-blue-500 to-cyan-500",
-    tasks: [
-      { task: "Comprehensive website audit & technical SEO fixes", status: "setup" },
-      { task: "Google Analytics 4 & Search Console setup", status: "setup" },
-      { task: "Competitor analysis & keyword research", status: "research" },
-      { task: "Social media account optimization", status: "setup" },
-      { task: "Content strategy development", status: "strategy" },
-      { task: "Landing page #1 & #2 design & development", status: "build" },
-    ],
-    deliverables: ["Technical SEO audit report", "Keyword strategy document", "2 landing pages live", "Social profiles optimized"],
-    expectedResults: "Foundation laid, tracking in place",
-  },
-  {
-    month: "Month 2-3",
-    phase: "Growth Activation",
-    color: "from-purple-500 to-pink-500",
-    tasks: [
-      { task: "On-page SEO implementation across all pages", status: "seo" },
-      { task: "Google Ads campaign launch", status: "ads" },
-      { task: "Social media content calendar execution", status: "social" },
-      { task: "Blog content production (4 posts/month)", status: "content" },
-      { task: "Landing pages #3, #4, #5 development", status: "build" },
-      { task: "Link building campaign initiation", status: "seo" },
-    ],
-    deliverables: ["All pages optimized", "Ads live & optimized", "8 blog posts published", "3 additional landing pages"],
-    expectedResults: "First leads coming in, 50-100 leads",
-  },
-  {
-    month: "Month 4-6",
-    phase: "Scale & Optimize",
-    color: "from-amber-500 to-orange-500",
-    tasks: [
-      { task: "AEO optimization & AI visibility push", status: "aeo" },
-      { task: "Performance analysis & campaign optimization", status: "optimize" },
-      { task: "Retargeting campaigns launch", status: "ads" },
-      { task: "Video content production", status: "content" },
-      { task: "PR & media outreach", status: "pr" },
-      { task: "Conversion rate optimization", status: "optimize" },
-    ],
-    deliverables: ["AEO strategy implemented", "Retargeting live", "4 videos produced", "Media coverage secured"],
-    expectedResults: "150-250 leads/month, rankings improving",
-  },
-  {
-    month: "Month 7-9",
-    phase: "Market Leadership",
+    key: "seo",
+    name: "SEO",
     color: "from-green-500 to-emerald-500",
-    tasks: [
-      { task: "Advanced link building & authority development", status: "seo" },
-      { task: "Influencer partnership campaigns", status: "social" },
-      { task: "International targeting expansion", status: "ads" },
-      { task: "WhatsApp marketing integration", status: "automation" },
-      { task: "Lead nurturing automation", status: "automation" },
-      { task: "Advanced analytics & attribution", status: "optimize" },
-    ],
-    deliverables: ["Domain authority increased", "Influencer campaigns live", "WhatsApp automation active", "Attribution model implemented"],
-    expectedResults: "300-400 leads/month, top 5 rankings",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    ),
   },
   {
-    month: "Month 10-12",
-    phase: "Dominance & Expansion",
-    color: "from-red-500 to-rose-500",
-    tasks: [
-      { task: "Market share expansion strategies", status: "strategy" },
-      { task: "New platform exploration (TikTok, YouTube)", status: "social" },
-      { task: "Advanced personalization implementation", status: "automation" },
-      { task: "Comprehensive performance review", status: "optimize" },
-      { task: "Year 2 strategy planning", status: "strategy" },
-      { task: "ROI analysis & success documentation", status: "report" },
-    ],
-    deliverables: ["Market leader position", "Multi-platform presence", "Full automation suite", "Year 2 roadmap"],
-    expectedResults: "400-600 leads/month, market leader status",
+    key: "aeo",
+    name: "AEO",
+    color: "from-purple-500 to-pink-500",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+  },
+  {
+    key: "social",
+    name: "Social Media",
+    color: "from-pink-500 to-rose-500",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+      </svg>
+    ),
+  },
+  {
+    key: "ppc",
+    name: "PPC & Ads",
+    color: "from-blue-500 to-cyan-500",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+      </svg>
+    ),
+  },
+  {
+    key: "landing",
+    name: "Landing Pages",
+    color: "from-amber-500 to-orange-500",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      </svg>
+    ),
   },
 ];
 
-const statusColors: Record<string, string> = {
-  setup: "bg-blue-500/20 text-blue-400",
-  research: "bg-purple-500/20 text-purple-400",
-  strategy: "bg-amber-500/20 text-amber-400",
-  build: "bg-cyan-500/20 text-cyan-400",
-  seo: "bg-green-500/20 text-green-400",
-  ads: "bg-red-500/20 text-red-400",
-  social: "bg-pink-500/20 text-pink-400",
-  content: "bg-orange-500/20 text-orange-400",
-  aeo: "bg-violet-500/20 text-violet-400",
-  optimize: "bg-emerald-500/20 text-emerald-400",
-  pr: "bg-indigo-500/20 text-indigo-400",
-  automation: "bg-teal-500/20 text-teal-400",
-  report: "bg-slate-500/20 text-slate-400",
+interface TimelineItem {
+  week: string;
+  phase: "onboarding" | "implementation" | "optimization" | "scaling";
+  tasks: { task: string; service: ServiceKey }[];
+}
+
+const timeline: TimelineItem[] = [
+  {
+    week: "Week 1-2",
+    phase: "onboarding",
+    tasks: [
+      { task: "Kickoff meeting & project scope finalization", service: "seo" },
+      { task: "Access credentials collection (GA4, GSC, CMS, hosting)", service: "seo" },
+      { task: "Brand guidelines & asset collection", service: "social" },
+      { task: "Google Ads & Meta Ads account setup/audit", service: "ppc" },
+      { task: "Social media accounts audit & optimization", service: "social" },
+      { task: "Competitor analysis deep dive", service: "seo" },
+    ],
+  },
+  {
+    week: "Week 3-4",
+    phase: "onboarding",
+    tasks: [
+      { task: "Technical SEO audit completion", service: "seo" },
+      { task: "Keyword research & mapping (200+ keywords)", service: "seo" },
+      { task: "Content gap analysis vs competitors", service: "aeo" },
+      { task: "Landing page wireframes & UX design", service: "landing" },
+      { task: "Social media content strategy document", service: "social" },
+      { task: "PPC campaign structure planning", service: "ppc" },
+    ],
+  },
+  {
+    week: "Week 5-6",
+    phase: "implementation",
+    tasks: [
+      { task: "Technical SEO fixes implementation (crawl errors, speed)", service: "seo" },
+      { task: "On-page SEO: meta tags, headings, schema markup", service: "seo" },
+      { task: "Landing Page #1: Off-Plan Properties development", service: "landing" },
+      { task: "Google Ads search campaigns launch", service: "ppc" },
+      { task: "Social content calendar Month 1 execution", service: "social" },
+      { task: "FAQ schema & structured data implementation", service: "aeo" },
+    ],
+  },
+  {
+    week: "Week 7-8",
+    phase: "implementation",
+    tasks: [
+      { task: "Landing Page #2: Luxury Villas development", service: "landing" },
+      { task: "Local SEO: Google Business Profile optimization", service: "seo" },
+      { task: "Meta Ads (Facebook/Instagram) campaigns launch", service: "ppc" },
+      { task: "Blog content production: 4 SEO-optimized articles", service: "seo" },
+      { task: "Entity-based content architecture for AI", service: "aeo" },
+      { task: "Reels & video content production begins", service: "social" },
+    ],
+  },
+  {
+    week: "Week 9-10",
+    phase: "implementation",
+    tasks: [
+      { task: "Landing Page #3: Investment Calculator development", service: "landing" },
+      { task: "Internal linking structure optimization", service: "seo" },
+      { task: "Retargeting campaigns setup", service: "ppc" },
+      { task: "Link building campaign launch (guest posts, PR)", service: "seo" },
+      { task: "AI citation building & knowledge graph optimization", service: "aeo" },
+      { task: "Influencer outreach & partnership negotiations", service: "social" },
+    ],
+  },
+  {
+    week: "Week 11-12",
+    phase: "optimization",
+    tasks: [
+      { task: "Landing Page #4: International Investor Guide", service: "landing" },
+      { task: "Performance analysis & A/B testing", service: "ppc" },
+      { task: "Content optimization based on ranking data", service: "seo" },
+      { task: "Month 1 reporting & strategy refinement", service: "seo" },
+      { task: "Social media engagement analysis & optimization", service: "social" },
+      { task: "AEO performance tracking (AI Overview appearances)", service: "aeo" },
+    ],
+  },
+  {
+    week: "Month 4",
+    phase: "optimization",
+    tasks: [
+      { task: "Landing Pages #5-6: Area-specific pages (Marina, Downtown)", service: "landing" },
+      { task: "Advanced keyword targeting expansion", service: "seo" },
+      { task: "Campaign scaling based on top performers", service: "ppc" },
+      { task: "Video content scaling (property tours, market updates)", service: "social" },
+      { task: "Featured snippet optimization", service: "aeo" },
+      { task: "Conversion rate optimization (CRO)", service: "landing" },
+    ],
+  },
+  {
+    week: "Month 5",
+    phase: "optimization",
+    tasks: [
+      { task: "Landing Pages #7-8: Area-specific pages (JBR, Palm)", service: "landing" },
+      { task: "Authority building: high-DA backlinks", service: "seo" },
+      { task: "YouTube Ads & TikTok exploration", service: "ppc" },
+      { task: "Influencer campaign execution", service: "social" },
+      { task: "Conversational content for voice search", service: "aeo" },
+      { task: "Lead nurturing automation setup", service: "landing" },
+    ],
+  },
+  {
+    week: "Month 6",
+    phase: "scaling",
+    tasks: [
+      { task: "Landing Pages #9-10: Developer-specific pages", service: "landing" },
+      { task: "International SEO expansion (UK, India, Russia)", service: "seo" },
+      { task: "Budget scaling for top-performing campaigns", service: "ppc" },
+      { task: "WhatsApp Business integration", service: "social" },
+      { task: "AI visibility monitoring & optimization", service: "aeo" },
+      { task: "Q2 comprehensive review & Q3 planning", service: "seo" },
+    ],
+  },
+  {
+    week: "Month 7-9",
+    phase: "scaling",
+    tasks: [
+      { task: "Advanced personalization & dynamic content", service: "landing" },
+      { task: "Competitor displacement strategies", service: "seo" },
+      { task: "Performance Max campaigns launch", service: "ppc" },
+      { task: "Community building & UGC campaigns", service: "social" },
+      { task: "Multilingual AI content optimization", service: "aeo" },
+      { task: "Attribution modeling & ROI tracking", service: "ppc" },
+    ],
+  },
+  {
+    week: "Month 10-12",
+    phase: "scaling",
+    tasks: [
+      { task: "Full automation suite deployment", service: "landing" },
+      { task: "Market leader positioning strategies", service: "seo" },
+      { task: "Full-funnel advertising optimization", service: "ppc" },
+      { task: "Brand ambassador program launch", service: "social" },
+      { task: "Year 1 performance analysis", service: "seo" },
+      { task: "Year 2 strategy development", service: "aeo" },
+    ],
+  },
+];
+
+const phaseColors = {
+  onboarding: { bg: "bg-blue-500/20", border: "border-blue-500/50", text: "text-blue-400", label: "Onboarding" },
+  implementation: { bg: "bg-green-500/20", border: "border-green-500/50", text: "text-green-400", label: "Implementation" },
+  optimization: { bg: "bg-amber-500/20", border: "border-amber-500/50", text: "text-amber-400", label: "Optimization" },
+  scaling: { bg: "bg-purple-500/20", border: "border-purple-500/50", text: "text-purple-400", label: "Scaling" },
 };
 
 export default function TimelineSection() {
-  const [activePhase, setActivePhase] = useState(0);
+  const [activeWeek, setActiveWeek] = useState(0);
+  const [filterService, setFilterService] = useState<ServiceKey | "all">("all");
+  const [viewMode, setViewMode] = useState<"timeline" | "gantt">("timeline");
+
+  const filteredTasks = filterService === "all" 
+    ? timeline[activeWeek].tasks 
+    : timeline[activeWeek].tasks.filter(t => t.service === filterService);
+
+  const getServiceInfo = (key: ServiceKey) => services.find(s => s.key === key)!;
 
   return (
     <section id="timeline" className="py-24 px-6">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="inline-block text-amber-400 text-sm font-semibold uppercase tracking-widest mb-4">
-            Project Timeline
+            Detailed Project Timeline
           </span>
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            12-Month Growth Roadmap
+            12-Month Implementation Roadmap
           </h2>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-            A phased approach to building Roca&apos;s digital dominance in the Dubai real estate market.
+          <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+            Week-by-week breakdown of onboarding, implementation, optimization, and scaling phases across all services for Roca Real Estate.
           </p>
         </div>
 
+        {/* Phase Legend */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {Object.entries(phaseColors).map(([key, value]) => (
+            <div key={key} className={`flex items-center gap-2 px-4 py-2 rounded-full ${value.bg} border ${value.border}`}>
+              <div className={`w-2 h-2 rounded-full ${value.text.replace("text-", "bg-")}`} />
+              <span className={`text-sm font-medium ${value.text}`}>{value.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Service Filter */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <button
+            onClick={() => setFilterService("all")}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              filterService === "all"
+                ? "bg-white text-slate-900"
+                : "bg-slate-800/50 text-slate-400 hover:text-white"
+            }`}
+          >
+            All Services
+          </button>
+          {services.map((service) => (
+            <button
+              key={service.key}
+              onClick={() => setFilterService(service.key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                filterService === service.key
+                  ? `bg-gradient-to-r ${service.color} text-white`
+                  : "bg-slate-800/50 text-slate-400 hover:text-white"
+              }`}
+            >
+              {service.icon}
+              {service.name}
+            </button>
+          ))}
+        </div>
+
         {/* Timeline Navigation */}
-        <div className="relative mb-12">
-          <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-800 -translate-y-1/2 hidden lg:block" />
-          <div className="flex flex-wrap lg:flex-nowrap justify-between gap-4">
-            {phases.map((phase, i) => (
-              <button
-                key={i}
-                onClick={() => setActivePhase(i)}
-                className={`relative flex-1 min-w-[150px] p-4 rounded-2xl transition-all ${
-                  activePhase === i
-                    ? `bg-gradient-to-r ${phase.color} text-white shadow-lg`
-                    : "bg-slate-800/50 text-slate-400 hover:text-white"
-                }`}
-              >
-                <div className="text-xs uppercase tracking-widest mb-1 opacity-70">{phase.month}</div>
-                <div className="font-semibold text-sm">{phase.phase}</div>
-                {activePhase === i && (
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-current hidden lg:block" />
-                )}
-              </button>
-            ))}
+        <div className="relative mb-8 overflow-x-auto pb-4">
+          <div className="flex gap-2 min-w-max">
+            {timeline.map((item, i) => {
+              const phase = phaseColors[item.phase];
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActiveWeek(i)}
+                  className={`relative px-4 py-3 rounded-xl transition-all min-w-[100px] ${
+                    activeWeek === i
+                      ? `${phase.bg} border-2 ${phase.border} ${phase.text}`
+                      : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:text-white hover:border-slate-600"
+                  }`}
+                >
+                  <div className="text-xs font-bold">{item.week}</div>
+                  <div className={`text-[10px] uppercase tracking-wider mt-1 ${activeWeek === i ? phase.text : "text-slate-500"}`}>
+                    {item.phase}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Active Phase Details */}
-        <div className={`rounded-3xl bg-gradient-to-br ${phases[activePhase].color} p-[1px]`}>
-          <div className="rounded-3xl bg-slate-900 p-8">
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Tasks */}
-              <div>
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  Key Tasks
-                </h3>
-                <div className="space-y-3">
-                  {phases[activePhase].tasks.map((task, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-800/50">
-                      <div className={`px-2 py-1 rounded-lg text-xs font-medium ${statusColors[task.status]}`}>
-                        {task.status.toUpperCase()}
-                      </div>
-                      <span className="text-slate-300 text-sm">{task.task}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Deliverables & Results */}
-              <div className="space-y-8">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Deliverables
-                  </h3>
-                  <div className="space-y-2">
-                    {phases[activePhase].deliverables.map((item, i) => (
-                      <div key={i} className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-gradient-to-r from-amber-400 to-orange-400" />
-                        <span className="text-slate-300">{item}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className={`rounded-2xl bg-gradient-to-r ${phases[activePhase].color} p-[1px]`}>
-                  <div className="rounded-2xl bg-slate-900 p-6 text-center">
-                    <div className="text-sm text-slate-400 mb-2">Expected Results</div>
-                    <div className="text-2xl font-bold text-white">{phases[activePhase].expectedResults}</div>
-                  </div>
-                </div>
-              </div>
+        {/* Active Week Details */}
+        <div className={`rounded-3xl ${phaseColors[timeline[activeWeek].phase].bg} border ${phaseColors[timeline[activeWeek].phase].border} p-6 md:p-8 mb-8`}>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-white">{timeline[activeWeek].week}</h3>
+              <span className={`text-sm font-medium ${phaseColors[timeline[activeWeek].phase].text}`}>
+                {phaseColors[timeline[activeWeek].phase].label} Phase
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-sm">{filteredTasks.length} tasks</span>
             </div>
           </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTasks.map((task, i) => {
+              const service = getServiceInfo(task.service);
+              return (
+                <div
+                  key={i}
+                  className="rounded-xl bg-slate-900/80 border border-slate-700/50 p-4 hover:border-slate-600 transition-colors"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white flex-shrink-0`}>
+                      {service.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs font-medium bg-gradient-to-r ${service.color} bg-clip-text text-transparent mb-1`}>
+                        {service.name}
+                      </div>
+                      <p className="text-slate-300 text-sm leading-relaxed">{task.task}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Milestone Summary */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Gantt-style Overview */}
+        <div className="rounded-3xl bg-slate-800/30 border border-slate-700/50 p-6 md:p-8 mb-8">
+          <h3 className="text-xl font-bold text-white mb-6">Service Implementation Timeline</h3>
+          <div className="space-y-4">
+            {services.map((service) => (
+              <div key={service.key} className="flex items-center gap-4">
+                <div className="w-32 flex items-center gap-2 flex-shrink-0">
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white`}>
+                    {service.icon}
+                  </div>
+                  <span className="text-white text-sm font-medium">{service.name}</span>
+                </div>
+                <div className="flex-1 flex gap-1">
+                  {timeline.map((week, i) => {
+                    const hasTask = week.tasks.some(t => t.service === service.key);
+                    const phase = phaseColors[week.phase];
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => setActiveWeek(i)}
+                        className={`flex-1 h-8 rounded cursor-pointer transition-all ${
+                          hasTask
+                            ? `bg-gradient-to-r ${service.color} opacity-80 hover:opacity-100`
+                            : "bg-slate-800/50 hover:bg-slate-700/50"
+                        } ${activeWeek === i ? "ring-2 ring-white" : ""}`}
+                        title={`${week.week}: ${week.tasks.filter(t => t.service === service.key).length} tasks`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-4 text-xs text-slate-500">
+            <span>Week 1</span>
+            <span>Month 3</span>
+            <span>Month 6</span>
+            <span>Month 9</span>
+            <span>Month 12</span>
+          </div>
+        </div>
+
+        {/* Key Milestones */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Month 3", milestone: "First 100 Leads", icon: "🎯" },
-            { label: "Month 6", milestone: "Page 1 Rankings", icon: "📈" },
-            { label: "Month 9", milestone: "300+ Leads/Month", icon: "🚀" },
-            { label: "Month 12", milestone: "Market Leader", icon: "👑" },
+            { week: "Week 4", milestone: "Onboarding Complete", desc: "All audits, strategies & access ready", color: "from-blue-500 to-cyan-500" },
+            { week: "Month 3", milestone: "Implementation Done", desc: "All services live & generating leads", color: "from-green-500 to-emerald-500" },
+            { week: "Month 6", milestone: "Optimization Peak", desc: "90+ keywords Page 1, 3,800+ traffic", color: "from-amber-500 to-orange-500" },
+            { week: "Month 12", milestone: "Market Leadership", desc: "12,500+ traffic, full automation", color: "from-purple-500 to-pink-500" },
           ].map((m, i) => (
-            <div key={i} className="rounded-2xl bg-slate-800/30 border border-slate-700/50 p-6 text-center">
-              <div className="text-3xl mb-2">{m.icon}</div>
-              <div className="text-amber-400 text-sm font-medium mb-1">{m.label}</div>
-              <div className="text-white font-bold">{m.milestone}</div>
+            <div key={i} className={`rounded-2xl bg-gradient-to-br ${m.color} p-[1px]`}>
+              <div className="rounded-2xl bg-slate-900 p-5 h-full">
+                <div className="text-amber-400 text-xs font-medium mb-1">{m.week}</div>
+                <div className="text-white font-bold mb-2">{m.milestone}</div>
+                <div className="text-slate-400 text-xs">{m.desc}</div>
+              </div>
             </div>
           ))}
         </div>

@@ -9,7 +9,6 @@ import LandingPagesSection from "./components/LandingPagesSection";
 import PricingSection from "./components/PricingSection";
 import TimelineSection from "./components/TimelineSection";
 import ResultsSection from "./components/ResultsSection";
-import CTASection from "./components/CTASection";
 
 export default function RocaProposalPage() {
   const [activeSection, setActiveSection] = useState("hero");
@@ -21,7 +20,7 @@ export default function RocaProposalPage() {
       const progress = (window.scrollY / scrollHeight) * 100;
       setScrollProgress(progress);
 
-      const sections = ["hero", "services", "seo-audit", "landing-pages", "pricing", "timeline", "results", "cta"];
+      const sections = ["hero", "services", "seo-audit", "landing-pages", "pricing", "timeline", "results"];
       for (const section of sections) {
         const el = document.getElementById(section);
         if (el) {
@@ -50,7 +49,6 @@ export default function RocaProposalPage() {
     { id: "pricing", label: "Pricing" },
     { id: "timeline", label: "Timeline" },
     { id: "results", label: "Results" },
-    { id: "cta", label: "Get Started" },
   ];
 
   return (
@@ -113,7 +111,6 @@ export default function RocaProposalPage() {
         <PricingSection />
         <TimelineSection />
         <ResultsSection />
-        <CTASection />
       </main>
 
       {/* Footer */}

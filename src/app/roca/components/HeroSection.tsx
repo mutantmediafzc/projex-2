@@ -65,15 +65,24 @@ export default function HeroSection() {
             Explore Services
           </a>
         </div>
-
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
-          <span className="text-slate-500 text-xs uppercase tracking-widest">Scroll to explore</span>
-          <svg className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </div>
       </div>
+
+      {/* Scroll Indicator - positioned relative to section, not content */}
+      <button
+        onClick={() => {
+          const servicesSection = document.getElementById("services");
+          if (servicesSection) {
+            servicesSection.scrollIntoView({ behavior: "smooth" });
+          }
+        }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce cursor-pointer z-20 hover:scale-110 transition-transform"
+        aria-label="Scroll to services section"
+      >
+        <span className="text-slate-500 text-xs uppercase tracking-widest">Scroll to explore</span>
+        <svg className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </button>
     </section>
   );
 }

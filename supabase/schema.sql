@@ -211,11 +211,12 @@ create table if not exists deal_stages (
 -- Services
 create table if not exists services (
   id uuid primary key default gen_random_uuid(),
-  clinic_id uuid not null,
+  clinic_id uuid,
   name text not null,
   description text,
-  base_price numeric(12, 2) not null default 0,
+  base_price numeric(12, 2) default 0,
   category_id uuid,
+  is_active boolean not null default true,
   created_at timestamp with time zone default now() not null,
   updated_at timestamp with time zone default now() not null
 );
@@ -721,17 +722,11 @@ create table if not exists service_categories (
 create unique index if not exists service_categories_name_key
   on service_categories(name);
 
--- Services offered by the clinic, grouped by category
-create table if not exists services (
-  id uuid primary key default gen_random_uuid(),
-  category_id uuid not null references service_categories(id) on delete restrict,
-  name text not null,
-  description text,
-  is_active boolean not null default true,
-  base_price numeric(12,2),
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+-- Ensure services table has all required columns (handles existing tables)
+alter table if exists services
+  add column if not exists category_id uuid,
+  add column if not exists is_active boolean not null default true,
+  add column if not exists base_price numeric(12,2);
 
 create index if not exists services_category_id_idx on services(category_id);
 create unique index if not exists services_category_id_name_key

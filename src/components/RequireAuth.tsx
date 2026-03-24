@@ -9,8 +9,12 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
 
+  // Public routes that don't require authentication
+  const publicRoutes = ["/login", "/roca"];
+  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
+
   useEffect(() => {
-    if (pathname === "/login") {
+    if (isPublicRoute) {
       setChecking(false);
       return;
     }
@@ -29,9 +33,9 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [pathname, router]);
+  }, [pathname, router, isPublicRoute]);
 
-  if (pathname === "/login") {
+  if (isPublicRoute) {
     return <>{children}</>;
   }
 

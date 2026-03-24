@@ -86,20 +86,22 @@ export default function RocaProposalPage() {
 
       {/* Mobile Nav - Only show on main tab */}
       {activeTab === "main" && (
-        <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden flex items-center justify-center gap-1 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 px-3 py-3 shadow-2xl overflow-x-auto">
-          {navItems.slice(0, 5).map((item) => (
-            <button
-              key={item.id}
-              onClick={() => scrollToSection(item.id)}
-              className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                activeSection === item.id
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
-                  : "text-slate-400"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <nav className="fixed bottom-4 left-2 right-2 z-40 lg:hidden rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/50 px-2 py-2 shadow-2xl">
+          <div className="flex items-center justify-between gap-0.5">
+            {navItems.slice(0, 5).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`flex-1 px-1.5 py-2 rounded-lg text-[10px] font-medium text-center transition-all ${
+                  activeSection === item.id
+                    ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white"
+                    : "text-slate-400"
+                }`}
+              >
+                {item.label === "Landing Pages" ? "Pages" : item.label === "SEO Audit" ? "Audit" : item.label}
+              </button>
+            ))}
+          </div>
         </nav>
       )}
 

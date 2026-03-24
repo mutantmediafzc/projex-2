@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Message = {
@@ -11,6 +12,7 @@ type Message = {
 };
 
 export default function SupportChat() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -20,6 +22,10 @@ export default function SupportChat() {
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Hide chat on specific routes (proposal pages, etc.)
+  const hiddenRoutes = ["/roca", "/login"];
+  const shouldHide = hiddenRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
   useEffect(() => {
     // Get current user info
@@ -123,6 +129,9 @@ export default function SupportChat() {
     setShowIntro(true);
     setIsOpen(false);
   }
+
+  // Don't render on hidden routes
+  if (shouldHide) return null;
 
   return (
     <>

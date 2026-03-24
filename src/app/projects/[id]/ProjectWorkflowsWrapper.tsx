@@ -202,19 +202,29 @@ export default function ProjectWorkflowsWrapper({ projectId, projectType }: { pr
   }
 
   // Render the appropriate workflow based on selection
-  const WorkflowComponent = () => {
+  function renderWorkflow() {
     switch (workflowType) {
       case "design":
-        return <DesignWorkflows projectId={projectId} />;
+        return <DesignWorkflows key="design" projectId={projectId} />;
       case "performance_marketing":
-        return <PerformanceMarketingWorkflows projectId={projectId} />;
+        return <PerformanceMarketingWorkflows key="performance_marketing" projectId={projectId} />;
       case "seo_aeo":
-        return <SEOWorkflows projectId={projectId} />;
+        return <SEOWorkflows key="seo_aeo" projectId={projectId} />;
       case "website":
+        return <ProjectWorkflows key="website" projectId={projectId} projectType="website" />;
       default:
-        return <ProjectWorkflows projectId={projectId} projectType="website" />;
+        return null;
     }
-  };
+  }
+
+  // Show loading when switching workflow types
+  if (saving) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -222,14 +232,14 @@ export default function ProjectWorkflowsWrapper({ projectId, projectType }: { pr
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => setWorkflowType(null)}
+          onClick={() => selectWorkflowType(null)}
           className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
         >
           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
           Change Workflow Type
         </button>
       </div>
-      <WorkflowComponent />
+      {renderWorkflow()}
     </div>
   );
 }

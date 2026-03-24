@@ -1,10 +1,19 @@
 -- Migration: Add Performance Marketing and SEO & AEO workflow support to project_workflows table
 -- Run this in your Supabase SQL Editor
 
--- Update workflow_type check constraint to include new types
+-- First, add workflow_type column if it doesn't exist
 ALTER TABLE project_workflows 
-DROP CONSTRAINT IF EXISTS project_workflows_workflow_type_check;
+ADD COLUMN IF NOT EXISTS workflow_type text DEFAULT NULL;
 
+-- Drop old constraint if exists (may fail silently if not exists)
+DO $$ 
+BEGIN
+  ALTER TABLE project_workflows DROP CONSTRAINT IF EXISTS project_workflows_workflow_type_check;
+EXCEPTION WHEN undefined_object THEN
+  -- Constraint doesn't exist, continue
+END $$;
+
+-- Add new constraint with all workflow types
 ALTER TABLE project_workflows 
 ADD CONSTRAINT project_workflows_workflow_type_check 
 CHECK (workflow_type IN ('design', 'website', 'performance_marketing', 'seo_aeo'));

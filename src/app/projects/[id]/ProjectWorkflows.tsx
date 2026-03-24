@@ -311,11 +311,11 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
     if (selected === "template" && needsFigma === undefined) return;
     
     const newSteps = getStepsForSubtype(selected, selected === "template" ? needsFigma : undefined);
-    newSteps[0].status = "pending";
+    if (newSteps.length > 0) newSteps[0].status = "pending";
     
     const updated: WebsiteWorkflowData = {
       projectSubtype: selected, subtypeName: subtypeName.trim(), needsFigma: selected === "template" ? needsFigma : undefined,
-      steps: [{ ...data.steps[0], status: "completed" as StepStatus, completedAt: new Date().toISOString(), data: { selectedType: selected } }, ...newSteps]
+      steps: data.steps[0] ? [{ ...data.steps[0], status: "completed" as StepStatus, completedAt: new Date().toISOString(), data: { selectedType: selected } }, ...newSteps] : newSteps
     };
     setData(updated); await save(updated);
   }
@@ -329,7 +329,7 @@ export default function ProjectWorkflows({ projectId, projectType }: { projectId
       if (i > stepIndex) return { ...s, status: "locked" as StepStatus, completedAt: null, reviewStatus: null };
       return s;
     })};
-    if (stepId === "website_type") { updated.steps = [{ ...updated.steps[0] }]; updated.projectSubtype = null; updated.needsFigma = undefined; }
+    if (stepId === "website_type" && updated.steps[0]) { updated.steps = [{ ...updated.steps[0] }]; updated.projectSubtype = null; updated.needsFigma = undefined; }
     setData(updated); await save(updated);
   }
 
@@ -1193,7 +1193,7 @@ function StepCard({ step, data, users, projectId, activePickerStep, setActivePic
             <div className="mt-3 space-y-3">
               {step.comments?.map(c => (
                 <div key={c.id} className="flex gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">{c.userName[0].toUpperCase()}</div>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">{(c.userName || "U")[0].toUpperCase()}</div>
                   <div className="flex-1 bg-slate-50 rounded-lg p-2">
                     <div className="flex items-center gap-2"><span className="text-xs font-semibold text-slate-800">{c.userName}</span><span className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleString()}</span></div>
                     <p className="text-xs text-slate-600 mt-1"><NoteBodyWithMentions body={c.body} /></p>

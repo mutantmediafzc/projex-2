@@ -257,7 +257,7 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
                         className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-violet-50 transition-colors"
                       >
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 text-[11px] font-bold">
-                          {company.name[0]}
+                          {(company.name || "C")[0]}
                         </div>
                         <div>
                           <p className="text-[13px] font-medium text-slate-900">{company.name}</p>

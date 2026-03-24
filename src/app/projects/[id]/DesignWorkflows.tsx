@@ -605,7 +605,7 @@ function DesignStepCard({ step, data, users, projectId, activePickerStep, setAct
             <div className="mt-3 space-y-3">
               {step.comments?.map(c => (
                 <div key={c.id} className="flex gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">{c.userName[0].toUpperCase()}</div>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-600 shrink-0">{(c.userName || "U")[0].toUpperCase()}</div>
                   <div className="flex-1 bg-slate-50 rounded-lg p-2">
                     <div className="flex items-center gap-2"><span className="text-xs font-semibold text-slate-800">{c.userName}</span><span className="text-[10px] text-slate-400">{new Date(c.createdAt).toLocaleString()}</span></div>
                     <p className="text-xs text-slate-600 mt-1"><NoteBodyWithMentions body={c.body} /></p>

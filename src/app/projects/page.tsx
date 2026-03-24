@@ -30,6 +30,8 @@ type Project = {
 
 const PROJECT_TYPE_OPTIONS = [
   { value: "social_media_seo", label: "Social Media Marketing & SEO", color: "from-pink-500 to-fuchsia-500", icon: "📱", hasCalendar: true },
+  { value: "performance_marketing", label: "Performance Marketing", color: "from-orange-500 to-red-500", icon: "🚀", hasCalendar: false },
+  { value: "seo_aeo", label: "SEO & AEO", color: "from-emerald-500 to-green-500", icon: "🔍", hasCalendar: false },
   { value: "app_design", label: "App Design & Development", color: "from-violet-500 to-purple-500", icon: "📲", hasCalendar: false },
   { value: "brand_development", label: "Brand Development", color: "from-amber-500 to-orange-500", icon: "🎨", hasCalendar: false },
   { value: "content_creation", label: "Content Creation", color: "from-rose-500 to-pink-500", icon: "✍️", hasCalendar: false },
@@ -37,7 +39,7 @@ const PROJECT_TYPE_OPTIONS = [
   { value: "event_services", label: "Event Services", color: "from-emerald-500 to-teal-500", icon: "🎪", hasCalendar: false },
   { value: "studio_rental", label: "Studio Rental / Production / Editing", color: "from-indigo-500 to-violet-500", icon: "🎬", hasCalendar: false },
   { value: "technical_assistance", label: "Technical Assistance & Configuration", color: "from-slate-500 to-gray-600", icon: "🔧", hasCalendar: false },
-  { value: "web_design", label: "Web Design & Development", color: "from-blue-500 to-cyan-500", icon: "�", hasCalendar: false },
+  { value: "web_design", label: "Web Design & Development", color: "from-blue-500 to-cyan-500", icon: "🌐", hasCalendar: false },
 ] as const;
 
 type Company = {

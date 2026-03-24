@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import ProjectWorkflows from "./ProjectWorkflows";
 import DesignWorkflows from "./DesignWorkflows";
+import PerformanceMarketingWorkflows from "./PerformanceMarketingWorkflows";
+import SEOWorkflows from "./SEOWorkflows";
 
-type WorkflowType = "design" | "website" | null;
+type WorkflowType = "design" | "website" | "performance_marketing" | "seo_aeo" | null;
 
 type WorkflowTypeData = {
   workflow_type: WorkflowType;
@@ -135,6 +137,58 @@ export default function ProjectWorkflowsWrapper({ projectId, projectType }: { pr
               </div>
             </div>
           </button>
+
+          {/* Performance Marketing Workflow Card */}
+          <button
+            type="button"
+            onClick={() => selectWorkflowType("performance_marketing")}
+            disabled={saving}
+            className="group relative overflow-hidden rounded-2xl border-2 border-orange-200 bg-white p-6 text-left shadow-lg transition-all hover:border-orange-500 hover:shadow-xl disabled:opacity-50"
+          >
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-orange-100 to-red-100 transition-transform group-hover:scale-110" />
+            <div className="relative">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg text-2xl">
+                🚀
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">Performance Marketing</h3>
+              <p className="mt-2 text-sm text-slate-600">Full campaign lifecycle from research to reporting. Meta, Google, LinkedIn ads with optimization and creative refresh cycles.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">17 Steps</span>
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">Client Approvals</span>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Optimization</span>
+              </div>
+              <div className="mt-4 text-xs text-orange-600 font-semibold flex items-center gap-1">
+                Select Performance Marketing
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </button>
+
+          {/* SEO & AEO Workflow Card */}
+          <button
+            type="button"
+            onClick={() => selectWorkflowType("seo_aeo")}
+            disabled={saving}
+            className="group relative overflow-hidden rounded-2xl border-2 border-emerald-200 bg-white p-6 text-left shadow-lg transition-all hover:border-emerald-500 hover:shadow-xl disabled:opacity-50"
+          >
+            <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-100 to-green-100 transition-transform group-hover:scale-110" />
+            <div className="relative">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-lg text-2xl">
+                🔍
+              </div>
+              <h3 className="mt-4 text-xl font-bold text-slate-900">SEO & AEO Workflow</h3>
+              <p className="mt-2 text-sm text-slate-600">Complete SEO workflow from onboarding to completion. Technical SEO, content production, link building, and performance tracking.</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">4 Phases</span>
+                <span className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">Content Flow</span>
+                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700">Multi-Role</span>
+              </div>
+              <div className="mt-4 text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                Select SEO & AEO Workflow
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </div>
+            </div>
+          </button>
         </div>
 
         {saving && (
@@ -148,24 +202,19 @@ export default function ProjectWorkflowsWrapper({ projectId, projectType }: { pr
   }
 
   // Render the appropriate workflow based on selection
-  if (workflowType === "design") {
-    return (
-      <div className="space-y-4">
-        {/* Change Workflow Type Button */}
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={() => setWorkflowType(null)}
-            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
-          >
-            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Change Workflow Type
-          </button>
-        </div>
-        <DesignWorkflows projectId={projectId} />
-      </div>
-    );
-  }
+  const WorkflowComponent = () => {
+    switch (workflowType) {
+      case "design":
+        return <DesignWorkflows projectId={projectId} />;
+      case "performance_marketing":
+        return <PerformanceMarketingWorkflows projectId={projectId} />;
+      case "seo_aeo":
+        return <SEOWorkflows projectId={projectId} />;
+      case "website":
+      default:
+        return <ProjectWorkflows projectId={projectId} projectType="website" />;
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -180,7 +229,7 @@ export default function ProjectWorkflowsWrapper({ projectId, projectType }: { pr
           Change Workflow Type
         </button>
       </div>
-      <ProjectWorkflows projectId={projectId} projectType="website" />
+      <WorkflowComponent />
     </div>
   );
 }

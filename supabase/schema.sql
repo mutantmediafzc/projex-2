@@ -981,9 +981,11 @@ create index if not exists invoice_items_invoice_id_idx on invoice_items(invoice
 create table if not exists project_workflows (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references projects(id) on delete cascade,
-  workflow_type text check (workflow_type in ('design', 'website')) default null,
+  workflow_type text check (workflow_type in ('design', 'website', 'performance_marketing', 'seo_aeo')) default null,
   workflow_data jsonb not null default '[]',
   design_workflow_data jsonb default null,
+  performance_marketing_data jsonb default null,
+  seo_workflow_data jsonb default null,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

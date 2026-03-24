@@ -658,6 +658,7 @@ export default function SEOWorkflows({ projectId }: { projectId: string }) {
   const [data, setData] = useState<SEOWorkflowData>(getDefault());
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activePickerStep, setActivePickerStep] = useState<string | null>(null);
   const [assignmentModal, setAssignmentModal] = useState<{ show: boolean; userName: string }>({ show: false, userName: "" });
   const [activePhase, setActivePhase] = useState<string>("Client Onboarding");
@@ -665,11 +666,18 @@ export default function SEOWorkflows({ projectId }: { projectId: string }) {
   useEffect(() => { supabaseClient.from("users").select("id, full_name, email").order("full_name").then(({ data: u }) => u && setUsers(u)); }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
     supabaseClient.from("project_workflows").select("seo_workflow_data").eq("project_id", projectId).single().then(({ data: d }) => {
-      if (d?.seo_workflow_data) {
+      if (cancelled) return;
+      if (d?.seo_workflow_data && (d.seo_workflow_data as SEOWorkflowData).steps?.length > 0) {
         setData(d.seo_workflow_data as SEOWorkflowData);
+      } else {
+        setData(getDefault());
       }
+      setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [projectId]);
 
   async function save(updated: SEOWorkflowData) {
@@ -781,6 +789,15 @@ export default function SEOWorkflows({ projectId }: { projectId: string }) {
 
     const updated = { ...data, steps: data.steps.map(s => s.id === stepId ? { ...s, files: [...updatedFiles, newFile] } : s) };
     setData(updated); await save(updated);
+  }
+
+  // Guard: show loading while data is being fetched
+  if (loading || !data.steps || data.steps.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-500" />
+      </div>
+    );
   }
 
   const completedSteps = data.steps.filter(s => s.status === "completed").length;

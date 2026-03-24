@@ -131,6 +131,7 @@ export default function DesignWorkflows({ projectId }: { projectId: string }) {
   const [data, setData] = useState<DesignWorkflowData>(getDefault());
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activePickerStep, setActivePickerStep] = useState<string | null>(null);
   const [selectedLane, setSelectedLane] = useState<DesignWorkflowLane>(null);
   const [assignmentModal, setAssignmentModal] = useState<{ show: boolean; userName: string }>({ show: false, userName: "" });
@@ -138,13 +139,20 @@ export default function DesignWorkflows({ projectId }: { projectId: string }) {
   useEffect(() => { supabaseClient.from("users").select("id, full_name, email").order("full_name").then(({ data: u }) => u && setUsers(u)); }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
     supabaseClient.from("project_workflows").select("design_workflow_data").eq("project_id", projectId).single().then(({ data: d }) => {
-      if (d?.design_workflow_data) {
+      if (cancelled) return;
+      if (d?.design_workflow_data && (d.design_workflow_data as DesignWorkflowData).steps?.length > 0) {
         const loaded = d.design_workflow_data as DesignWorkflowData;
         setData(loaded);
         if (loaded.lane) setSelectedLane(loaded.lane);
+      } else {
+        setData(getDefault());
       }
+      setLoading(false);
     });
+    return () => { cancelled = true; };
   }, [projectId]);
 
   async function save(updated: DesignWorkflowData) {
@@ -201,7 +209,7 @@ export default function DesignWorkflows({ projectId }: { projectId: string }) {
     const newSteps = selectedLane === "main_project" ? getMainProjectSteps() : getOnDemandSteps();
     const updated: DesignWorkflowData = {
       lane: selectedLane,
-      steps: [{ ...data.steps[0], status: "completed" as StepStatus, completedAt: new Date().toISOString(), data: { selectedLane } }, ...newSteps]
+      steps: data.steps[0] ? [{ ...data.steps[0], status: "completed" as StepStatus, completedAt: new Date().toISOString(), data: { selectedLane } }, ...newSteps] : newSteps
     };
     setData(updated); await save(updated);
   }
@@ -274,8 +282,17 @@ export default function DesignWorkflows({ projectId }: { projectId: string }) {
       if (i > stepIndex) return { ...s, status: "locked" as StepStatus, completedAt: null, approvalStatus: null };
       return s;
     })};
-    if (stepId === "select_lane") { updated.steps = [{ ...updated.steps[0] }]; updated.lane = null; }
+    if (stepId === "select_lane" && updated.steps[0]) { updated.steps = [{ ...updated.steps[0] }]; updated.lane = null; }
     setData(updated); await save(updated);
+  }
+
+  // Guard: show loading while data is being fetched
+  if (loading || !data.steps || data.steps.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-purple-500" />
+      </div>
+    );
   }
 
   const completedSteps = data.steps.filter(s => s.status === "completed").length;

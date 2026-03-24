@@ -1,15 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 const services = [
   {
     id: "seo",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    ),
+    gif: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDZhd2NkbmN1N2gzaG81ZmZwbGN0MjRnaG9sajhicW5wcTZnd3ZtayZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/SvckSy7fFviqrq8ClF/giphy.gif",
     title: "Search Engine Optimization",
     subtitle: "Dominate Google Rankings",
     description: "Comprehensive SEO strategy to rank Roca for high-intent keywords like 'Dubai luxury apartments', 'off-plan properties Dubai', and 'Dubai real estate investment'.",
@@ -26,11 +23,7 @@ const services = [
   },
   {
     id: "aeo",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611l-2.498.47a1.812 1.812 0 01-2.11-1.474l-.377-2.825m0 0l-.463-3.478a.75.75 0 00-.893-.625l-2.826.377a1.812 1.812 0 01-1.474-2.11l.47-2.498c.293-1.717 2.38-2.299 3.611-1.067L12 8.5" />
-      </svg>
-    ),
+    gif: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYWoyODE0NG94aDV6OTNjajFvZ20xNGY5b2F3d3llZHhsaWJoOGZvdSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/Sgt2De5Akb97E7QC5J/giphy.gif",
     title: "Answer Engine Optimization",
     subtitle: "AI-First Visibility",
     description: "Position Roca as the authoritative source for Dubai real estate queries in ChatGPT, Google AI Overview, Perplexity, and other AI search engines.",
@@ -47,11 +40,7 @@ const services = [
   },
   {
     id: "social",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
-      </svg>
-    ),
+    gif: "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExYTdobTNwbDRtODd2eWo4emN0YTZsMmtiaXg4OGp6bjlycmduZG9mYyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/XyJPNKBskIDWR3Md8K/giphy.gif",
     title: "Social Media Marketing",
     subtitle: "Build Trust & Authority",
     description: "Strategic social presence across Instagram, LinkedIn, TikTok, and YouTube to showcase properties, build brand awareness, and generate qualified investor leads.",
@@ -68,11 +57,7 @@ const services = [
   },
   {
     id: "ppc",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-      </svg>
-    ),
+    gif: "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExd3pvbm04dmZ4c3QxZGwxZ3hkbHl0OTcwb2ZsMmZobndweTk3aG9vZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/anjQ3PkRSxPb67QTBz/giphy.gif",
     title: "Performance Marketing",
     subtitle: "Paid Ads & Lead Gen",
     description: "Data-driven Google Ads and Meta Ads campaigns targeting high-net-worth individuals interested in Dubai property investment with measurable ROI.",
@@ -130,8 +115,8 @@ export default function ServicesSection() {
         <div className="grid lg:grid-cols-2 gap-8 items-center">
           {/* Left: Info */}
           <div className="order-2 lg:order-1">
-            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r ${active.color} text-white mb-6`}>
-              {active.icon}
+            <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r ${active.color} overflow-hidden mb-6`}>
+              <img src={active.gif} alt={active.title} className="w-full h-full object-cover" />
             </div>
             <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">{active.title}</h3>
             <p className={`text-lg font-medium bg-gradient-to-r ${active.color} bg-clip-text text-transparent mb-4`}>
@@ -163,16 +148,14 @@ export default function ServicesSection() {
           {/* Right: Visual */}
           <div className="order-1 lg:order-2">
             <div className={`relative rounded-3xl bg-gradient-to-br ${active.color} p-[1px] overflow-hidden`}>
-              <div className="rounded-3xl bg-slate-900 p-8">
+              <div className="rounded-3xl bg-slate-900 p-4 sm:p-8">
                 <div className="aspect-square rounded-2xl bg-slate-800/50 flex items-center justify-center relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
-                  <div className={`w-32 h-32 rounded-3xl bg-gradient-to-r ${active.color} flex items-center justify-center shadow-2xl`}>
-                    <div className="scale-150 text-white">{active.icon}</div>
-                  </div>
-                  {/* Decorative elements */}
-                  <div className="absolute top-4 left-4 w-20 h-20 rounded-xl bg-white/5" />
-                  <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full bg-white/5" />
-                  <div className="absolute top-1/2 right-8 w-2 h-24 rounded-full bg-white/10" />
+                  <img 
+                    src={active.gif} 
+                    alt={active.title} 
+                    className="w-full h-full object-contain p-4 sm:p-8"
+                  />
                 </div>
               </div>
             </div>

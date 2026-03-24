@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePackage } from "../context/PackageContext";
 
 type ServiceKey = "seo" | "aeo" | "social" | "ppc" | "landing";
 
@@ -208,11 +209,42 @@ const phaseColors = {
 export default function TimelineSection() {
   const [activeWeek, setActiveWeek] = useState(0);
   const [filterService, setFilterService] = useState<ServiceKey | "all">("all");
-  const [viewMode, setViewMode] = useState<"timeline" | "gantt">("timeline");
+  const { packageData } = usePackage();
+
+  // Filter services based on selected package
+  const includedServices: ServiceKey[] = [
+    ...(packageData.seoIncluded ? ["seo" as ServiceKey] : []),
+    ...(packageData.aeoIncluded ? ["aeo" as ServiceKey] : []),
+    ...(packageData.socialIncluded ? ["social" as ServiceKey] : []),
+    ...(packageData.ppcIncluded ? ["ppc" as ServiceKey] : []),
+    ...(packageData.landingPages > 0 ? ["landing" as ServiceKey] : []),
+  ];
+
+  // Filter timeline based on package services
+  const packageTimeline = timeline.map(week => ({
+    ...week,
+    tasks: week.tasks.filter(task => includedServices.includes(task.service))
+  }));
+
+  // Adjust landing page tasks based on package
+  const adjustedTimeline = packageTimeline.map(week => ({
+    ...week,
+    tasks: week.tasks.map(task => {
+      if (task.service === "landing" && task.task.includes("Landing Page")) {
+        const lpNum = parseInt(task.task.match(/Landing Page[s]? #(\d+)/)?.[1] || "0");
+        if (lpNum > packageData.landingPages) {
+          return null;
+        }
+      }
+      return task;
+    }).filter(Boolean) as typeof week.tasks
+  }));
 
   const filteredTasks = filterService === "all" 
-    ? timeline[activeWeek].tasks 
-    : timeline[activeWeek].tasks.filter(t => t.service === filterService);
+    ? adjustedTimeline[activeWeek].tasks 
+    : adjustedTimeline[activeWeek].tasks.filter(t => t.service === filterService);
+
+  const availableServices = services.filter(s => includedServices.includes(s.key));
 
   const getServiceInfo = (key: ServiceKey) => services.find(s => s.key === key)!;
 
@@ -222,13 +254,14 @@ export default function TimelineSection() {
         {/* Section Header */}
         <div className="text-center mb-8 sm:mb-12">
           <span className="inline-block text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4">
-            Detailed Project Timeline
+            {packageData.name} Timeline
           </span>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
-            12-Month Implementation Roadmap
+            Implementation Roadmap
           </h2>
           <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto px-2">
-            Week-by-week breakdown of onboarding, implementation, optimization, and scaling phases across all services for Roca Real Estate.
+            Week-by-week breakdown for <span className="text-amber-400 font-medium">{packageData.name}</span> package: 
+            {includedServices.length} services, {packageData.landingPages} landing pages, results in {packageData.timeToResults}.
           </p>
         </div>
 
@@ -254,7 +287,7 @@ export default function TimelineSection() {
           >
             All
           </button>
-          {services.map((service) => (
+          {availableServices.map((service) => (
             <button
               key={service.key}
               onClick={() => setFilterService(service.key)}
@@ -274,8 +307,9 @@ export default function TimelineSection() {
         {/* Timeline Navigation */}
         <div className="relative mb-6 sm:mb-8 overflow-x-auto pb-2 sm:pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           <div className="flex gap-1.5 sm:gap-2 min-w-max">
-            {timeline.map((item, i) => {
+            {adjustedTimeline.map((item, i) => {
               const phase = phaseColors[item.phase];
+              const taskCount = item.tasks.length;
               return (
                 <button
                   key={i}
@@ -283,12 +317,15 @@ export default function TimelineSection() {
                   className={`relative px-2.5 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all min-w-[70px] sm:min-w-[100px] ${
                     activeWeek === i
                       ? `${phase.bg} border-2 ${phase.border} ${phase.text}`
-                      : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:text-white hover:border-slate-600"
+                      : taskCount === 0 
+                        ? "bg-slate-800/20 border border-slate-800 text-slate-600"
+                        : "bg-slate-800/30 border border-slate-700/50 text-slate-400 hover:text-white hover:border-slate-600"
                   }`}
+                  disabled={taskCount === 0}
                 >
                   <div className="text-[10px] sm:text-xs font-bold">{item.week}</div>
                   <div className={`text-[8px] sm:text-[10px] uppercase tracking-wider mt-0.5 sm:mt-1 ${activeWeek === i ? phase.text : "text-slate-500"}`}>
-                    {item.phase.slice(0, 3)}
+                    {taskCount > 0 ? item.phase.slice(0, 3) : "—"}
                   </div>
                 </button>
               );
@@ -297,12 +334,12 @@ export default function TimelineSection() {
         </div>
 
         {/* Active Week Details */}
-        <div className={`rounded-2xl sm:rounded-3xl ${phaseColors[timeline[activeWeek].phase].bg} border ${phaseColors[timeline[activeWeek].phase].border} p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8`}>
+        <div className={`rounded-2xl sm:rounded-3xl ${phaseColors[adjustedTimeline[activeWeek].phase].bg} border ${phaseColors[adjustedTimeline[activeWeek].phase].border} p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8`}>
           <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
             <div>
-              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{timeline[activeWeek].week}</h3>
-              <span className={`text-xs sm:text-sm font-medium ${phaseColors[timeline[activeWeek].phase].text}`}>
-                {phaseColors[timeline[activeWeek].phase].label} Phase
+              <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white">{adjustedTimeline[activeWeek].week}</h3>
+              <span className={`text-xs sm:text-sm font-medium ${phaseColors[adjustedTimeline[activeWeek].phase].text}`}>
+                {phaseColors[adjustedTimeline[activeWeek].phase].label} Phase
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -339,7 +376,7 @@ export default function TimelineSection() {
         <div className="hidden sm:block rounded-2xl sm:rounded-3xl bg-slate-800/30 border border-slate-700/50 p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8">
           <h3 className="text-base sm:text-lg lg:text-xl font-bold text-white mb-4 sm:mb-6">Service Implementation Timeline</h3>
           <div className="space-y-3 sm:space-y-4">
-            {services.map((service) => (
+            {availableServices.map((service) => (
               <div key={service.key} className="flex items-center gap-2 sm:gap-4">
                 <div className="w-24 sm:w-32 flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                   <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r ${service.color} flex items-center justify-center text-white`}>
@@ -348,16 +385,16 @@ export default function TimelineSection() {
                   <span className="text-white text-xs sm:text-sm font-medium truncate">{service.name}</span>
                 </div>
                 <div className="flex-1 flex gap-0.5 sm:gap-1">
-                  {timeline.map((week, i) => {
+                  {adjustedTimeline.map((week, i) => {
                     const hasTask = week.tasks.some(t => t.service === service.key);
                     return (
                       <div
                         key={i}
-                        onClick={() => setActiveWeek(i)}
-                        className={`flex-1 h-6 sm:h-8 rounded cursor-pointer transition-all ${
+                        onClick={() => hasTask && setActiveWeek(i)}
+                        className={`flex-1 h-6 sm:h-8 rounded transition-all ${
                           hasTask
-                            ? `bg-gradient-to-r ${service.color} opacity-80 hover:opacity-100`
-                            : "bg-slate-800/50 hover:bg-slate-700/50"
+                            ? `bg-gradient-to-r ${service.color} opacity-80 hover:opacity-100 cursor-pointer`
+                            : "bg-slate-800/50"
                         } ${activeWeek === i ? "ring-2 ring-white" : ""}`}
                         title={`${week.week}: ${week.tasks.filter(t => t.service === service.key).length} tasks`}
                       />
@@ -380,8 +417,8 @@ export default function TimelineSection() {
         <div className="sm:hidden rounded-2xl bg-slate-800/30 border border-slate-700/50 p-4 mb-6">
           <h3 className="text-base font-bold text-white mb-4">Service Timeline</h3>
           <div className="space-y-3">
-            {services.map((service) => {
-              const taskCount = timeline.reduce((acc, week) => 
+            {availableServices.map((service) => {
+              const taskCount = adjustedTimeline.reduce((acc, week) => 
                 acc + week.tasks.filter(t => t.service === service.key).length, 0
               );
               return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePackage, PackageId } from "../context/PackageContext";
 
 const packages = [
   {
@@ -73,7 +74,14 @@ const addOns = [
 
 export default function PricingSection() {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "quarterly">("monthly");
+  const { selectedPackage, setSelectedPackage } = usePackage();
   const discount = billingCycle === "quarterly" ? 0.1 : 0;
+
+  const handleSelectPackage = (pkgId: string) => {
+    setSelectedPackage(pkgId as PackageId);
+    // Scroll to results section to show dynamic data
+    document.getElementById("results")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <section id="pricing" className="py-24 px-6 bg-slate-900/50">
@@ -188,16 +196,18 @@ export default function PricingSection() {
                   </div>
                 </div>
 
-                <a
-                  href="#cta"
-                  className={`block text-center py-3 rounded-xl font-semibold transition-all ${
-                    pkg.highlight
-                      ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/25"
-                      : "bg-slate-700 text-white hover:bg-slate-600"
+                <button
+                  onClick={() => handleSelectPackage(pkg.id)}
+                  className={`w-full block text-center py-3 rounded-xl font-semibold transition-all ${
+                    selectedPackage === pkg.id
+                      ? "bg-green-500 text-white ring-2 ring-green-400"
+                      : pkg.highlight
+                        ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-lg hover:shadow-amber-500/25"
+                        : "bg-slate-700 text-white hover:bg-slate-600"
                   }`}
                 >
-                  Get Started
-                </a>
+                  {selectedPackage === pkg.id ? "✓ Selected" : "Choose Package"}
+                </button>
               </div>
             </div>
           ))}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { PackageProvider } from "./context/PackageContext";
 import HeroSection from "./components/HeroSection";
 import ServicesSection from "./components/ServicesSection";
 import SEOAuditSection from "./components/SEOAuditSection";
@@ -52,6 +53,7 @@ export default function RocaProposalPage() {
   ];
 
   return (
+    <PackageProvider>
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-slate-800">
@@ -128,5 +130,6 @@ export default function RocaProposalPage() {
         </div>
       </footer>
     </div>
+    </PackageProvider>
   );
 }

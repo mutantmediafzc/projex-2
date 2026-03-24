@@ -1,22 +1,44 @@
 "use client";
 
 import { useState } from "react";
+import { usePackage, packageDataMap, PackageId } from "../context/PackageContext";
 
-const trafficData = [
-  { month: "Current", organic: 450, paid: 200, direct: 150, referral: 80, total: 880 },
-  { month: "Month 1", organic: 620, paid: 350, direct: 180, referral: 120, total: 1270 },
-  { month: "Month 2", organic: 890, paid: 500, direct: 220, referral: 180, total: 1790 },
-  { month: "Month 3", organic: 1350, paid: 650, direct: 280, referral: 250, total: 2530 },
-  { month: "Month 4", organic: 1980, paid: 750, direct: 350, referral: 340, total: 3420 },
-  { month: "Month 5", organic: 2750, paid: 800, direct: 420, referral: 450, total: 4420 },
-  { month: "Month 6", organic: 3800, paid: 850, direct: 520, referral: 580, total: 5750 },
-  { month: "Month 7", organic: 4950, paid: 900, direct: 640, referral: 720, total: 7210 },
-  { month: "Month 8", organic: 6200, paid: 950, direct: 780, referral: 880, total: 8810 },
-  { month: "Month 9", organic: 7600, paid: 1000, direct: 940, referral: 1050, total: 10590 },
-  { month: "Month 10", organic: 9100, paid: 1050, direct: 1120, referral: 1240, total: 12510 },
-  { month: "Month 11", organic: 10700, paid: 1100, direct: 1320, referral: 1450, total: 14570 },
-  { month: "Month 12", organic: 12500, paid: 1150, direct: 1540, referral: 1680, total: 16870 },
-];
+// Traffic data scales based on package
+const getTrafficData = (packageId: PackageId) => {
+  const pkg = packageDataMap[packageId];
+  const scale = {
+    starter: 0.35,
+    professional: 0.75,
+    enterprise: 1.0,
+  }[packageId];
+
+  const baseData = [
+    { month: "Current", organic: 450, paid: 200, direct: 150, referral: 80 },
+    { month: "Month 1", organic: 620, paid: 350, direct: 180, referral: 120 },
+    { month: "Month 2", organic: 890, paid: 500, direct: 220, referral: 180 },
+    { month: "Month 3", organic: 1350, paid: 650, direct: 280, referral: 250 },
+    { month: "Month 4", organic: 1980, paid: 750, direct: 350, referral: 340 },
+    { month: "Month 5", organic: 2750, paid: 800, direct: 420, referral: 450 },
+    { month: "Month 6", organic: 3800, paid: 850, direct: 520, referral: 580 },
+    { month: "Month 7", organic: 4950, paid: 900, direct: 640, referral: 720 },
+    { month: "Month 8", organic: 6200, paid: 950, direct: 780, referral: 880 },
+    { month: "Month 9", organic: 7600, paid: 1000, direct: 940, referral: 1050 },
+    { month: "Month 10", organic: 9100, paid: 1050, direct: 1120, referral: 1240 },
+    { month: "Month 11", organic: 10700, paid: 1100, direct: 1320, referral: 1450 },
+    { month: "Month 12", organic: 12500, paid: 1150, direct: 1540, referral: 1680 },
+  ];
+
+  return baseData.map((d, i) => ({
+    ...d,
+    organic: i === 0 ? d.organic : Math.round(d.organic * scale),
+    paid: i === 0 ? d.paid : Math.round(d.paid * scale),
+    direct: i === 0 ? d.direct : Math.round(d.direct * scale),
+    referral: i === 0 ? d.referral : Math.round(d.referral * scale),
+    total: i === 0 
+      ? d.organic + d.paid + d.direct + d.referral 
+      : Math.round((d.organic + d.paid + d.direct + d.referral) * scale),
+  }));
+};
 
 const kpis = [
   {
@@ -110,7 +132,68 @@ const marketContext = {
 
 export default function ResultsSection() {
   const [activeMetric, setActiveMetric] = useState<"organic" | "total">("total");
+  const { selectedPackage, packageData } = usePackage();
+  
+  const trafficData = getTrafficData(selectedPackage);
   const maxTraffic = Math.max(...trafficData.map((t) => t.total));
+
+  // Dynamic KPIs based on selected package
+  const dynamicKpis = [
+    {
+      metric: "Organic Traffic Growth",
+      current: "450/month",
+      month6: `${packageData.organicMonth6.toLocaleString()}/month`,
+      month12: `${packageData.organicMonth12.toLocaleString()}/month`,
+      growth: `+${Math.round((packageData.organicMonth12 / 450 - 1) * 100)}%`,
+      benchmark: "Industry avg: 220% in 6 months",
+      icon: kpis[0].icon,
+    },
+    {
+      metric: "Qualified Property Inquiries",
+      current: "~15/month",
+      month6: `${Math.round(parseInt(packageData.leadsPerMonth.split("-")[0]) * 0.5)}-${Math.round(parseInt(packageData.leadsPerMonth.split("-")[1]) * 0.6)}/month`,
+      month12: `${packageData.leadsPerMonth}/month`,
+      growth: `+${Math.round((parseInt(packageData.leadsPerMonth.split("-")[1]) / 15 - 1) * 100)}%`,
+      benchmark: "Based on 3-5% conversion rate",
+      icon: kpis[1].icon,
+    },
+    {
+      metric: "Page 1 Keywords",
+      current: "~28",
+      month6: `${packageData.keywordsPage1Month6}+`,
+      month12: `${packageData.keywordsPage1Month12}+`,
+      growth: `+${Math.round((packageData.keywordsPage1Month12 / 28 - 1) * 100)}%`,
+      benchmark: `${packageData.keywordsPage1Month6}+ high-intent keywords typical`,
+      icon: kpis[2].icon,
+    },
+    {
+      metric: "Local Search Visibility",
+      current: "Limited",
+      month6: packageData.id === "starter" ? "+80%" : packageData.id === "professional" ? "+120%" : "+160%",
+      month12: packageData.id === "starter" ? "+100%" : packageData.id === "professional" ? "+140%" : "+160%",
+      growth: packageData.id === "starter" ? "+100%" : packageData.id === "professional" ? "+140%" : "+160%",
+      benchmark: "Google Maps & local pack",
+      icon: kpis[3].icon,
+    },
+    {
+      metric: "Domain Authority",
+      current: "18",
+      month6: packageData.id === "starter" ? "25-30" : packageData.id === "professional" ? "32-38" : "35-42",
+      month12: packageData.domainAuthorityMonth12,
+      growth: `+${Math.round((parseInt(packageData.domainAuthorityMonth12.split("-")[0]) / 18 - 1) * 100)}%`,
+      benchmark: "Competitor avg: 45-60",
+      icon: kpis[4].icon,
+    },
+    {
+      metric: "AI Search Visibility",
+      current: "0%",
+      month6: packageData.aeoIncluded ? (packageData.id === "professional" ? "10-18%" : "15-25%") : "N/A",
+      month12: packageData.aeoIncluded ? packageData.aiVisibilityMonth12 : "N/A (not included)",
+      growth: packageData.aeoIncluded ? "New Channel" : "Add AEO",
+      benchmark: packageData.aeoIncluded ? "ChatGPT, Perplexity, Google AI" : "Upgrade for AI visibility",
+      icon: kpis[5].icon,
+    },
+  ];
 
   const trafficSources = [
     { key: "organic", label: "Organic Search", color: "from-green-500 to-emerald-500" },
@@ -125,14 +208,15 @@ export default function ResultsSection() {
         {/* Section Header */}
         <div className="text-center mb-8 sm:mb-12">
           <span className="inline-block text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-3 sm:mb-4">
-            Research-Based Projections
+            {packageData.name} Package Projections
           </span>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 sm:mb-6">
             Expected Traffic & Growth
           </h2>
           <p className="text-slate-400 text-sm sm:text-base lg:text-lg max-w-3xl mx-auto px-2">
-            Projections based on real estate SEO case studies showing 220% traffic growth in 6 months, 
-            with 90+ high-intent keywords reaching Page 1 and 180% increase in qualified inquiries.
+            Projections for <span className="text-amber-400 font-medium">{packageData.name}</span> package: 
+            {packageData.leadsPerMonth} leads/month, {packageData.keywordsPage1Month12}+ Page 1 keywords, 
+            results in {packageData.timeToResults}.
           </p>
         </div>
 
@@ -259,7 +343,9 @@ export default function ResultsSection() {
               <div className="text-slate-500 text-xs sm:text-sm">Month 12</div>
             </div>
             <div className="text-center">
-              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-400">+1,817%</div>
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-purple-400">
+                +{Math.round((trafficData[12].total / trafficData[0].total - 1) * 100)}%
+              </div>
               <div className="text-slate-500 text-xs sm:text-sm">Total Growth</div>
             </div>
           </div>
@@ -267,7 +353,7 @@ export default function ResultsSection() {
 
         {/* KPI Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
-          {kpis.map((kpi, i) => (
+          {dynamicKpis.map((kpi, i) => (
             <div key={i} className="rounded-xl sm:rounded-2xl bg-slate-800/30 border border-slate-700/50 p-4 sm:p-6 hover:border-amber-500/30 transition-colors">
               <div className="flex items-center gap-3 mb-3 sm:mb-4">
                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white flex-shrink-0">
@@ -276,7 +362,7 @@ export default function ResultsSection() {
                 <div className="min-w-0">
                   <h3 className="text-white font-semibold text-sm sm:text-base truncate">{kpi.metric}</h3>
                   <span className={`text-xs font-bold ${
-                    kpi.growth.includes("-") ? "text-green-400" : kpi.growth === "New Channel" ? "text-purple-400" : "text-green-400"
+                    kpi.growth.includes("Add") ? "text-slate-400" : kpi.growth === "New Channel" ? "text-purple-400" : "text-green-400"
                   }`}>
                     {kpi.growth}
                   </span>

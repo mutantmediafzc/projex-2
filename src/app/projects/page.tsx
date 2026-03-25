@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -102,6 +103,9 @@ export default function ProjectsPage() {
   const [projectTypeFilter, setProjectTypeFilter] = useState<string>("");
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [typeSearchQuery, setTypeSearchQuery] = useState("");
+  const typeButtonRef = useRef<HTMLButtonElement>(null);
+  const typeDropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [openingProjectId, setOpeningProjectId] = useState<string | null>(null);
   const router = useRouter();
@@ -120,6 +124,22 @@ export default function ProjectsPage() {
     setOpeningProjectId(projectId);
     router.push(`/projects/${projectId}`);
   };
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!showTypeDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const isInsideButton = typeButtonRef.current?.contains(target);
+      const isInsideDropdown = typeDropdownRef.current?.contains(target);
+      if (!isInsideButton && !isInsideDropdown) {
+        setShowTypeDropdown(false);
+        setTypeSearchQuery("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showTypeDropdown]);
 
   useEffect(() => {
     let isMounted = true;
@@ -335,7 +355,7 @@ export default function ProjectsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm backdrop-blur">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 rounded-xl border border-slate-200/80 bg-white/80 p-3 shadow-sm backdrop-blur overflow-visible">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="hidden sm:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -368,10 +388,20 @@ export default function ProjectsPage() {
         </div>
         
         {/* Project Type Filter - Searchable Dropdown */}
-        <div className="relative z-40">
+        <div className="relative">
           <button
+            ref={typeButtonRef}
             type="button"
-            onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+            onClick={() => {
+              if (!showTypeDropdown && typeButtonRef.current) {
+                const rect = typeButtonRef.current.getBoundingClientRect();
+                setDropdownPosition({
+                  top: rect.bottom + window.scrollY + 4,
+                  left: rect.right - 288 + window.scrollX, // 288 = w-72 (18rem)
+                });
+              }
+              setShowTypeDropdown(!showTypeDropdown);
+            }}
             className={`h-10 sm:h-9 inline-flex items-center gap-2 rounded-lg border px-3 text-[14px] sm:text-[13px] shadow-sm transition-all ${
               projectTypeFilter 
                 ? "border-emerald-300 bg-emerald-50 text-emerald-700" 
@@ -396,8 +426,12 @@ export default function ProjectsPage() {
             </svg>
           </button>
           
-          {showTypeDropdown && (
-            <div className="absolute right-0 top-full z-[100] mt-1 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+          {showTypeDropdown && typeof document !== "undefined" && createPortal(
+            <div 
+              ref={typeDropdownRef}
+              className="fixed w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
+              style={{ top: dropdownPosition.top, left: dropdownPosition.left, zIndex: 9999 }}
+            >
               <div className="relative mb-2">
                 <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="11" cy="11" r="8" />
@@ -452,7 +486,8 @@ export default function ProjectsPage() {
                     </button>
                   ))}
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </div>
         

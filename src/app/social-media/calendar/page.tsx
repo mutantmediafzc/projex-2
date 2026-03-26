@@ -682,11 +682,11 @@ export default function ContentCalendar2026() {
                                   <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
                                 ) : (
                                   <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: brandColor }}>
-                                    {(post.project?.company?.name || post.project?.name || "?")[0]}
+                                    {(post.project?.name || "?")[0]}
                                   </span>
                                 )}
                                 <span className="text-sm text-slate-700 truncate max-w-[120px]">
-                                  {post.project?.company?.name || post.project?.name || "Unknown"}
+                                  {post.project?.name || "Unknown"}
                                 </span>
                               </div>
                             </td>
@@ -861,11 +861,11 @@ export default function ContentCalendar2026() {
                                       className="w-3.5 h-3.5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
                                       style={{ backgroundColor: brandColor }}
                                     >
-                                      {(post.project?.company?.name || post.project?.name || "?")[0]}
+                                      {(post.project?.name || "?")[0]}
                                     </span>
                                   )}
                                   <span className="text-[9px] font-medium text-slate-700 truncate flex-1">
-                                    {post.project?.company?.name || post.project?.name || "Unknown"}
+                                    {post.project?.name || "Unknown"}
                                   </span>
                                   {/* Status dot */}
                                   <span
@@ -883,7 +883,7 @@ export default function ContentCalendar2026() {
                               {isHovered && (
                                 <div className="absolute left-full top-0 ml-2 w-48 p-2 bg-white rounded-lg shadow-xl border border-slate-200 z-50 pointer-events-none">
                                   <p className="text-xs font-medium text-slate-900 mb-1">
-                                    {post.project?.company?.name || post.project?.name}
+                                    {post.project?.name || "Unknown"}
                                   </p>
                                   <p className="text-[10px] text-slate-600 line-clamp-3 mb-1">
                                     {post.caption || "No caption"}

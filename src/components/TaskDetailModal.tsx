@@ -94,6 +94,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
   const [editActivityDate, setEditActivityDate] = useState("");
   const [editAssignedUserName, setEditAssignedUserName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadTask() {
@@ -102,7 +103,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
         const [taskRes, checklistRes, commentsRes] = await Promise.all([
           supabaseClient
             .from("tasks")
-            .select("id, project_id, patient_id, name, content, status, priority, type, activity_date, created_at, created_by_name, assigned_user_name, patient:patients(id, first_name, last_name, email, phone), project:projects(id, name)")
+            .select("id, project_id, patient_id, name, content, status, priority, type, activity_date, created_at, updated_at, created_by_name, assigned_user_name, updated_by_name, updated_by_user_id, patient:patients(id, first_name, last_name, email, phone), project:projects(id, name)")
             .eq("id", taskId)
             .single(),
           supabaseClient
@@ -178,7 +179,24 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
     
     try {
       setSaving(true);
-      const { error } = await supabaseClient
+      setSaveError(null);
+
+      // Get current user for tracking who edited
+      const { data: authData } = await supabaseClient.auth.getUser();
+      const authUser = authData?.user;
+      if (!authUser) {
+        setSaveError("You must be logged in to edit tasks");
+        setSaving(false);
+        return;
+      }
+
+      const meta = (authUser.user_metadata || {}) as Record<string, unknown>;
+      const first = (meta["first_name"] as string) || "";
+      const last = (meta["last_name"] as string) || "";
+      const editorName = [first, last].filter(Boolean).join(" ") || authUser.email || "Unknown";
+      const now = new Date().toISOString();
+
+      const { data, error } = await supabaseClient
         .from("tasks")
         .update({
           name: editName.trim(),
@@ -186,10 +204,21 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
           priority: editPriority,
           activity_date: editActivityDate || null,
           assigned_user_name: editAssignedUserName.trim() || null,
+          updated_at: now,
+          updated_by_user_id: authUser.id,
+          updated_by_name: editorName,
         })
-        .eq("id", taskId);
+        .eq("id", taskId)
+        .select()
+        .single();
 
-      if (!error) {
+      if (error) {
+        console.error("Error saving task:", error);
+        setSaveError(error.message || "Failed to save task. Please try again.");
+        return;
+      }
+
+      if (data) {
         setTask((prev: any) => ({
           ...prev,
           name: editName.trim(),
@@ -197,11 +226,15 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
           priority: editPriority,
           activity_date: editActivityDate || null,
           assigned_user_name: editAssignedUserName.trim() || null,
+          updated_at: now,
+          updated_by_user_id: authUser.id,
+          updated_by_name: editorName,
         }));
         setIsEditMode(false);
       }
     } catch (err) {
       console.error("Error saving task:", err);
+      setSaveError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setSaving(false);
     }
@@ -214,6 +247,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
     setEditActivityDate(task.activity_date || "");
     setEditAssignedUserName(task.assigned_user_name || "");
     setIsEditMode(false);
+    setSaveError(null);
   }
 
   async function handleSubmitComment() {
@@ -300,6 +334,11 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
                   Created by {task.created_by_name || "Unknown"}
                   {project && <span> • {project.name}</span>}
                 </p>
+                {task.updated_by_name && (
+                  <p className="text-[10px] text-white/60 mt-0.5">
+                    Last edited by {task.updated_by_name} • {formatDate(task.updated_at)}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -384,6 +423,17 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
                     placeholder="Assignee name"
                   />
                 </div>
+                {saveError && (
+                  <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                    <div className="flex items-start gap-2">
+                      <svg className="h-4 w-4 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 8v4M12 16h.01" />
+                      </svg>
+                      <span>{saveError}</span>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-center gap-3 pt-2">
                   <button
                     type="button"

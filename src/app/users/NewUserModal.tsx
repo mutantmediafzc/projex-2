@@ -203,14 +203,24 @@ export default function NewUserModal({ onClose }: Props) {
               <label htmlFor="designation" className="block text-[11px] font-semibold text-slate-700 uppercase tracking-wide">
                 Designation *
               </label>
-              <input
+              <select
                 id="designation"
                 name="designation"
-                type="text"
-                placeholder="e.g. Project Manager"
                 required
-                className="block w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-black placeholder:text-slate-400 shadow-sm transition-all focus:border-violet-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-              />
+                className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black shadow-sm transition-all focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+              >
+                <option value="">Select designation...</option>
+                <option value="Account Manager">Account Manager</option>
+                <option value="Creative Team Lead">Creative Team Lead</option>
+                <option value="Creative">Creative</option>
+                <option value="Social Media Specialist">Social Media Specialist</option>
+                <option value="Performance Marketer">Performance Marketer</option>
+                <option value="Project Manager">Project Manager</option>
+                <option value="Developer">Developer</option>
+                <option value="Designer">Designer</option>
+                <option value="Content Writer">Content Writer</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </div>
 

@@ -208,11 +208,41 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
       platform_budgets: platformBudgets,
     };
 
+    const oldStatus = post?.workflow_status;
+    let savedPostId = post?.id;
+
     if (post) {
       await supabaseClient.from("social_posts").update(postData).eq("id", post.id);
     } else {
-      await supabaseClient.from("social_posts").insert(postData);
+      const { data: newPost } = await supabaseClient.from("social_posts").insert(postData).select("id").single();
+      savedPostId = newPost?.id;
     }
+
+    // Send workflow notifications if status changed
+    if (savedPostId && workflowStatus !== oldStatus) {
+      try {
+        await fetch("/api/social-media/notify-workflow", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            postId: savedPostId,
+            projectId,
+            newStatus: workflowStatus,
+            oldStatus: oldStatus || null,
+            postData: {
+              subject,
+              caption,
+              content_type: contentType,
+              image_asset_url: imageAssetUrl,
+              post_type: postType,
+            },
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to send workflow notifications:", err);
+      }
+    }
+
     setSaving(false);
     onSaved();
   }

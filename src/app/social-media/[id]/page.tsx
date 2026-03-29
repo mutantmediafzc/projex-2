@@ -12,6 +12,7 @@ import ClientAccess from "./ClientAccess";
 import QuarterlyReports from "./QuarterlyReports";
 import SubscriptionsPanel from "./SubscriptionsPanel";
 import StrategyLinkManager from "./StrategyLinkManager";
+import TeamAssignments from "./TeamAssignments";
 
 type SocialProject = {
   id: string;
@@ -380,7 +381,10 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       {/* Tab Content */}
       <div className="p-4 sm:p-6 lg:p-8">
         {activeTab === "calendar" && (
-          <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
+          <div className="space-y-6">
+            <TeamAssignments projectId={project.id} />
+            <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
+          </div>
         )}
         {activeTab === "articles" && (
           <ArticlePlanner projectId={project.id} />

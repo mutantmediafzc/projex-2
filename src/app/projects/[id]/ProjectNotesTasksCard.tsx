@@ -6,6 +6,7 @@ import { useProjectActivityFeed, ActivitySource } from "./ProjectActivityFeed";
 import ProjectDocumentsTab from "./ProjectDocumentsTab";
 import FilePreviewModal from "@/components/FilePreviewModal";
 import MentionTextarea, { extractMentionedUserIds, NoteBodyWithMentions } from "@/components/MentionTextarea";
+import TaskDetailModal from "@/components/TaskDetailModal";
 import { useMessagesUnread } from "@/components/MessagesUnreadContext";
 
 type Note = {
@@ -219,6 +220,15 @@ export default function ProjectNotesTasksCard({
   const [taskCommentsLoading, setTaskCommentsLoading] = useState(false);
   const [newCommentBody, setNewCommentBody] = useState("");
   const [commentSaving, setCommentSaving] = useState(false);
+  
+  // TaskDetailModal state - for full edit/history modal
+  const [selectedTaskIdForModal, setSelectedTaskIdForModal] = useState<string | null>(null);
+  
+  // Handler for TaskDetailModal status changes
+  function handleTaskDetailStatusChange(taskId: string, newStatus: TaskStatus) {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
+    setActivityReloadKey((prev) => prev + 1);
+  }
 
   const selectedTaskAllCompleted =
     selectedTaskGroup?.statuses.every((status) => status === "completed") ??
@@ -775,30 +785,8 @@ export default function ProjectNotesTasksCard({
   }
 
   function openTaskFromActivity(taskId: string) {
-    const task = tasks.find((row) => row.id === taskId);
-    if (!task) return;
-
-    const assignedLabel = task.assigned_user_name ? [task.assigned_user_name] : [];
-    const checklistItems = checklistByTaskId[task.id] ?? [];
-
-    setIsEditingTask(false);
-    setNewCommentBody("");
-    setTaskComments([]);
-    setSelectedTaskGroup({
-      key: task.id,
-      primaryTaskId: task.id,
-      name: task.name,
-      content: task.content,
-      activity_date: task.activity_date,
-      priority: task.priority,
-      created_by_name: task.created_by_name,
-      created_at: task.created_at,
-      statuses: [task.status],
-      assignedNames: assignedLabel,
-      taskIds: [task.id],
-      checklistItems,
-    });
-    void loadTaskComments(task.id);
+    // Use TaskDetailModal for full edit/history functionality
+    setSelectedTaskIdForModal(taskId);
   }
 
   function extractFileNameFromBody(body: string | null): string | null {
@@ -2026,11 +2014,9 @@ export default function ProjectNotesTasksCard({
                                 : "border-red-200/60 bg-gradient-to-r from-red-50/80 to-rose-50/50 hover:border-red-300"
                             }`}
                             onClick={() => {
-                              setIsEditingTask(false);
-                              setSelectedTaskGroup({
-                                ...group,
-                                primaryTaskId: group.taskIds[0] ?? null,
-                              });
+                              // Use TaskDetailModal for full edit/history functionality
+                              const taskId = group.taskIds[0];
+                              if (taskId) setSelectedTaskIdForModal(taskId);
                             }}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -2440,253 +2426,14 @@ export default function ProjectNotesTasksCard({
         </div>
       ) : null}
 
-      {selectedTaskGroup ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center px-4 py-6">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setSelectedTaskGroup(null)}
-          />
-          <div className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200/50 bg-white shadow-2xl">
-            {/* Header with gradient */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 px-6 py-5">
-              <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-              <div className="absolute -bottom-10 -left-10 h-24 w-24 rounded-full bg-white/10 blur-xl" />
-              <div className="relative flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm shadow-lg">
-                    <svg className="h-6 w-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 11l3 3L22 4" />
-                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-white line-clamp-1">
-                      {selectedTaskGroup.name}
-                    </h3>
-                    <p className="text-[11px] text-white/80">
-                      Created by {selectedTaskGroup.created_by_name || "Unknown"}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedTaskGroup(null)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 text-white backdrop-blur-sm transition-all hover:bg-white/30"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M18 6 6 18M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
-              {/* Description */}
-              {selectedTaskGroup.content && (
-                <div className="mb-4 rounded-xl bg-slate-50 p-4">
-                  <p className="text-[12px] text-slate-700 leading-relaxed">
-                    {selectedTaskGroup.content}
-                  </p>
-                </div>
-              )}
-
-              {/* Info Cards */}
-              <div className="mb-5 grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Due Date</p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {formatDate(selectedTaskGroup.activity_date ?? selectedTaskGroup.created_at)}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Priority</p>
-                  <p className={`mt-1 text-[13px] font-semibold ${
-                    selectedTaskGroup.priority === "high" ? "text-red-600" :
-                    selectedTaskGroup.priority === "medium" ? "text-amber-600" : "text-slate-600"
-                  }`}>
-                    {selectedTaskGroup.priority.charAt(0).toUpperCase() + selectedTaskGroup.priority.slice(1)}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Assigned To</p>
-                  <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                    {selectedTaskGroup.assignedNames.join(", ") || "Unassigned"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Status</p>
-                  <div className="relative mt-1">
-                    <button
-                      type="button"
-                      onClick={() => setModalStatusDropdownOpen((prev) => !prev)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold shadow-sm transition-all hover:scale-105 ${taskStatusPillClasses(selectedTaskDisplayStatus!)}`}
-                    >
-                      {formatTaskStatusLabel(selectedTaskDisplayStatus)}
-                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                        <polyline points="6 9 12 15 18 9" />
-                      </svg>
-                    </button>
-                    {modalStatusDropdownOpen && (
-                      <div className="absolute left-0 top-full z-20 mt-2 w-40 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                        {(["not_started", "in_progress", "completed"] as TaskStatus[]).map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => {
-                              setModalStatusDropdownOpen(false);
-                              void handleChangeTaskStatus(selectedTaskGroup.taskIds, s);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[11px] font-medium text-slate-700 transition-all hover:bg-slate-50"
-                          >
-                            <span className={`h-2 w-2 rounded-full ${
-                              s === "completed" ? "bg-emerald-500" :
-                              s === "in_progress" ? "bg-amber-500" : "bg-red-400"
-                            }`} />
-                            {formatTaskStatusLabel(s)}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Checklist */}
-              <div className="mb-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 text-violet-600">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M9 11l3 3L22 4" />
-                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-                    </svg>
-                  </div>
-                  <span className="text-[12px] font-bold text-slate-800">Checklist</span>
-                  {selectedTaskGroup.checklistItems.length > 0 && (
-                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
-                      {selectedTaskGroup.checklistItems.filter(i => i.is_completed).length}/{selectedTaskGroup.checklistItems.length}
-                    </span>
-                  )}
-                </div>
-                {selectedTaskGroup.checklistItems.length > 0 ? (
-                  <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                    {selectedTaskGroup.checklistItems.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => void handleToggleChecklistItem(item)}
-                        className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-all hover:bg-white"
-                      >
-                        <span className={`flex h-5 w-5 items-center justify-center rounded-md border-2 transition-all ${
-                          item.is_completed
-                            ? "border-emerald-500 bg-emerald-500 text-white"
-                            : "border-slate-300 bg-white"
-                        }`}>
-                          {item.is_completed && (
-                            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </span>
-                        <span className={`text-[12px] ${item.is_completed ? "text-slate-400 line-through" : "text-slate-700"}`}>
-                          {item.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-[11px] text-slate-400">
-                    No checklist items for this task
-                  </p>
-                )}
-              </div>
-
-              {/* Comments Section */}
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </div>
-                  <span className="text-[12px] font-bold text-slate-800">Comments</span>
-                  {taskComments.length > 0 && (
-                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
-                      {taskComments.length}
-                    </span>
-                  )}
-                </div>
-
-                {taskCommentsLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-sky-200 border-t-sky-600" />
-                  </div>
-                ) : taskComments.length === 0 ? (
-                  <p className="mb-4 rounded-xl border border-dashed border-slate-200 bg-slate-50/50 p-4 text-center text-[11px] text-slate-400">
-                    No comments yet. Be the first to comment!
-                  </p>
-                ) : (
-                  <div className="mb-4 max-h-48 space-y-3 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                    {taskComments.map((comment) => (
-                      <div key={comment.id} className="rounded-lg bg-white p-3 shadow-sm">
-                        <div className="mb-2 flex items-center gap-2">
-                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-sky-400 to-blue-600 text-[10px] font-bold text-white shadow-sm">
-                            {(comment.author_name || "U")[0].toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="text-[11px] font-semibold text-slate-800">
-                              {comment.author_name || "Unknown"}
-                            </span>
-                            <span className="ml-2 text-[10px] text-slate-400">
-                              {formatDate(comment.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="pl-9 text-[11px] text-slate-600 leading-relaxed">
-                          <NoteBodyWithMentions body={comment.body} />
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add Comment */}
-                <div className="space-y-3">
-                  <MentionTextarea
-                    value={newCommentBody}
-                    onChange={setNewCommentBody}
-                    users={users}
-                    placeholder="Write a comment... Use @ to mention someone"
-                    rows={2}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleSubmitComment()}
-                    disabled={commentSaving || !newCommentBody.trim()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2 text-[11px] font-semibold text-white shadow-lg shadow-sky-500/25 transition-all hover:shadow-xl hover:shadow-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {commentSaving ? (
-                      <>
-                        <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Posting...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M22 2L11 13" />
-                          <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-                        </svg>
-                        Post Comment
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* TaskDetailModal with full edit/history features and proper z-index */}
+      {selectedTaskIdForModal && (
+        <TaskDetailModal
+          taskId={selectedTaskIdForModal}
+          onClose={() => setSelectedTaskIdForModal(null)}
+          onStatusChange={handleTaskDetailStatusChange}
+        />
+      )}
 
       {/* File Preview Modal */}
       <FilePreviewModal

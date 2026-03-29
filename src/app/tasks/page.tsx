@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import TaskDetailModal from "@/components/TaskDetailModal";
 
 type TaskStatus = "not_started" | "in_progress" | "completed";
 type TaskPriority = "low" | "medium" | "high";
@@ -59,6 +60,7 @@ export default function TasksPage() {
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
   const [statusDropdownOpen, setStatusDropdownOpen] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,6 +154,10 @@ export default function TasksPage() {
     } catch (e) {
       console.error("Error updating task status:", e);
     }
+  }
+
+  function handleTaskStatusChange(taskId: string, newStatus: "not_started" | "in_progress" | "completed") {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
   }
 
   function clearFilters() {
@@ -295,6 +301,10 @@ export default function TasksPage() {
                         </span>
                         {task.activity_date && <span>{formatDate(task.activity_date)}</span>}
                       </div>
+                      <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedTaskId(task.id); }} className="mt-2 w-full inline-flex items-center justify-center gap-1 rounded-lg bg-emerald-50 px-2 py-1.5 text-[10px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Open Task
+                      </button>
                     </div>
                   ))}
                   {columnTasks.length === 0 && <div className="flex flex-col items-center justify-center py-8 text-center"><p className="text-[11px] text-slate-400">Drop tasks here</p></div>}
@@ -344,12 +354,21 @@ export default function TasksPage() {
                       </div>
                     )}
                   </div>
-                  {task.project && (<Link href={`/projects/${task.project.id}`} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-medium text-slate-700 shadow-sm hover:bg-slate-50"><svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open</Link>)}
+                  <button type="button" onClick={() => setSelectedTaskId(task.id)} className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-medium text-emerald-700 shadow-sm hover:bg-emerald-100 transition-colors"><svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open</button>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Task Detail Modal */}
+      {selectedTaskId && (
+        <TaskDetailModal
+          taskId={selectedTaskId}
+          onClose={() => setSelectedTaskId(null)}
+          onStatusChange={handleTaskStatusChange}
+        />
       )}
     </div>
   );

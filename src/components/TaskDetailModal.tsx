@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
@@ -77,6 +78,12 @@ function linkifyText(text: string): React.ReactNode {
 export default function TaskDetailModal({ taskId, onClose, onStatusChange }: TaskDetailModalProps) {
   const { role } = useUserRole();
   const isAdmin = role === "admin";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
   
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -284,19 +291,22 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
     }
   }
 
+  if (!mounted) return null;
+
   if (loading) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
         <div className="flex items-center gap-3 rounded-2xl bg-white px-6 py-4 shadow-2xl">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
           <span className="text-sm text-slate-600">Loading task...</span>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   if (!task) {
-    return (
+    return createPortal(
       <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
         <div className="rounded-2xl bg-white p-6 shadow-2xl">
           <p className="text-sm text-slate-600">Task not found</p>
@@ -304,7 +314,8 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
             Close
           </button>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
@@ -312,7 +323,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
   const patientName = patient ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim() : null;
   const project = task.project as { id: string; name: string } | null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center px-0 sm:px-4 py-0 sm:py-6">
       <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full sm:max-w-xl max-h-[95vh] sm:max-h-[85vh] overflow-hidden rounded-t-2xl sm:rounded-2xl border-0 sm:border border-slate-200/50 bg-white shadow-2xl safe-area-inset-bottom">
@@ -652,6 +663,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

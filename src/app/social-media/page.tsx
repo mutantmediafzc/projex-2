@@ -95,6 +95,8 @@ export default function SocialMediaPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [letterFilter, setLetterFilter] = useState<string>("");
 
   useEffect(() => {
     loadProjects();
@@ -148,6 +150,10 @@ export default function SocialMediaPage() {
         return false;
       }
       if (statusFilter && project.status !== statusFilter) return false;
+      if (letterFilter) {
+        const firstLetter = project.name.charAt(0).toUpperCase();
+        if (firstLetter !== letterFilter) return false;
+      }
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesName = project.name.toLowerCase().includes(query);
@@ -160,8 +166,16 @@ export default function SocialMediaPage() {
     .sort((a, b) => {
       const nameA = a.name.toLowerCase();
       const nameB = b.name.toLowerCase();
-      return nameA.localeCompare(nameB);
+      return sortDirection === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
     });
+
+  // Get available letters from projects
+  const availableLetters = [...new Set(
+    projects
+      .filter((p) => !statusFilter || p.status === statusFilter)
+      .filter((p) => statusFilter || (p.status !== "completed" && p.status !== "archived"))
+      .map((p) => p.name.charAt(0).toUpperCase())
+  )].sort();
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
@@ -197,7 +211,7 @@ export default function SocialMediaPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -211,6 +225,15 @@ export default function SocialMediaPage() {
             className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
           />
         </div>
+        <button
+          onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18M3 12h12M3 18h6" />
+          </svg>
+          {sortDirection === "asc" ? "A → Z" : "Z → A"}
+        </button>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -222,6 +245,40 @@ export default function SocialMediaPage() {
           <option value="completed">Completed</option>
           <option value="archived">Archived</option>
         </select>
+      </div>
+
+      {/* Alphabetical Filter */}
+      <div className="mb-6 flex flex-wrap items-center gap-1">
+        <button
+          onClick={() => setLetterFilter("")}
+          className={`h-8 min-w-[2rem] rounded-lg px-2 text-xs font-medium transition-all ${
+            letterFilter === ""
+              ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-md"
+              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          All
+        </button>
+        {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => {
+          const isAvailable = availableLetters.includes(letter);
+          const isActive = letterFilter === letter;
+          return (
+            <button
+              key={letter}
+              onClick={() => isAvailable && setLetterFilter(isActive ? "" : letter)}
+              disabled={!isAvailable}
+              className={`h-8 w-8 rounded-lg text-xs font-medium transition-all ${
+                isActive
+                  ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-md"
+                  : isAvailable
+                  ? "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  : "bg-slate-50 text-slate-300 cursor-not-allowed"
+              }`}
+            >
+              {letter}
+            </button>
+          );
+        })}
       </div>
 
       {/* Loading / Error states */}

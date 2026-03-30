@@ -306,28 +306,9 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         
         {/* Title section */}
         <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
-              <p className="text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
-            </div>
-            
-            {/* Platform badges */}
-            <div className="flex items-center gap-2">
-              {(data.project?.platforms || []).map((platform) => {
-                const pConfig = PLATFORM_ICONS[platform.toLowerCase()];
-                if (!pConfig) return null;
-                return (
-                  <span
-                    key={platform}
-                    className={`inline-flex items-center gap-1.5 rounded-full ${pConfig.bg} px-3 py-1.5 text-xs font-medium text-white shadow-sm`}
-                  >
-                    {pConfig.icon}
-                    {pConfig.label}
-                  </span>
-                );
-              })}
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
+            <p className="text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
           </div>
         </div>
       </div>
@@ -340,37 +321,25 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             <div className="space-y-6">
               {data.objectives && (
                 <div className="rounded-2xl bg-gradient-to-br from-violet-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-violet-100/50">
-                  <h3 className="text-sm font-semibold text-violet-700 mb-3 flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100">🎯</span>
-                    Objectives
-                  </h3>
+                  <h3 className="text-sm font-semibold text-violet-700 mb-3">Objectives</h3>
                   <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.objectives}</p>
                 </div>
               )}
               {data.core_goals && (
                 <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
-                  <h3 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100">🚀</span>
-                    Core Goals
-                  </h3>
+                  <h3 className="text-sm font-semibold text-emerald-700 mb-3">Core Goals</h3>
                   <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.core_goals}</p>
                 </div>
               )}
               {data.theme && (
                 <div className="rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/80 backdrop-blur-sm p-5 border border-amber-100/50">
-                  <h3 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100">✨</span>
-                    Theme
-                  </h3>
+                  <h3 className="text-sm font-semibold text-amber-700 mb-3">Theme</h3>
                   <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.theme}</p>
                 </div>
               )}
               {data.target_audience && (
                 <div className="rounded-2xl bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-sm p-5 border border-sky-100/50">
-                  <h3 className="text-sm font-semibold text-sky-700 mb-3 flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100">👥</span>
-                    Target Audience
-                  </h3>
+                  <h3 className="text-sm font-semibold text-sky-700 mb-3">Target Audience</h3>
                   <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.target_audience}</p>
                 </div>
               )}
@@ -381,7 +350,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         {/* KPIs Section - Glass Morphism */}
         {kpis.length > 0 && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">📊 Strategy KPIs</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Strategy KPIs</h2>
             <div className="space-y-6">
               {kpis.map((kpi) => (
                 <div key={kpi.id} className="space-y-6">
@@ -497,7 +466,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         {/* Quarterly Deliverables */}
         {data.deliverables.length > 0 && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">📦 Quarterly Deliverables</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Quarterly Deliverables</h2>
             
             {/* Overall Progress */}
             <div className="mb-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -555,7 +524,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         {/* KPI Performance */}
         {data.monthly_kpis.length > 0 && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">📈 KPI Performance</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">KPI Performance</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -588,7 +557,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         {/* Notes */}
         {data.notes && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">📝 Notes</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Notes</h2>
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.notes}</p>
           </section>
         )}

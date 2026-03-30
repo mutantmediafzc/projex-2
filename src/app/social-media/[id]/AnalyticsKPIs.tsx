@@ -92,38 +92,16 @@ const KPI_LABELS: Record<string, { label: string; format: (v: number) => string;
 };
 
 export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
-  const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingReport, setEditingReport] = useState<Report | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
-
-  // KPI system state
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [kpis, setKpis] = useState<SocialKPI[]>([]);
   const [showKpiModal, setShowKpiModal] = useState(false);
   const [editingKpi, setEditingKpi] = useState<SocialKPI | null>(null);
-  const [activeTab, setActiveTab] = useState<"reports" | "kpis">("kpis");
 
   useEffect(() => {
-    loadReports();
     loadStrategies();
     loadKpis();
   }, [projectId]);
-
-  async function loadReports() {
-    setLoading(true);
-    const { data } = await supabaseClient
-      .from("social_reports")
-      .select("*")
-      .eq("project_id", projectId)
-      .order("report_month", { ascending: false });
-    if (data) setReports(data as Report[]);
-    setLoading(false);
-  }
 
   async function loadStrategies() {
     const { data } = await supabaseClient
@@ -135,26 +113,15 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
   }
 
   async function loadKpis() {
+    setLoading(true);
     const { data } = await supabaseClient
       .from("social_kpis")
       .select("*, strategy:social_strategy_links(id, title, quarter)")
       .eq("project_id", projectId)
       .order("report_period", { ascending: false });
     if (data) setKpis(data as SocialKPI[]);
+    setLoading(false);
   }
-
-  const currentReport = reports.find((r) => r.report_month.startsWith(selectedMonth));
-  const previousReport = reports.find((r) => {
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const prevMonth = month === 1 ? 12 : month - 1;
-    const prevYear = month === 1 ? year - 1 : year;
-    return r.report_month.startsWith(`${prevYear}-${String(prevMonth).padStart(2, "0")}`);
-  });
-
-  const calculateMoM = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
 
   return (
     <div>
@@ -163,46 +130,17 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
           <h2 className="text-lg font-semibold text-slate-900">Strategies & KPIs</h2>
         </div>
         <div className="flex items-center gap-3">
-          {activeTab === "reports" && (
-            <>
-              <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20" />
-              <button onClick={() => { setEditingReport(currentReport || null); setShowModal(true); }}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 hover:shadow-xl">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                {currentReport ? "Edit Report" : "Add Report"}
-              </button>
-            </>
-          )}
-          {activeTab === "kpis" && (
-            <button onClick={() => { setEditingKpi(null); setShowKpiModal(true); }}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 hover:shadow-xl">
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-              Add KPI
-            </button>
-          )}
+          <button onClick={() => { setEditingKpi(null); setShowKpiModal(true); }}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 hover:shadow-xl">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+            Add KPI
+          </button>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-slate-100 p-1">
-        <button
-          onClick={() => setActiveTab("kpis")}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === "kpis" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
-        >
-          📊 Strategy KPIs
-        </button>
-        <button
-          onClick={() => setActiveTab("reports")}
-          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === "reports" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
-        >
-          📈 Monthly Reports
-        </button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500 border-t-transparent" /></div>
-      ) : activeTab === "kpis" ? (
+      ) : (
         /* KPIs Tab Content */
         kpis.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
@@ -319,64 +257,6 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
             ))}
           </div>
         )
-      ) : !currentReport ? (
-        <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
-            <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-          </div>
-          <h3 className="mb-1 text-lg font-semibold text-slate-900">No data for {selectedMonth}</h3>
-          <p className="text-sm text-slate-500">Add metrics for this month to track performance</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(KPI_LABELS).map(([key, { label, format, icon }]) => {
-              const kpiData = currentReport.kpi_data[key as keyof typeof currentReport.kpi_data];
-              const prevData = previousReport?.kpi_data[key as keyof typeof currentReport.kpi_data];
-              const actual = kpiData?.actual || 0;
-              const goal = kpiData?.goal || 0;
-              const progress = goal > 0 ? Math.min((actual / goal) * 100, 100) : 0;
-              const mom = prevData ? calculateMoM(actual, prevData.actual) : null;
-
-              return (
-                <div key={key} className="rounded-2xl border border-slate-200 bg-white p-5">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-slate-600">{icon}<span className="text-sm font-medium">{label}</span></div>
-                    {mom !== null && (
-                      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${mom >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {mom >= 0 ? "▲" : "▼"} {Math.abs(mom).toFixed(1)}%
-                      </span>
-                    )}
-                  </div>
-                  <div className="mb-3">
-                    <span className="text-2xl font-bold text-slate-900">{format(actual)}</span>
-                    <span className="ml-2 text-sm text-slate-500">/ {format(goal)} goal</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div className={`h-full rounded-full transition-all ${progress >= 100 ? "bg-emerald-500" : progress >= 75 ? "bg-blue-500" : progress >= 50 ? "bg-amber-500" : "bg-slate-300"}`}
-                      style={{ width: `${progress}%` }} />
-                  </div>
-                  <div className="mt-1 text-right text-xs text-slate-500">{progress.toFixed(0)}% of goal</div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Notes */}
-          {currentReport.notes && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="mb-2 text-sm font-semibold text-slate-900">Notes</h3>
-              <p className="text-sm text-slate-600 whitespace-pre-wrap">{currentReport.notes}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {showModal && (
-        <ReportModal report={editingReport} projectId={projectId} selectedMonth={selectedMonth}
-          onClose={() => { setShowModal(false); setEditingReport(null); }}
-          onSaved={() => { setShowModal(false); setEditingReport(null); loadReports(); }} />
       )}
 
       {showKpiModal && (

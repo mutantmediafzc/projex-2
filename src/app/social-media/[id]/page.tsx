@@ -14,6 +14,7 @@ import SubscriptionsPanel from "./SubscriptionsPanel";
 import StrategyLinkManager from "./StrategyLinkManager";
 import TeamAssignments from "./TeamAssignments";
 import EmailWhatsAppCampaigns from "./EmailWhatsAppCampaigns";
+import BlogsArticles from "./BlogsArticles";
 
 type SocialProject = {
   id: string;
@@ -36,10 +37,11 @@ type SocialProject = {
 };
 
 const TABS = [
+  { id: "team", label: "Team", icon: TeamIcon },
   { id: "calendar", label: "Social Media", icon: CalendarIcon },
   { id: "email", label: "Email & WhatsApp", icon: EmailIcon },
-  { id: "articles", label: "Website Blogs", icon: ArticleIcon },
-  { id: "analytics", label: "Strategies & KPI", icon: ChartIcon },
+  { id: "articles", label: "Blogs & Articles", icon: ArticleIcon },
+  { id: "analytics", label: "Strategies & KPIs", icon: ChartIcon },
   { id: "quarterly", label: "Reports", icon: ReportIcon },
   { id: "client", label: "Share Access", icon: LinkIcon },
 ];
@@ -102,6 +104,17 @@ function EmailIcon() {
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="2" y="4" width="20" height="16" rx="2" />
       <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  );
+}
+
+function TeamIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   );
 }
@@ -391,17 +404,17 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
 
       {/* Tab Content */}
       <div className="p-4 sm:p-6 lg:p-8">
+        {activeTab === "team" && (
+          <TeamAssignments projectId={project.id} />
+        )}
         {activeTab === "calendar" && (
-          <div className="space-y-6">
-            <TeamAssignments projectId={project.id} />
-            <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
-          </div>
+          <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
         )}
         {activeTab === "email" && (
           <EmailWhatsAppCampaigns projectId={project.id} />
         )}
         {activeTab === "articles" && (
-          <ArticlePlanner projectId={project.id} />
+          <BlogsArticles projectId={project.id} />
         )}
         {activeTab === "analytics" && (
           <div className="space-y-6">

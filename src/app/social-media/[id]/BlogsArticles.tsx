@@ -5,10 +5,10 @@ import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import RichTextEditor from "@/components/RichTextEditor";
 
-type Campaign = {
+type Blog = {
   id: string;
   project_id: string;
-  campaign_type: "email" | "whatsapp";
+  publication_type: "website_blog" | "linkedin_article";
   status: "not_due" | "in_progress" | "scheduled" | "published";
   scheduled_date: string | null;
   title: string;
@@ -25,20 +25,20 @@ const STATUS_OPTIONS = [
   { value: "published", label: "Published", color: "bg-emerald-100 text-emerald-700" },
 ];
 
-const CAMPAIGN_TYPES = [
-  { value: "email", label: "Email", icon: "✉️" },
-  { value: "whatsapp", label: "WhatsApp", icon: "💬" },
+const PUBLICATION_TYPES = [
+  { value: "website_blog", label: "Website Blog", icon: "📝" },
+  { value: "linkedin_article", label: "LinkedIn Article", icon: "💼" },
 ];
 
-export default function EmailWhatsAppCampaigns({ projectId }: { projectId: string }) {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+export default function BlogsArticles({ projectId }: { projectId: string }) {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<"all" | "published">("all");
 
   // Form state
-  const [campaignType, setCampaignType] = useState<"email" | "whatsapp">("email");
+  const [publicationType, setPublicationType] = useState<"website_blog" | "linkedin_article">("website_blog");
   const [status, setStatus] = useState<"not_due" | "in_progress" | "scheduled" | "published">("not_due");
   const [scheduledDate, setScheduledDate] = useState("");
   const [title, setTitle] = useState("");
@@ -48,26 +48,26 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadCampaigns();
+    loadBlogs();
   }, [projectId]);
 
-  async function loadCampaigns() {
+  async function loadBlogs() {
     setLoading(true);
     const { data, error } = await supabaseClient
-      .from("email_campaigns")
+      .from("website_blogs")
       .select("*")
       .eq("project_id", projectId)
-      .order("created_at", { ascending: false });
+      .order("scheduled_date", { ascending: true, nullsFirst: false });
 
     if (!error && data) {
-      setCampaigns(data as Campaign[]);
+      setBlogs(data as Blog[]);
     }
     setLoading(false);
   }
 
   function openNewModal() {
-    setEditingCampaign(null);
-    setCampaignType("email");
+    setEditingBlog(null);
+    setPublicationType("website_blog");
     setStatus("not_due");
     setScheduledDate("");
     setTitle("");
@@ -76,14 +76,14 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     setShowModal(true);
   }
 
-  function openEditModal(campaign: Campaign) {
-    setEditingCampaign(campaign);
-    setCampaignType(campaign.campaign_type);
-    setStatus(campaign.status);
-    setScheduledDate(campaign.scheduled_date || "");
-    setTitle(campaign.title);
-    setImageUrl(campaign.image_url || "");
-    setContent(campaign.content || "");
+  function openEditModal(blog: Blog) {
+    setEditingBlog(blog);
+    setPublicationType(blog.publication_type);
+    setStatus(blog.status);
+    setScheduledDate(blog.scheduled_date || "");
+    setTitle(blog.title);
+    setImageUrl(blog.image_url || "");
+    setContent(blog.content || "");
     setShowModal(true);
   }
 
@@ -93,8 +93,8 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
 
     setUploading(true);
     const ext = file.name.split(".").pop();
-    const fileName = `campaign-${Date.now()}.${ext}`;
-    const filePath = `campaigns/${projectId}/${fileName}`;
+    const fileName = `blog-${Date.now()}.${ext}`;
+    const filePath = `blogs/${projectId}/${fileName}`;
 
     const { error: uploadError } = await supabaseClient.storage
       .from("media")
@@ -111,11 +111,11 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     if (!title.trim()) return;
 
     setSaving(true);
-    const wasPublished = editingCampaign?.status !== "published" && status === "published";
+    const wasPublished = editingBlog?.status !== "published" && status === "published";
     
     const data = {
       project_id: projectId,
-      campaign_type: campaignType,
+      publication_type: publicationType,
       status,
       scheduled_date: scheduledDate || null,
       title: title.trim(),
@@ -124,42 +124,36 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
       updated_at: new Date().toISOString(),
     };
 
-    if (editingCampaign) {
+    if (editingBlog) {
       await supabaseClient
-        .from("email_campaigns")
+        .from("website_blogs")
         .update(data)
-        .eq("id", editingCampaign.id);
+        .eq("id", editingBlog.id);
     } else {
-      await supabaseClient.from("email_campaigns").insert(data);
+      await supabaseClient.from("website_blogs").insert(data);
     }
 
     // If status changed to published, notify (placeholder for now)
-    if (wasPublished || (!editingCampaign && status === "published")) {
-      console.log("Campaign published - notify account manager and Email & WhatsApp users");
+    if (wasPublished || (!editingBlog && status === "published")) {
+      console.log("Blog published - notify account manager and Website Blogs users");
     }
 
     setSaving(false);
     setShowModal(false);
-    loadCampaigns();
+    loadBlogs();
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this campaign?")) return;
-    await supabaseClient.from("email_campaigns").delete().eq("id", id);
-    loadCampaigns();
+    if (!confirm("Delete this blog?")) return;
+    await supabaseClient.from("website_blogs").delete().eq("id", id);
+    loadBlogs();
   }
 
-  // Filter campaigns based on active sub-tab
-  const filteredCampaigns = campaigns.filter((c) => {
-    if (activeSubTab === "published") return c.status === "published";
-    return c.status !== "published"; // "all" shows non-published
+  // Filter blogs based on active sub-tab
+  const filteredBlogs = blogs.filter((b) => {
+    if (activeSubTab === "published") return b.status === "published";
+    return b.status !== "published"; // "all" shows non-published
   });
-
-  const truncateContent = (html: string | null, maxLength: number = 150) => {
-    if (!html) return "";
-    const text = html.replace(/<[^>]*>/g, "");
-    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-  };
 
   const getStatusStyle = (status: string) => {
     return STATUS_OPTIONS.find((s) => s.value === status)?.color || "bg-slate-100 text-slate-700";
@@ -169,10 +163,16 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     return STATUS_OPTIONS.find((s) => s.value === status)?.label || status;
   };
 
+  const truncateContent = (html: string | null, maxLength: number = 150) => {
+    if (!html) return "";
+    const text = html.replace(/<[^>]*>/g, "");
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-500 border-t-transparent" />
       </div>
     );
   }
@@ -182,17 +182,17 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Email & WhatsApp Campaigns</h2>
-          <p className="text-sm text-slate-500">Manage your email newsletters and WhatsApp broadcasts</p>
+          <h2 className="text-xl font-bold text-slate-900">Blogs & Articles</h2>
+          <p className="text-sm text-slate-500">Manage your website blogs and LinkedIn articles</p>
         </div>
         <button
           onClick={openNewModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-500/25 transition-all hover:shadow-xl"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          Add Campaign
+          Add Website Blog
         </button>
       </div>
 
@@ -202,17 +202,17 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
           onClick={() => setActiveSubTab("all")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "all"
-              ? "border-emerald-500 text-emerald-600"
+              ? "border-violet-500 text-violet-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
-          Email & WhatsApp
+          Website Blogs
         </button>
         <button
           onClick={() => setActiveSubTab("published")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "published"
-              ? "border-emerald-500 text-emerald-600"
+              ? "border-violet-500 text-violet-600"
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
@@ -220,32 +220,32 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
         </button>
       </div>
 
-      {/* Campaigns List View */}
-      {filteredCampaigns.length === 0 ? (
+      {/* Blogs List View */}
+      {filteredBlogs.length === 0 ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100">
-            <svg className="h-8 w-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-purple-100">
+            <svg className="h-8 w-8 text-violet-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+              <polyline points="14,2 14,8 20,8" />
             </svg>
           </div>
           <h3 className="mb-2 text-lg font-semibold text-slate-900">
-            {activeSubTab === "published" ? "No published campaigns yet" : "No campaigns yet"}
+            {activeSubTab === "published" ? "No published blogs yet" : "No blogs yet"}
           </h3>
           <p className="mb-4 text-sm text-slate-500">
             {activeSubTab === "published" 
-              ? "Published campaigns will appear here." 
-              : "Create your first email or WhatsApp campaign to get started."}
+              ? "Published blogs will appear here." 
+              : "Create your first website blog or LinkedIn article."}
           </p>
           {activeSubTab !== "published" && (
             <button
               onClick={openNewModal}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-500/25"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/25"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Add Campaign
+              Add Website Blog
             </button>
           )}
         </div>
@@ -260,58 +260,58 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
             <span></span>
           </div>
           {/* List Rows */}
-          {filteredCampaigns.map((campaign) => (
+          {filteredBlogs.map((blog) => (
             <div
-              key={campaign.id}
-              className="grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 items-center px-4 py-3 border-b border-slate-50 hover:bg-emerald-50/50 transition-colors"
+              key={blog.id}
+              className="grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 items-center px-4 py-3 border-b border-slate-50 hover:bg-violet-50/50 transition-colors"
             >
               {/* Image */}
               <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                {campaign.image_url ? (
+                {blog.image_url ? (
                   <Image
-                    src={campaign.image_url}
+                    src={blog.image_url}
                     alt=""
                     width={64}
                     height={48}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xl">
-                    {campaign.campaign_type === "email" ? "✉️" : "💬"}
+                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="m21 15-5-5L5 21" />
+                    </svg>
                   </div>
                 )}
               </div>
               {/* Title & Content */}
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <span className={`text-xs px-1.5 py-0.5 rounded ${
-                    campaign.campaign_type === "email" 
-                      ? "bg-violet-100 text-violet-700" 
-                      : "bg-green-100 text-green-700"
-                  }`}>
-                    {campaign.campaign_type === "email" ? "✉️ Email" : "💬 WhatsApp"}
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                    {blog.publication_type === "website_blog" ? "📝 Blog" : "💼 LinkedIn"}
                   </span>
                 </div>
-                <h4 className="font-medium text-slate-900 truncate">{campaign.title}</h4>
+                <h4 className="font-medium text-slate-900 truncate">{blog.title}</h4>
                 <p className="text-sm text-slate-500 line-clamp-1">
-                  {truncateContent(campaign.content)}
+                  {truncateContent(blog.content)}
                 </p>
               </div>
               {/* Date */}
               <span className="text-sm text-slate-600">
-                {campaign.scheduled_date 
-                  ? new Date(campaign.scheduled_date).toLocaleDateString()
+                {blog.scheduled_date 
+                  ? new Date(blog.scheduled_date).toLocaleDateString()
                   : "—"}
               </span>
               {/* Status */}
-              <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(campaign.status)}`}>
-                {getStatusLabel(campaign.status)}
+              <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(blog.status)}`}>
+                {getStatusLabel(blog.status)}
               </span>
               {/* Actions */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => openEditModal(campaign)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50"
+                  onClick={() => openEditModal(blog)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
@@ -319,7 +319,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                   </svg>
                 </button>
                 <button
-                  onClick={() => handleDelete(campaign.id)}
+                  onClick={() => handleDelete(blog.id)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
                 >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -339,7 +339,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h2 className="text-lg font-semibold text-slate-900">
-                {editingCampaign ? "Edit Campaign" : "Add Campaign"}
+                {editingBlog ? "Edit Blog" : "Add Website Blog"}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -351,18 +351,18 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
             {/* Form */}
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-5">
-                {/* Campaign Type */}
+                {/* Publication Type */}
                 <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Campaign Type</label>
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Publication</label>
                   <div className="flex gap-3">
-                    {CAMPAIGN_TYPES.map((type) => (
+                    {PUBLICATION_TYPES.map((type) => (
                       <button
                         key={type.value}
                         type="button"
-                        onClick={() => setCampaignType(type.value as "email" | "whatsapp")}
+                        onClick={() => setPublicationType(type.value as "website_blog" | "linkedin_article")}
                         className={`flex-1 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all ${
-                          campaignType === type.value
-                            ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                          publicationType === type.value
+                            ? "border-violet-500 bg-violet-50 text-violet-700"
                             : "border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >
@@ -379,7 +379,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value as typeof status)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                   >
                     {STATUS_OPTIONS.map((s) => (
                       <option key={s.value} value={s.value}>{s.label}</option>
@@ -387,14 +387,14 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                   </select>
                 </div>
 
-                {/* Date */}
+                {/* Scheduled Date */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-slate-700">Date</label>
                   <input
                     type="date"
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                   />
                 </div>
 
@@ -417,7 +417,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                       </button>
                     </div>
                   ) : (
-                    <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors">
+                    <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50/50 transition-colors">
                       <input
                         type="file"
                         accept="image/*"
@@ -426,7 +426,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                         disabled={uploading}
                       />
                       {uploading ? (
-                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
                       ) : (
                         <>
                           <svg className="mb-2 h-8 w-8 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -450,8 +450,8 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Campaign title..."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    placeholder="Blog title..."
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 focus:border-violet-300 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
                   />
                 </div>
 
@@ -461,7 +461,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                   <RichTextEditor
                     value={content}
                     onChange={setContent}
-                    placeholder="Write your campaign content..."
+                    placeholder="Write your blog content..."
                   />
                 </div>
               </div>
@@ -478,7 +478,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
               <button
                 onClick={handleSave}
                 disabled={saving || !title.trim()}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-emerald-500/25 hover:shadow-xl disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/25 hover:shadow-xl disabled:opacity-50"
               >
                 {saving ? (
                   <>
@@ -486,7 +486,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                     Saving...
                   </>
                 ) : (
-                  "Save Campaign"
+                  "Save Blog"
                 )}
               </button>
             </div>

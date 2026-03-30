@@ -499,9 +499,15 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange, onSav
                   {project && <span> • {project.name}</span>}
                 </p>
                 {task.updated_by_name && (
-                  <p className="text-[10px] text-white/60 mt-0.5">
-                    Last edited by {task.updated_by_name} • {formatDate(task.updated_at)}
-                  </p>
+                  <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-sm px-2.5 py-1 shadow-sm">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-300 opacity-75"></span>
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-400"></span>
+                    </span>
+                    <span className="text-[10px] font-medium text-white">
+                      ✨ Freshly updated by {task.updated_by_name}
+                    </span>
+                  </div>
                 )}
               </div>
             </div>

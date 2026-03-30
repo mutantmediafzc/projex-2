@@ -17,6 +17,12 @@ type RichTextEditorProps = {
   placeholder?: string;
 };
 
+function isEmptyHtml(html: string): boolean {
+  if (!html) return true;
+  const stripped = html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+  return stripped.length === 0;
+}
+
 export default function RichTextEditor({
   value,
   onChange,
@@ -35,12 +41,21 @@ export default function RichTextEditor({
 
   const formats = ["bold", "italic", "underline", "list", "bullet"];
 
+  const handleChange = (content: string) => {
+    // If content is empty HTML like <p><br></p>, convert to empty string
+    if (isEmptyHtml(content)) {
+      onChange("");
+    } else {
+      onChange(content);
+    }
+  };
+
   return (
     <div className="rich-text-editor">
       <ReactQuill
         theme="snow"
         value={value}
-        onChange={onChange}
+        onChange={handleChange}
         modules={modules}
         formats={formats}
         placeholder={placeholder}

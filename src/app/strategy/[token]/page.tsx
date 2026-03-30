@@ -314,56 +314,55 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {/* Strategy Overview - Single Column with Glass Morphism */}
-        {(data.objectives || data.core_goals || data.content_pillars || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
-          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Strategy Overview</h2>
-            <div className="space-y-6">
-              {data.objectives && (
-                <div className="rounded-2xl bg-gradient-to-br from-violet-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-violet-100/50">
-                  <h3 className="text-sm font-semibold text-violet-700 mb-3">Objectives</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.objectives }} />
-                </div>
-              )}
-              {data.core_goals && (
-                <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
-                  <h3 className="text-sm font-semibold text-emerald-700 mb-3">Core Goals</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
-                </div>
-              )}
-              {data.content_pillars && (
-                <div className="rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-indigo-100/50">
-                  <h3 className="text-sm font-semibold text-indigo-700 mb-3">Content Pillars</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
-                </div>
-              )}
-              {data.target_audience && (
-                <div className="rounded-2xl bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-sm p-5 border border-sky-100/50">
-                  <h3 className="text-sm font-semibold text-sky-700 mb-3">Target Audience</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
-                </div>
-              )}
-              {data.kpi_description && (
-                <div className="rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/80 backdrop-blur-sm p-5 border border-pink-100/50">
-                  <h3 className="text-sm font-semibold text-pink-700 mb-3">KPIs</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
-                </div>
-              )}
-              {data.platform_specific_strategy && (
-                <div className="rounded-2xl bg-gradient-to-br from-cyan-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-cyan-100/50">
-                  <h3 className="text-sm font-semibold text-cyan-700 mb-3">Platform Specific Strategy</h3>
-                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="flex gap-8">
+          {/* Main Content */}
+          <div className="flex-1 space-y-6">
+            {/* Strategy Overview Section */}
+            {(data.objectives || data.core_goals || data.content_pillars || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                {data.objectives && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold text-slate-900 mb-3">Objectives</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.objectives }} />
+                  </div>
+                )}
+                {data.core_goals && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold text-slate-900 mb-3">Core Goals</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
+                  </div>
+                )}
+                {data.content_pillars && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold text-slate-900 mb-3">Content Pillars</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
+                  </div>
+                )}
+                {data.target_audience && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold text-slate-900 mb-3">Target Audience</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
+                  </div>
+                )}
+                {data.kpi_description && (
+                  <div className="mb-6">
+                    <h3 className="text-base font-bold text-slate-900 mb-3">KPIs</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
+                  </div>
+                )}
+                {data.platform_specific_strategy && (
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 mb-3">Platform Specific Strategy</h3>
+                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
+                  </div>
+                )}
+              </section>
+            )}
 
-        {/* KPIs Section - Glass Morphism */}
-        {kpis.length > 0 && (
-          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Strategy KPIs</h2>
+            {/* KPIs Section */}
+            {kpis.length > 0 && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="space-y-6">
               {kpis.map((kpi) => (
                 <div key={kpi.id} className="space-y-6">
@@ -473,9 +472,37 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                 </div>
               ))}
             </div>
-          </section>
-        )}
+              </section>
+            )}
+          </div>
 
+          {/* Right Sidebar - Section Navigation */}
+          <div className="hidden lg:block w-48 flex-shrink-0">
+            <div className="sticky top-8 space-y-2">
+              {data.objectives && (
+                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Objectives</p>
+              )}
+              {data.core_goals && (
+                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Core Goals</p>
+              )}
+              {data.content_pillars && (
+                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Content Pillars</p>
+              )}
+              {data.target_audience && (
+                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Target Audience</p>
+              )}
+              {data.kpi_description && (
+                <p className="text-sm text-pink-600 font-medium cursor-pointer">KPIs <span className="text-[10px] text-pink-400">(You are here)</span></p>
+              )}
+              {data.platform_specific_strategy && (
+                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Platform Specific Strategy</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 pb-8 space-y-8">
         {/* Quarterly Deliverables */}
         {data.deliverables.length > 0 && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
@@ -595,6 +622,33 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           </div>
         </div>
       </div>
+      <style jsx global>{`
+        .strategy-content strong, .strategy-content b {
+          font-weight: 700;
+        }
+        .strategy-content em, .strategy-content i {
+          font-style: italic;
+        }
+        .strategy-content u {
+          text-decoration: underline;
+        }
+        .strategy-content ul {
+          list-style-type: disc;
+          padding-left: 1.5rem;
+          margin: 0.5rem 0;
+        }
+        .strategy-content ol {
+          list-style-type: decimal;
+          padding-left: 1.5rem;
+          margin: 0.5rem 0;
+        }
+        .strategy-content li {
+          margin: 0.25rem 0;
+        }
+        .strategy-content p {
+          margin: 0.25rem 0;
+        }
+      `}</style>
     </div>
   );
 }

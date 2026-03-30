@@ -9,6 +9,9 @@ type StrategyLink = {
   quarter: string;
   objectives: string | null;
   core_goals: string | null;
+  kpi_description: string | null;
+  content_pillars: string | null;
+  platform_specific_strategy: string | null;
   theme: string | null;
   target_audience: string | null;
   is_published: boolean;
@@ -192,6 +195,9 @@ function StrategyModal({
   const [quarter, setQuarter] = useState(link?.quarter?.split("-")[1] || "Q1");
   const [objectives, setObjectives] = useState(link?.objectives || "");
   const [coreGoals, setCoreGoals] = useState(link?.core_goals || "");
+  const [kpiDescription, setKpiDescription] = useState(link?.kpi_description || "");
+  const [contentPillars, setContentPillars] = useState(link?.content_pillars || "");
+  const [platformStrategy, setPlatformStrategy] = useState(link?.platform_specific_strategy || "");
   const [theme, setTheme] = useState(link?.theme || "");
   const [targetAudience, setTargetAudience] = useState(link?.target_audience || "");
   const [saving, setSaving] = useState(false);
@@ -204,6 +210,9 @@ function StrategyModal({
       quarter: `${year}-${quarter}`,
       objectives: objectives || null,
       core_goals: coreGoals || null,
+      kpi_description: kpiDescription || null,
+      content_pillars: contentPillars || null,
+      platform_specific_strategy: platformStrategy || null,
       theme: theme || null,
       target_audience: targetAudience || null,
     };
@@ -286,9 +295,42 @@ function StrategyModal({
             <textarea
               value={coreGoals}
               onChange={(e) => setCoreGoals(e.target.value)}
-              rows={3}
+              rows={4}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
               placeholder="List the core goals..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">KPI</label>
+            <textarea
+              value={kpiDescription}
+              onChange={(e) => setKpiDescription(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              placeholder="Describe the key performance indicators..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Content Pillars</label>
+            <textarea
+              value={contentPillars}
+              onChange={(e) => setContentPillars(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              placeholder="Define the content pillars..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Platform Specific Strategy</label>
+            <textarea
+              value={platformStrategy}
+              onChange={(e) => setPlatformStrategy(e.target.value)}
+              rows={4}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              placeholder="Describe platform-specific strategies..."
             />
           </div>
 

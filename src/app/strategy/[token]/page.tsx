@@ -11,7 +11,6 @@ type StrategyData = {
   quarter: string;
   objectives: string | null;
   core_goals: string | null;
-  content_pillars: string | null;
   target_audience: string | null;
   kpi_description: string | null;
   platform_specific_strategy: string | null;
@@ -319,7 +318,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {/* Main Content */}
           <div className="flex-1 space-y-6">
             {/* Strategy Overview Section */}
-            {(data.objectives || data.core_goals || data.content_pillars || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
+            {(data.objectives || data.core_goals || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
               <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                 {data.objectives && (
                   <div className="mb-6">
@@ -331,12 +330,6 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <div className="mb-6">
                     <h3 className="text-base font-bold text-slate-900 mb-3">Core Goals</h3>
                     <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
-                  </div>
-                )}
-                {data.content_pillars && (
-                  <div className="mb-6">
-                    <h3 className="text-base font-bold text-slate-900 mb-3">Content Pillars</h3>
-                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
                   </div>
                 )}
                 {data.target_audience && (
@@ -484,9 +477,6 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
               )}
               {data.core_goals && (
                 <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Core Goals</p>
-              )}
-              {data.content_pillars && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Content Pillars</p>
               )}
               {data.target_audience && (
                 <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Target Audience</p>

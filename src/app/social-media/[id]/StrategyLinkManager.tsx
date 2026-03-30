@@ -11,7 +11,6 @@ type StrategyLink = {
   objectives: string | null;
   core_goals: string | null;
   kpi_description: string | null;
-  content_pillars: string | null;
   platform_specific_strategy: string | null;
   target_audience: string | null;
   is_published: boolean;
@@ -195,31 +194,44 @@ function StrategyModal({
   const [quarter, setQuarter] = useState(link?.quarter?.split("-")[1] || "Q1");
   const [objectives, setObjectives] = useState(link?.objectives || "");
   const [coreGoals, setCoreGoals] = useState(link?.core_goals || "");
-  const [contentPillars, setContentPillars] = useState(link?.content_pillars || "");
   const [targetAudience, setTargetAudience] = useState(link?.target_audience || "");
   const [kpiDescription, setKpiDescription] = useState(link?.kpi_description || "");
   const [platformStrategy, setPlatformStrategy] = useState(link?.platform_specific_strategy || "");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit() {
     setSaving(true);
+    setError(null);
+    
     const data = {
       project_id: projectId,
       title,
       quarter: `${year}-${quarter}`,
       objectives: objectives || null,
       core_goals: coreGoals || null,
-      content_pillars: contentPillars || null,
       target_audience: targetAudience || null,
       kpi_description: kpiDescription || null,
       platform_specific_strategy: platformStrategy || null,
     };
 
+    console.log("Saving strategy data:", data);
+
+    let result;
     if (link) {
-      await supabaseClient.from("social_strategy_links").update(data).eq("id", link.id);
+      result = await supabaseClient.from("social_strategy_links").update(data).eq("id", link.id);
     } else {
-      await supabaseClient.from("social_strategy_links").insert(data);
+      result = await supabaseClient.from("social_strategy_links").insert(data);
     }
+    
+    if (result.error) {
+      console.error("Error saving strategy:", result.error);
+      setError(result.error.message);
+      setSaving(false);
+      return;
+    }
+    
+    console.log("Strategy saved successfully");
     setSaving(false);
     onSaved();
   }
@@ -239,6 +251,12 @@ function StrategyModal({
         </div>
 
         <div className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-600">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
+          
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Title</label>
             <input
@@ -292,15 +310,6 @@ function StrategyModal({
               value={coreGoals}
               onChange={setCoreGoals}
               placeholder="List the core goals..."
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Content Pillars</label>
-            <RichTextEditor
-              value={contentPillars}
-              onChange={setContentPillars}
-              placeholder="Define the content pillars..."
             />
           </div>
 

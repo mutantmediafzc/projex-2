@@ -15,6 +15,7 @@ type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  minHeight?: string;
 };
 
 function isEmptyHtml(html: string): boolean {
@@ -27,6 +28,7 @@ export default function RichTextEditor({
   value,
   onChange,
   placeholder = "Enter text...",
+  minHeight = "100px",
 }: RichTextEditorProps) {
   const modules = useMemo(
     () => ({
@@ -66,7 +68,7 @@ export default function RichTextEditor({
           border-bottom-right-radius: 0.75rem;
           border-color: rgb(226 232 240);
           font-size: 0.875rem;
-          min-height: 100px;
+          min-height: ${minHeight};
         }
         .rich-text-editor .ql-toolbar {
           border-top-left-radius: 0.75rem;
@@ -75,7 +77,7 @@ export default function RichTextEditor({
           background: rgb(248 250 252);
         }
         .rich-text-editor .ql-editor {
-          min-height: 100px;
+          min-height: ${minHeight};
           color: black;
         }
         .rich-text-editor .ql-editor.ql-blank::before {

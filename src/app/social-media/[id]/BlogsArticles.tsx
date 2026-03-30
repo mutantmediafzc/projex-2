@@ -206,7 +206,7 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
-          Website Blogs
+          Blogs & Articles
         </button>
         <button
           onClick={() => setActiveSubTab("published")}
@@ -462,6 +462,7 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
                     value={content}
                     onChange={setContent}
                     placeholder="Write your blog content..."
+                    minHeight="500px"
                   />
                 </div>
               </div>

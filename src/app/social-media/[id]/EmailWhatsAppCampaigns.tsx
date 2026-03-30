@@ -462,6 +462,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                     value={content}
                     onChange={setContent}
                     placeholder="Write your campaign content..."
+                    minHeight="500px"
                   />
                 </div>
               </div>

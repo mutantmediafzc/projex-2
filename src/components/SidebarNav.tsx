@@ -80,7 +80,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     href: "/social-media",
-    label: "Social Media",
+    label: "Integrated Marketing",
     gradient: { from: "from-pink-100 to-fuchsia-100", to: "from-pink-500 to-fuchsia-500", hover: "from-pink-50 to-fuchsia-50", shadow: "shadow-pink-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

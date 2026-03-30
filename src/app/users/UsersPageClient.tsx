@@ -37,24 +37,34 @@ interface Props {
 }
 
 export default function UsersPageClient({ users }: Props) {
+  const [activeTab, setActiveTab] = useState<"active" | "inactive">("active");
   const [statusFilter, setStatusFilter] = useState<WorkStatus | "all">("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
 
+  const activeUsers = users.filter(u => u.is_active !== false);
+  const inactiveUsers = users.filter(u => u.is_active === false);
+  
   const adminCount = users.filter(u => u.role === "admin").length;
   const staffCount = users.filter(u => u.role !== "admin").length;
 
-  // Status counts
+  // Status counts (only for active users)
   const statusCounts = {
-    available: users.filter(u => u.work_status === "available").length,
-    on_leave: users.filter(u => u.work_status === "on_leave").length,
-    wfh: users.filter(u => u.work_status === "wfh").length,
+    available: activeUsers.filter(u => u.work_status === "available").length,
+    on_leave: activeUsers.filter(u => u.work_status === "on_leave").length,
+    wfh: activeUsers.filter(u => u.work_status === "wfh").length,
   };
 
-  // Filter users by status
-  const filteredUsers = statusFilter === "all" 
-    ? users 
-    : users.filter(u => u.work_status === statusFilter);
+  // Filter users by active tab, then by status, then sort alphabetically
+  const tabUsers = activeTab === "active" ? activeUsers : inactiveUsers;
+  const filteredUsers = (statusFilter === "all" || activeTab === "inactive"
+    ? tabUsers 
+    : tabUsers.filter(u => u.work_status === statusFilter)
+  ).sort((a, b) => {
+    const nameA = [a.firstName, a.lastName].filter(Boolean).join(" ").toLowerCase();
+    const nameB = [b.firstName, b.lastName].filter(Boolean).join(" ").toLowerCase();
+    return nameA.localeCompare(nameB);
+  });
 
   return (
     <RequireAdmin>
@@ -114,38 +124,66 @@ export default function UsersPageClient({ users }: Props) {
         </div>
       </div>
 
-      {/* Status Filter */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-medium text-slate-500">Filter by status:</span>
-        <button
-          onClick={() => setStatusFilter("all")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-            statusFilter === "all" 
-              ? "bg-slate-800 text-white" 
-              : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          All ({users.length})
-        </button>
-        {(Object.keys(STATUS_CONFIG) as WorkStatus[]).map((status) => {
-          const config = STATUS_CONFIG[status];
-          const count = statusCounts[status];
-          return (
-            <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
-                statusFilter === status 
-                  ? `${config.bg} ${config.color} ring-2 ring-offset-1 ring-current` 
-                  : `${config.bg} ${config.color} opacity-70 hover:opacity-100`
-              }`}
-            >
-              <span>{config.icon}</span>
-              {config.label} ({count})
-            </button>
-          );
-        })}
+      {/* Active/Inactive Tabs */}
+      <div className="flex items-center gap-4">
+        <div className="flex rounded-xl border border-slate-200 bg-white p-1">
+          <button
+            onClick={() => { setActiveTab("active"); setStatusFilter("all"); }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "active" 
+                ? "bg-emerald-500 text-white shadow" 
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Active ({activeUsers.length})
+          </button>
+          <button
+            onClick={() => { setActiveTab("inactive"); setStatusFilter("all"); }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "inactive" 
+                ? "bg-slate-500 text-white shadow" 
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Inactive ({inactiveUsers.length})
+          </button>
+        </div>
       </div>
+
+      {/* Status Filter - Only show for Active tab */}
+      {activeTab === "active" && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-500">Filter by status:</span>
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              statusFilter === "all" 
+                ? "bg-slate-800 text-white" 
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            All ({activeUsers.length})
+          </button>
+          {(Object.keys(STATUS_CONFIG) as WorkStatus[]).map((status) => {
+            const config = STATUS_CONFIG[status];
+            const count = statusCounts[status];
+            return (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  statusFilter === status 
+                    ? `${config.bg} ${config.color} ring-2 ring-offset-1 ring-current` 
+                    : `${config.bg} ${config.color} opacity-70 hover:opacity-100`
+                }`}
+              >
+                <span>{config.icon}</span>
+                {config.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Team Members Card */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-200/50 bg-white shadow-xl shadow-slate-200/30">
@@ -168,7 +206,7 @@ export default function UsersPageClient({ users }: Props) {
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Team Members</h2>
               <p className="text-[11px] text-slate-500">
-                {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""} {statusFilter !== "all" ? `(${STATUS_CONFIG[statusFilter].label})` : "in the system"}
+                {filteredUsers.length} {activeTab} user{filteredUsers.length !== 1 ? "s" : ""} {statusFilter !== "all" && activeTab === "active" ? `(${STATUS_CONFIG[statusFilter].label})` : ""} • Sorted A-Z
               </p>
             </div>
           </div>

@@ -182,8 +182,8 @@ export default function SocialMediaPage() {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Social Media</h1>
-          <p className="text-sm text-slate-500">Manage social media projects and content calendars</p>
+          <h1 className="text-2xl font-bold text-slate-900">Integrated Marketing</h1>
+          <p className="text-sm text-slate-500">Plan, execute, and track your marketing campaigns and content calendar in one place.</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -381,8 +381,8 @@ export default function SocialMediaPage() {
                   <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
                 </svg>
               </div>
-              <h3 className="mb-1 text-lg font-semibold text-slate-900">No social projects yet</h3>
-              <p className="mb-4 text-sm text-slate-500">Create your first social media project to get started</p>
+              <h3 className="mb-1 text-lg font-semibold text-slate-900">No marketing projects yet</h3>
+              <p className="mb-4 text-sm text-slate-500">Create your first integrated marketing project to get started</p>
               <button
                 onClick={() => setShowNewProjectModal(true)}
                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 transition-all hover:shadow-xl"
@@ -475,7 +475,7 @@ function NewProjectModal({
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 p-6">
-          <h2 className="text-lg font-semibold text-slate-900">New Social Media Project</h2>
+          <h2 className="text-lg font-semibold text-slate-900">New Marketing Project</h2>
           <button
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"

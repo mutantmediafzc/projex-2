@@ -18,6 +18,9 @@ type TeamAssignment = {
   creative_id: string | null;
   social_media_specialist_id: string | null;
   performance_marketer_id: string | null;
+  email_whatsapp_specialist_id: string | null;
+  website_blogs_specialist_id: string | null;
+  content_creator_id: string | null;
 };
 
 type Props = {
@@ -55,6 +58,24 @@ const ROLE_CONFIG = [
     label: "Performance Marketer", 
     icon: "📊",
     description: "Manages boosted content"
+  },
+  { 
+    key: "email_whatsapp_specialist_id" as const, 
+    label: "Email & WhatsApp", 
+    icon: "📧",
+    description: "Handles email & WhatsApp campaigns"
+  },
+  { 
+    key: "website_blogs_specialist_id" as const, 
+    label: "Website Blogs", 
+    icon: "🌐",
+    description: "Manages website blog content"
+  },
+  { 
+    key: "content_creator_id" as const, 
+    label: "Content Creator", 
+    icon: "🎬",
+    description: "Creates content for all platforms"
   },
 ];
 
@@ -210,6 +231,9 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     creative_id: null,
     social_media_specialist_id: null,
     performance_marketer_id: null,
+    email_whatsapp_specialist_id: null,
+    website_blogs_specialist_id: null,
+    content_creator_id: null,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -247,7 +271,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     // Load current assignments
     const { data: project } = await supabaseClient
       .from("social_projects")
-      .select("account_manager_id, creative_team_lead_id, creative_id, social_media_specialist_id, performance_marketer_id")
+      .select("account_manager_id, creative_team_lead_id, creative_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
       .eq("id", projectId)
       .single();
 
@@ -258,6 +282,9 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
         creative_id: project.creative_id || null,
         social_media_specialist_id: project.social_media_specialist_id || null,
         performance_marketer_id: project.performance_marketer_id || null,
+        email_whatsapp_specialist_id: project.email_whatsapp_specialist_id || null,
+        website_blogs_specialist_id: project.website_blogs_specialist_id || null,
+        content_creator_id: project.content_creator_id || null,
       });
     }
 

@@ -10,6 +10,7 @@ type StrategyLink = {
   quarter: string;
   objectives: string | null;
   core_goals: string | null;
+  content_pillars: string | null;
   kpi_description: string | null;
   platform_specific_strategy: string | null;
   target_audience: string | null;
@@ -194,6 +195,7 @@ function StrategyModal({
   const [quarter, setQuarter] = useState(link?.quarter?.split("-")[1] || "Q1");
   const [objectives, setObjectives] = useState(link?.objectives || "");
   const [coreGoals, setCoreGoals] = useState(link?.core_goals || "");
+  const [contentPillars, setContentPillars] = useState(link?.content_pillars || "");
   const [targetAudience, setTargetAudience] = useState(link?.target_audience || "");
   const [kpiDescription, setKpiDescription] = useState(link?.kpi_description || "");
   const [platformStrategy, setPlatformStrategy] = useState(link?.platform_specific_strategy || "");
@@ -210,6 +212,7 @@ function StrategyModal({
       quarter: `${year}-${quarter}`,
       objectives: objectives || null,
       core_goals: coreGoals || null,
+      content_pillars: contentPillars || null,
       target_audience: targetAudience || null,
       kpi_description: kpiDescription || null,
       platform_specific_strategy: platformStrategy || null,
@@ -310,6 +313,15 @@ function StrategyModal({
               value={coreGoals}
               onChange={setCoreGoals}
               placeholder="List the core goals..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Content Pillars</label>
+            <RichTextEditor
+              value={contentPillars}
+              onChange={setContentPillars}
+              placeholder="Define the content pillars..."
             />
           </div>
 

@@ -165,7 +165,15 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
 
   const truncateContent = (html: string | null, maxLength: number = 150) => {
     if (!html) return "";
-    const text = html.replace(/<[^>]*>/g, "");
+    // Remove HTML tags and decode HTML entities
+    const text = html
+      .replace(/<[^>]*>/g, "")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
   };
 
@@ -192,7 +200,7 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          Add Website Blog
+          Add Publication
         </button>
       </div>
 
@@ -245,14 +253,14 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M12 5v14M5 12h14" />
               </svg>
-              Add Website Blog
+              Add Publication
             </button>
           )}
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          {/* List Header */}
-          <div className="grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
+          {/* List Header - Hidden on mobile */}
+          <div className="hidden md:grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
             <span>Image</span>
             <span>Title & Content</span>
             <span>Date</span>
@@ -263,69 +271,75 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
           {filteredBlogs.map((blog) => (
             <div
               key={blog.id}
-              className="grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 items-center px-4 py-3 border-b border-slate-50 hover:bg-violet-50/50 transition-colors"
+              className="flex flex-col md:grid md:grid-cols-[80px_1fr_150px_120px_100px] gap-3 md:gap-4 md:items-center px-4 py-3 border-b border-slate-50 hover:bg-violet-50/50 transition-colors"
             >
-              {/* Image */}
-              <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                {blog.image_url ? (
-                  <Image
-                    src={blog.image_url}
-                    alt=""
-                    width={64}
-                    height={48}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <path d="m21 15-5-5L5 21" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {/* Title & Content */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                    {blog.publication_type === "website_blog" ? "📝 Blog" : "💼 LinkedIn"}
-                  </span>
+              {/* Mobile: Top row with image and content */}
+              <div className="flex gap-3 md:contents">
+                {/* Image */}
+                <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                  {blog.image_url ? (
+                    <Image
+                      src={blog.image_url}
+                      alt=""
+                      width={64}
+                      height={48}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400">
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="m21 15-5-5L5 21" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
-                <h4 className="font-medium text-slate-900 truncate">{blog.title}</h4>
-                <p className="text-sm text-slate-500 line-clamp-1">
-                  {truncateContent(blog.content)}
-                </p>
+                {/* Title & Content */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                      {blog.publication_type === "website_blog" ? "📝 Blog" : "💼 LinkedIn"}
+                    </span>
+                  </div>
+                  <h4 className="font-medium text-slate-900 truncate">{blog.title}</h4>
+                  <p className="text-sm text-slate-500 line-clamp-1">
+                    {truncateContent(blog.content)}
+                  </p>
+                </div>
               </div>
-              {/* Date */}
-              <span className="text-sm text-slate-600">
-                {blog.scheduled_date 
-                  ? new Date(blog.scheduled_date).toLocaleDateString()
-                  : "—"}
-              </span>
-              {/* Status */}
-              <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(blog.status)}`}>
-                {getStatusLabel(blog.status)}
-              </span>
-              {/* Actions */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => openEditModal(blog)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => handleDelete(blog.id)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                  </svg>
-                </button>
+              {/* Mobile: Bottom row with date, status, actions */}
+              <div className="flex items-center justify-between md:contents pl-[76px] md:pl-0">
+                {/* Date */}
+                <span className="text-sm text-slate-600">
+                  {blog.scheduled_date 
+                    ? new Date(blog.scheduled_date).toLocaleDateString()
+                    : "—"}
+                </span>
+                {/* Status */}
+                <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(blog.status)}`}>
+                  {getStatusLabel(blog.status)}
+                </span>
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openEditModal(blog)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(blog.id)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -339,7 +353,7 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
               <h2 className="text-lg font-semibold text-slate-900">
-                {editingBlog ? "Edit Blog" : "Add Website Blog"}
+                {editingBlog ? "Edit Publication" : "Add Publication"}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -13,6 +13,7 @@ type User = {
 };
 
 type TeamAssignment = {
+  project_manager_id: string | null;
   account_manager_id: string | null;
   creative_team_lead_id: string | null;
   creative_id: string | null;
@@ -29,6 +30,12 @@ type Props = {
 };
 
 const ROLE_CONFIG = [
+  { 
+    key: "project_manager_id" as const, 
+    label: "Project Manager", 
+    icon: "📋",
+    description: "Oversees project execution"
+  },
   { 
     key: "account_manager_id" as const, 
     label: "Account Manager", 
@@ -49,7 +56,7 @@ const ROLE_CONFIG = [
   },
   { 
     key: "social_media_specialist_id" as const, 
-    label: "Social Media Specialist", 
+    label: "Integrated Marketing", 
     icon: "📱",
     description: "Handles captions & publishing"
   },
@@ -67,9 +74,9 @@ const ROLE_CONFIG = [
   },
   { 
     key: "website_blogs_specialist_id" as const, 
-    label: "Website Blogs", 
-    icon: "🌐",
-    description: "Manages website blog content"
+    label: "SEO Specialist", 
+    icon: "🔍",
+    description: "Manages SEO & blog content"
   },
   { 
     key: "content_creator_id" as const, 
@@ -226,6 +233,7 @@ function SearchableUserDropdown({
 export default function TeamAssignments({ projectId, onUpdate }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [assignments, setAssignments] = useState<TeamAssignment>({
+    project_manager_id: null,
     account_manager_id: null,
     creative_team_lead_id: null,
     creative_id: null,
@@ -271,12 +279,13 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     // Load current assignments
     const { data: project } = await supabaseClient
       .from("social_projects")
-      .select("account_manager_id, creative_team_lead_id, creative_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
+      .select("project_manager_id, account_manager_id, creative_team_lead_id, creative_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
       .eq("id", projectId)
       .single();
 
     if (project) {
       setAssignments({
+        project_manager_id: project.project_manager_id || null,
         account_manager_id: project.account_manager_id || null,
         creative_team_lead_id: project.creative_team_lead_id || null,
         creative_id: project.creative_id || null,
@@ -417,8 +426,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
           {/* Info box */}
           <div className="mt-4 p-3 bg-gradient-to-r from-pink-50 to-fuchsia-50 rounded-lg border border-pink-100">
             <p className="text-xs text-pink-800">
-              <strong>Notification Routing:</strong> Team members will receive notifications based on workflow status changes. 
-              Social Media Specialists are notified for Captions & Publishing, Creative Team Leads for Creative Approval, etc.
+              <strong>Notification Routing:</strong> Team members will receive notifications based on workflow status changes.
             </p>
           </div>
         </div>

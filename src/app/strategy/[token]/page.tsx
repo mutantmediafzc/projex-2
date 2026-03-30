@@ -162,6 +162,16 @@ const ASSET_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
   ad_creative: { label: "Ad Creatives", icon: "📢" },
 };
 
+// Section definitions for navigation
+const REPORT_SECTIONS = [
+  { id: 'strategy', label: 'Strategy Overview', icon: '📋' },
+  { id: 'kpis', label: 'KPIs', icon: '📊' },
+  { id: 'content', label: 'Content Calendar', icon: '📅' },
+  { id: 'campaigns', label: 'Campaigns', icon: '📧' },
+  { id: 'articles', label: 'Articles', icon: '📝' },
+  { id: 'deliverables', label: 'Deliverables', icon: '✅' },
+];
+
 export default function PublicStrategyPage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
   const [data, setData] = useState<StrategyData | null>(null);
@@ -172,6 +182,16 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
   const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
   const [blogArticles, setBlogArticles] = useState<BlogArticle[]>([]);
   const [viewingContent, setViewingContent] = useState<{ type: string; item: ContentPost | EmailCampaign | BlogArticle } | null>(null);
+  const [activeSection, setActiveSection] = useState('strategy');
+
+  // Scroll to section
+  function scrollToSection(sectionId: string) {
+    setActiveSection(sectionId);
+    const element = document.getElementById(`section-${sectionId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 
   useEffect(() => {
     loadStrategy();
@@ -338,30 +358,30 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
       <div className="bg-white border-b border-slate-200 print:border-0">
         {/* Top bar with logos */}
         <div className="border-b border-slate-100">
-          <div className="max-w-5xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-4">
               {/* Mutant Logo */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                 <Image
                   src="/logos/mutant-logo.avif"
                   alt="Mutant"
                   width={120}
                   height={40}
-                  className="h-10 w-auto object-contain"
+                  className="h-8 sm:h-10 w-auto object-contain"
                 />
-                <div className="h-8 w-px bg-slate-200" />
-                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Strategy Report</span>
+                <div className="hidden sm:block h-8 w-px bg-slate-200" />
+                <span className="hidden sm:block text-xs font-medium text-slate-400 uppercase tracking-wider">Strategy Report</span>
               </div>
               
               {/* Client Logo */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 {data.project?.company?.logo_url ? (
                   <Image
                     src={data.project.company.logo_url}
                     alt={data.project?.company?.name || ""}
                     width={48}
                     height={48}
-                    className="h-12 w-12 rounded-lg object-cover border border-slate-100"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg object-cover border border-slate-100"
                   />
                 ) : data.project?.logo_url ? (
                   <Image
@@ -369,19 +389,19 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     alt={data.project?.name || ""}
                     width={48}
                     height={48}
-                    className="h-12 w-12 rounded-lg object-cover border border-slate-100"
+                    className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg object-cover border border-slate-100"
                   />
                 ) : (
                   <div
-                    className="flex h-12 w-12 items-center justify-center rounded-lg text-white text-lg font-bold"
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg text-white text-base sm:text-lg font-bold flex-shrink-0"
                     style={{ background: data.project?.brand_color || "linear-gradient(135deg, #ec4899, #d946ef)" }}
                   >
                     {data.project?.name?.charAt(0) || "?"}
                   </div>
                 )}
                 <div className="text-right">
-                  <p className="text-sm font-semibold text-slate-900">{data.project?.company?.name || data.project?.name}</p>
-                  <p className="text-xs text-slate-500">{data.quarter}</p>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-1">{data.project?.company?.name || data.project?.name}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500">{data.quarter}</p>
                 </div>
               </div>
             </div>
@@ -389,180 +409,228 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         </div>
         
         {/* Title section */}
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
-            <p className="text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
+        </div>
+
+        {/* Section Navigation Tabs */}
+        <div className="border-t border-slate-100">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex overflow-x-auto scrollbar-hide -mb-px">
+              {REPORT_SECTIONS.map((section) => (
+                <button
+                  key={section.id}
+                  onClick={() => scrollToSection(section.id)}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                    activeSection === section.id
+                      ? 'border-pink-500 text-pink-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-sm sm:text-base">{section.icon}</span>
+                  <span className="hidden sm:inline">{section.label}</span>
+                  <span className="sm:hidden">{section.label.split(' ')[0]}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* Main Content */}
-          <div className="flex-1 space-y-6">
-            {/* Strategy Overview Section - Professional Layout with Dividers */}
-            {(data.objectives || data.core_goals || data.content_pillars || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
-              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                {data.objectives && (
-                  <>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">Objectives</h3>
-                      <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.objectives }} />
-                    </div>
-                    <div className="border-t border-slate-200" />
-                  </>
-                )}
-                {data.core_goals && (
-                  <>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">Core Goals</h3>
-                      <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
-                    </div>
-                    <div className="border-t border-slate-200" />
-                  </>
-                )}
-                {data.content_pillars && (
-                  <>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">Content Pillars</h3>
-                      <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
-                    </div>
-                    <div className="border-t border-slate-200" />
-                  </>
-                )}
-                {data.target_audience && (
-                  <>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">Target Audience</h3>
-                      <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
-                    </div>
-                    <div className="border-t border-slate-200" />
-                  </>
-                )}
-                {data.kpi_description && (
-                  <>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-slate-900 mb-4">KPIs</h3>
-                      <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
-                    </div>
-                    <div className="border-t border-slate-200" />
-                  </>
-                )}
-                {data.platform_specific_strategy && (
-                  <div className="p-6">
-                    <h3 className="text-lg font-bold text-slate-900 mb-4">Platform Specific Strategy</h3>
-                    <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
-                  </div>
-                )}
-              </section>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+        {/* SECTION: Strategy Overview - Box-style groupings */}
+        <section id="section-strategy" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white text-sm">📋</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Strategy Overview</h2>
+          </div>
+          
+          <div className="grid gap-4 sm:gap-5">
+            {data.objectives && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-xs">🎯</span>
+                  Objectives
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.objectives }} />
+              </div>
             )}
+            
+            {data.core_goals && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 text-xs">🚀</span>
+                  Core Goals
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
+              </div>
+            )}
+            
+            {data.content_pillars && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600 text-xs">📚</span>
+                  Content Pillars
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
+              </div>
+            )}
+            
+            {data.target_audience && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600 text-xs">👥</span>
+                  Target Audience
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
+              </div>
+            )}
+            
+            {data.kpi_description && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600 text-xs">📊</span>
+                  KPIs
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
+              </div>
+            )}
+            
+            {data.platform_specific_strategy && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 text-xs">📱</span>
+                  Platform Specific Strategy
+                </h3>
+                <div className="text-sm text-slate-700 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
+              </div>
+            )}
+          </div>
+        </section>
 
-            {/* KPIs Section */}
-            {kpis.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        {/* SECTION: KPIs with Colorful Cards */}
+        <section id="section-kpis" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-500 text-white text-sm">📊</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">KPIs & Performance</h2>
+          </div>
+
+          {kpis.length > 0 ? (
             <div className="space-y-6">
               {kpis.map((kpi) => (
-                <div key={kpi.id} className="space-y-6">
-                  <div className="flex items-center gap-3 mb-4">
+                <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-3 mb-5">
                     <span className="inline-flex items-center rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25">
                       {kpi.report_period}
                     </span>
                   </div>
                   
-                  {/* Social Media Section */}
-                  <div className="rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/80 backdrop-blur-sm p-5 border border-pink-100/50">
-                    <h4 className="text-sm font-bold text-pink-700 mb-4 flex items-center gap-2">
+                  {/* Colorful KPI Cards Grid - Like the screenshot */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+                    <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-4 text-white shadow-lg">
+                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Reach</p>
+                      <p className="text-xs font-bold mb-1">KPI Range</p>
+                      <div className="text-[9px] opacity-90 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
+                    </div>
+                    <div className="rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 p-4 text-white shadow-lg">
+                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Engagement</p>
+                      <p className="text-xs font-bold mb-1">KPI Range</p>
+                      <p className="text-[9px] opacity-90">{kpi.sm_engagement_kpi || "—"}</p>
+                    </div>
+                    <div className="rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 p-4 text-white shadow-lg">
+                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Views</p>
+                      <p className="text-xs font-bold mb-1">KPI Range</p>
+                      <p className="text-[9px] opacity-90">{kpi.sm_impressions_kpi || "—"}</p>
+                    </div>
+                    <div className="rounded-xl bg-gradient-to-br from-yellow-500 to-lime-500 p-4 text-white shadow-lg">
+                      <p className="text-[10px] font-medium opacity-90 mb-1">Followers</p>
+                      <p className="text-xs font-bold mb-1">Growth</p>
+                      <p className="text-[9px] opacity-90">{kpi.sm_followers_kpi || "—"}</p>
+                    </div>
+                    <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-4 text-white shadow-lg">
+                      <p className="text-[10px] font-medium opacity-90 mb-1">Clicks</p>
+                      <p className="text-xs font-bold mb-1">KPI Range</p>
+                      <p className="text-[9px] opacity-90">{kpi.sm_clicks_kpi || "—"}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Social Media Content Stats */}
+                  <div className="rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 p-4 sm:p-5 border border-pink-100 mb-4">
+                    <h4 className="text-sm font-bold text-pink-700 mb-3 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100">📱</span>
                       Social Media Content
                     </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_reels}</p>
-                        <p className="text-xs text-pink-500 font-medium">Reels</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="rounded-xl bg-white p-3 text-center border border-pink-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-pink-600">{kpi.sm_reels}</p>
+                        <p className="text-[10px] sm:text-xs text-pink-500 font-medium">Reels</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_long_form_video}</p>
-                        <p className="text-xs text-pink-500 font-medium">Long-Form Video</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-pink-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-pink-600">{kpi.sm_long_form_video}</p>
+                        <p className="text-[10px] sm:text-xs text-pink-500 font-medium">Long-Form</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_static_carousels}</p>
-                        <p className="text-xs text-pink-500 font-medium">Static/Carousels</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-pink-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-pink-600">{kpi.sm_static_carousels}</p>
+                        <p className="text-[10px] sm:text-xs text-pink-500 font-medium">Static/Carousels</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_stories}</p>
-                        <p className="text-xs text-pink-500 font-medium">Stories</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-pink-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-pink-600">{kpi.sm_stories}</p>
+                        <p className="text-[10px] sm:text-xs text-pink-500 font-medium">Stories</p>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                      {[
-                        { label: "Impressions", kpiVal: kpi.sm_impressions_kpi, goal: kpi.sm_impressions_goal },
-                        { label: "Reach", kpiVal: kpi.sm_reach_kpi, goal: kpi.sm_reach_goal },
-                        { label: "Engagement", kpiVal: kpi.sm_engagement_kpi, goal: kpi.sm_engagement_goal },
-                        { label: "Followers", kpiVal: kpi.sm_followers_kpi, goal: kpi.sm_followers_goal },
-                        { label: "Clicks", kpiVal: kpi.sm_clicks_kpi, goal: kpi.sm_clicks_goal },
-                      ].map((item) => (
-                        <div key={item.label} className="rounded-xl bg-white/80 backdrop-blur-sm p-3 text-center border border-pink-50">
-                          <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
-                          <p className="text-xs font-semibold text-slate-800">{item.kpiVal || "—"}</p>
-                          <p className="text-[9px] text-pink-500">Goal: {item.goal?.toLocaleString() || 0}</p>
-                        </div>
-                      ))}
                     </div>
                   </div>
 
-                  {/* Email & WhatsApp Section */}
-                  <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-green-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
-                    <h4 className="text-sm font-bold text-emerald-700 mb-4 flex items-center gap-2">
+                  {/* Email & WhatsApp Stats */}
+                  <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-green-50 p-4 sm:p-5 border border-emerald-100 mb-4">
+                    <h4 className="text-sm font-bold text-emerald-700 mb-3 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100">📧</span>
                       Email & WhatsApp Marketing
                     </h4>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-emerald-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-emerald-600">{kpi.email_campaigns}</p>
-                        <p className="text-xs text-emerald-500 font-medium">Email Campaigns</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                      <div className="rounded-xl bg-white p-3 text-center border border-emerald-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-emerald-600">{kpi.email_campaigns}</p>
+                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">Email Campaigns</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-emerald-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-emerald-600">{kpi.whatsapp_campaigns}</p>
-                        <p className="text-xs text-emerald-500 font-medium">WhatsApp Campaigns</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-emerald-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-emerald-600">{kpi.whatsapp_campaigns}</p>
+                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">WhatsApp</p>
                       </div>
-                      <div className="rounded-xl bg-white/80 backdrop-blur-sm p-4 text-center border border-emerald-50">
-                        <p className="text-[10px] text-slate-500 mb-0.5">CTR KPI</p>
-                        <p className="text-lg font-semibold text-slate-800">{kpi.ewm_ctr_kpi || "—"}</p>
-                        <p className="text-[9px] text-emerald-500">Goal: {kpi.ewm_ctr_goal}%</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-emerald-100 shadow-sm col-span-2 sm:col-span-1">
+                        <p className="text-lg font-bold text-emerald-600">{kpi.ewm_ctr_kpi || "—"}</p>
+                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">CTR Goal: {kpi.ewm_ctr_goal}%</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* SEO & AEO Section */}
-                  <div className="rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm p-5 border border-blue-100/50">
-                    <h4 className="text-sm font-bold text-blue-700 mb-4 flex items-center gap-2">
+                  {/* SEO Stats */}
+                  <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4 sm:p-5 border border-blue-100">
+                    <h4 className="text-sm font-bold text-blue-700 mb-3 flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100">🔍</span>
                       SEO & AEO
                     </h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_website_blogs}</p>
-                        <p className="text-xs text-blue-500 font-medium">Website Blogs</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                      <div className="rounded-xl bg-white p-3 text-center border border-blue-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-blue-600">{kpi.seo_website_blogs}</p>
+                        <p className="text-[10px] sm:text-xs text-blue-500 font-medium">Website Blogs</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_linkedin_articles}</p>
-                        <p className="text-xs text-blue-500 font-medium">LinkedIn Articles</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-blue-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-blue-600">{kpi.seo_linkedin_articles}</p>
+                        <p className="text-[10px] sm:text-xs text-blue-500 font-medium">LinkedIn</p>
                       </div>
-                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
-                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_pr_offpage}</p>
-                        <p className="text-xs text-blue-500 font-medium">PR/Off Page</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-blue-100 shadow-sm">
+                        <p className="text-xl sm:text-2xl font-bold text-blue-600">{kpi.seo_pr_offpage}</p>
+                        <p className="text-[10px] sm:text-xs text-blue-500 font-medium">PR/Off Page</p>
                       </div>
-                      <div className="rounded-xl bg-white/80 backdrop-blur-sm p-4 text-center border border-blue-50">
-                        <p className="text-[10px] text-slate-500 mb-0.5">Impressions KPI</p>
-                        <p className="text-lg font-semibold text-slate-800">{kpi.seo_impressions_kpi || "—"}</p>
-                        <p className="text-[9px] text-blue-500">Goal: {kpi.seo_impressions_goal?.toLocaleString()}</p>
+                      <div className="rounded-xl bg-white p-3 text-center border border-blue-100 shadow-sm">
+                        <p className="text-lg font-bold text-blue-600">{kpi.seo_impressions_kpi || "—"}</p>
+                        <p className="text-[10px] sm:text-xs text-blue-500 font-medium">Impressions</p>
                       </div>
                     </div>
                   </div>
 
                   {kpi.notes && (
-                    <div className="rounded-2xl bg-slate-50/80 backdrop-blur-sm p-4 border border-slate-100/50">
+                    <div className="mt-4 rounded-xl bg-slate-50 p-4 border border-slate-100">
                       <p className="text-xs font-medium text-slate-500 mb-1">Notes</p>
                       <p className="text-sm text-slate-700">{kpi.notes}</p>
                     </div>
@@ -570,262 +638,262 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                 </div>
               ))}
             </div>
-              </section>
-            )}
-
-            {/* Published Content Sections - Social Media, Email & WhatsApp, Blogs & Articles */}
-            
-            {/* Social Media Content */}
-            {contentPosts.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-100 text-pink-600">📱</span>
-                    Social Media Content
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">Published content for {data.quarter}</p>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {contentPosts.map((post) => (
-                    <div 
-                      key={post.id}
-                      onClick={() => setViewingContent({ type: 'social', item: post })}
-                      className="p-4 hover:bg-pink-50/50 cursor-pointer transition-colors flex items-center gap-4"
-                    >
-                      {post.image_url ? (
-                        <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                          <Image src={post.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-12 rounded-lg bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-lg">📷</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 capitalize">{post.platform}</span>
-                          <span className="text-xs text-slate-400">{post.content_type}</span>
-                        </div>
-                        <p className="text-sm text-slate-700 line-clamp-1">{post.caption || "No caption"}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-slate-500">{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "—"}</p>
-                        <span className="text-xs text-emerald-600 font-medium">Published</span>
-                      </div>
-                      <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Email & WhatsApp Campaigns */}
-            {emailCampaigns.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">📧</span>
-                    Email & WhatsApp Campaigns
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">Published campaigns for {data.quarter}</p>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {emailCampaigns.map((campaign) => (
-                    <div 
-                      key={campaign.id}
-                      onClick={() => setViewingContent({ type: 'email', item: campaign })}
-                      className="p-4 hover:bg-emerald-50/50 cursor-pointer transition-colors flex items-center gap-4"
-                    >
-                      {campaign.image_url ? (
-                        <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                          <Image src={campaign.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-12 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-lg">{campaign.campaign_type === 'email' ? '✉️' : '💬'}</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${campaign.campaign_type === 'email' ? 'bg-violet-100 text-violet-700' : 'bg-green-100 text-green-700'}`}>
-                            {campaign.campaign_type === 'email' ? '✉️ Email' : '💬 WhatsApp'}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium text-slate-700 line-clamp-1">{campaign.title}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-slate-500">{campaign.scheduled_date ? new Date(campaign.scheduled_date).toLocaleDateString() : "—"}</p>
-                        <span className="text-xs text-emerald-600 font-medium">Published</span>
-                      </div>
-                      <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Blogs & Articles */}
-            {blogArticles.length > 0 && (
-              <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50">
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600">📝</span>
-                    Blogs & Articles
-                  </h3>
-                  <p className="text-sm text-slate-500 mt-1">Published content for {data.quarter}</p>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {blogArticles.map((blog) => (
-                    <div 
-                      key={blog.id}
-                      onClick={() => setViewingContent({ type: 'blog', item: blog })}
-                      className="p-4 hover:bg-violet-50/50 cursor-pointer transition-colors flex items-center gap-4"
-                    >
-                      {blog.image_url ? (
-                        <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                          <Image src={blog.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-12 rounded-lg bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
-                          <span className="text-lg">{blog.publication_type === 'website_blog' ? '📝' : '💼'}</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                            {blog.publication_type === 'website_blog' ? '📝 Blog' : '💼 LinkedIn'}
-                          </span>
-                        </div>
-                        <p className="text-sm font-medium text-slate-700 line-clamp-1">{blog.title}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-slate-500">{blog.scheduled_date ? new Date(blog.scheduled_date).toLocaleDateString() : "—"}</p>
-                        <span className="text-xs text-emerald-600 font-medium">Published</span>
-                      </div>
-                      <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* Right Sidebar - Section Navigation */}
-          <div className="hidden lg:block w-48 flex-shrink-0">
-            <div className="sticky top-8 space-y-2">
-              {data.objectives && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Objectives</p>
-              )}
-              {data.core_goals && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Core Goals</p>
-              )}
-              {data.content_pillars && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Content Pillars</p>
-              )}
-              {data.target_audience && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Target Audience</p>
-              )}
-              {data.kpi_description && (
-                <p className="text-sm text-pink-600 font-medium cursor-pointer">KPIs <span className="text-[10px] text-pink-400">(You are here)</span></p>
-              )}
-              {data.platform_specific_strategy && (
-                <p className="text-sm text-slate-600 hover:text-pink-600 cursor-pointer">Platform Specific Strategy</p>
-              )}
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-sm text-slate-500">No KPI data available for this strategy.</p>
             </div>
+          )}
+        </section>
+
+        {/* SECTION: Content Calendar (Social Media) */}
+        <section id="section-content" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white text-sm">📅</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Social Media Content</h2>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-6 pb-8 space-y-8">
-        {/* Quarterly Deliverables */}
-        {data.deliverables.length > 0 && (
-          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Quarterly Deliverables</h2>
-            
-            {/* Overall Progress */}
-            <div className="mb-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">Overall Progress</span>
-                <span className="text-sm font-bold text-slate-900">{totalDelivered} / {totalPlanned}</span>
+          
+          {contentPosts.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50">
+                <p className="text-sm text-slate-600">Published content for <span className="font-semibold">{data.quarter}</span></p>
               </div>
-              <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className={`h-full rounded-full transition-all ${
-                    overallProgress >= 100
-                      ? "bg-emerald-500"
-                      : overallProgress >= 75
-                      ? "bg-blue-500"
-                      : overallProgress >= 50
-                      ? "bg-amber-500"
-                      : "bg-slate-400"
-                  }`}
-                  style={{ width: `${overallProgress}%` }}
-                />
-              </div>
-              <p className="mt-1 text-right text-xs text-slate-500">{overallProgress.toFixed(0)}% complete</p>
-            </div>
-
-            {/* Deliverables Grid */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {data.deliverables.map((d) => {
-                const typeConfig = ASSET_TYPE_LABELS[d.asset_type] || { label: d.asset_type, icon: "📄" };
-                const progress = d.planned_count > 0 ? Math.min((d.delivered_count / d.planned_count) * 100, 100) : 0;
-                return (
-                  <div key={d.asset_type} className="rounded-xl bg-slate-50 p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg">{typeConfig.icon}</span>
-                      <span className="text-xs font-semibold text-slate-700">{typeConfig.label}</span>
+              <div className="divide-y divide-slate-100">
+                {contentPosts.map((post) => (
+                  <div 
+                    key={post.id}
+                    onClick={() => setViewingContent({ type: 'social', item: post })}
+                    className="p-3 sm:p-4 hover:bg-pink-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
+                  >
+                    {post.image_url ? (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                        <Image src={post.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-base sm:text-lg">📷</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 capitalize">{post.platform}</span>
+                        <span className="text-[10px] sm:text-xs text-slate-400">{post.content_type}</span>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-700 line-clamp-1">{post.caption || "No caption"}</p>
                     </div>
-                    <div className="flex items-baseline justify-between mb-2">
-                      <span className="text-xl font-bold text-slate-900">{d.delivered_count}</span>
-                      <span className="text-xs text-slate-500">/ {d.planned_count} planned</span>
+                    <div className="text-right flex-shrink-0 hidden sm:block">
+                      <p className="text-xs text-slate-500">{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "—"}</p>
+                      <span className="text-xs text-emerald-600 font-medium">Published</span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                      <div
-                        className={`h-full rounded-full ${
-                          progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-blue-500" : "bg-slate-400"
-                        }`}
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
+                    <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-sm text-slate-500">No published social media content for this quarter.</p>
+            </div>
+          )}
+        </section>
 
-        {/* KPI Performance */}
+        {/* SECTION: Email & WhatsApp Campaigns */}
+        <section id="section-campaigns" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-500 text-white text-sm">📧</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Email & WhatsApp Campaigns</h2>
+          </div>
+          
+          {emailCampaigns.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50">
+                <p className="text-sm text-slate-600">Published campaigns for <span className="font-semibold">{data.quarter}</span></p>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {emailCampaigns.map((campaign) => (
+                  <div 
+                    key={campaign.id}
+                    onClick={() => setViewingContent({ type: 'email', item: campaign })}
+                    className="p-3 sm:p-4 hover:bg-emerald-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
+                  >
+                    {campaign.image_url ? (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                        <Image src={campaign.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-base sm:text-lg">{campaign.campaign_type === 'email' ? '✉️' : '💬'}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${campaign.campaign_type === 'email' ? 'bg-violet-100 text-violet-700' : 'bg-green-100 text-green-700'}`}>
+                          {campaign.campaign_type === 'email' ? '✉️ Email' : '💬 WhatsApp'}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-medium text-slate-700 line-clamp-1">{campaign.title}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0 hidden sm:block">
+                      <p className="text-xs text-slate-500">{campaign.scheduled_date ? new Date(campaign.scheduled_date).toLocaleDateString() : "—"}</p>
+                      <span className="text-xs text-emerald-600 font-medium">Published</span>
+                    </div>
+                    <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-sm text-slate-500">No published campaigns for this quarter.</p>
+            </div>
+          )}
+        </section>
+
+        {/* SECTION: Blogs & Articles */}
+        <section id="section-articles" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-500 text-white text-sm">📝</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Blogs & Articles</h2>
+          </div>
+          
+          {blogArticles.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50">
+                <p className="text-sm text-slate-600">Published articles for <span className="font-semibold">{data.quarter}</span></p>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {blogArticles.map((blog) => (
+                  <div 
+                    key={blog.id}
+                    onClick={() => setViewingContent({ type: 'blog', item: blog })}
+                    className="p-3 sm:p-4 hover:bg-violet-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
+                  >
+                    {blog.image_url ? (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                        <Image src={blog.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-base sm:text-lg">{blog.publication_type === 'website_blog' ? '📝' : '💼'}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                          {blog.publication_type === 'website_blog' ? '📝 Blog' : '💼 LinkedIn'}
+                        </span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-medium text-slate-700 line-clamp-1">{blog.title}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0 hidden sm:block">
+                      <p className="text-xs text-slate-500">{blog.scheduled_date ? new Date(blog.scheduled_date).toLocaleDateString() : "—"}</p>
+                      <span className="text-xs text-emerald-600 font-medium">Published</span>
+                    </div>
+                    <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-sm text-slate-500">No published articles for this quarter.</p>
+            </div>
+          )}
+        </section>
+
+        {/* SECTION: Deliverables */}
+        <section id="section-deliverables" className="scroll-mt-32">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm">✅</span>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Quarterly Deliverables</h2>
+          </div>
+          
+          {data.deliverables.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              {/* Overall Progress */}
+              <div className="mb-5 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-slate-700">Overall Progress</span>
+                  <span className="text-sm font-bold text-slate-900">{totalDelivered} / {totalPlanned}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      overallProgress >= 100 ? "bg-emerald-500" :
+                      overallProgress >= 75 ? "bg-blue-500" :
+                      overallProgress >= 50 ? "bg-amber-500" : "bg-slate-400"
+                    }`}
+                    style={{ width: `${overallProgress}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-right text-xs text-slate-500">{overallProgress.toFixed(0)}% complete</p>
+              </div>
+
+              {/* Deliverables Grid */}
+              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                {data.deliverables.map((d) => {
+                  const typeConfig = ASSET_TYPE_LABELS[d.asset_type] || { label: d.asset_type, icon: "📄" };
+                  const progress = d.planned_count > 0 ? Math.min((d.delivered_count / d.planned_count) * 100, 100) : 0;
+                  return (
+                    <div key={d.asset_type} className="rounded-xl bg-slate-50 p-3 sm:p-4">
+                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                        <span className="text-base sm:text-lg">{typeConfig.icon}</span>
+                        <span className="text-[10px] sm:text-xs font-semibold text-slate-700">{typeConfig.label}</span>
+                      </div>
+                      <div className="flex items-baseline justify-between mb-2">
+                        <span className="text-lg sm:text-xl font-bold text-slate-900">{d.delivered_count}</span>
+                        <span className="text-[10px] sm:text-xs text-slate-500">/ {d.planned_count}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
+                        <div
+                          className={`h-full rounded-full ${
+                            progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-blue-500" : "bg-slate-400"
+                          }`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
+              <p className="text-sm text-slate-500">No deliverables data available.</p>
+            </div>
+          )}
+        </section>
+
+        {/* KPI Performance Table */}
         {data.monthly_kpis.length > 0 && (
-          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">KPI Performance</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-4">Monthly KPI Performance</h3>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr className="border-b border-slate-200 text-left">
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600">Month</th>
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600 text-right">Reach</th>
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600 text-right">Impressions</th>
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600 text-right">Engagement</th>
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600 text-right">Followers</th>
-                    <th className="px-4 py-3 text-sm font-semibold text-slate-600 text-right">Clicks</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600">Month</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600 text-right">Reach</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600 text-right">Impressions</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600 text-right">Engagement</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600 text-right">Followers</th>
+                    <th className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-slate-600 text-right">Clicks</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.monthly_kpis.map((kpi) => (
                     <tr key={kpi.month} className="border-b border-slate-100">
-                      <td className="px-4 py-3 text-sm font-medium text-slate-900">{kpi.month}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 text-right">{kpi.reach.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 text-right">{kpi.impressions.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 text-right">{kpi.engagement_rate.toFixed(2)}%</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 text-right">+{kpi.follower_growth.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-sm text-slate-600 text-right">{kpi.website_clicks.toLocaleString()}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-slate-900">{kpi.month}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 text-right">{kpi.reach.toLocaleString()}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 text-right">{kpi.impressions.toLocaleString()}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 text-right">{kpi.engagement_rate.toFixed(2)}%</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 text-right">+{kpi.follower_growth.toLocaleString()}</td>
+                      <td className="px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 text-right">{kpi.website_clicks.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -836,32 +904,33 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
         {/* Notes */}
         {data.notes && (
-          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Notes</h2>
+          <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3">Notes</h3>
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.notes}</p>
           </section>
         )}
 
         {/* Footer */}
-        <div className="border-t border-slate-200 mt-12 pt-8 pb-8">
-          <div className="flex items-center justify-between">
+        <div className="border-t border-slate-200 pt-6 sm:pt-8 pb-6 sm:pb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <Image
                 src="/logos/mutant-logo.avif"
                 alt="Mutant"
                 width={80}
                 height={28}
-                className="h-7 w-auto object-contain opacity-60"
+                className="h-6 sm:h-7 w-auto object-contain opacity-60"
               />
-              <span className="text-xs text-slate-400">Integrated Marketing Agency</span>
+              <span className="text-[10px] sm:text-xs text-slate-400">Integrated Marketing Agency</span>
             </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-400">For questions, please contact your account manager.</p>
-              <p className="text-[10px] text-slate-300 mt-1">© {new Date().getFullYear()} Mutant Communications</p>
+            <div className="text-center sm:text-right">
+              <p className="text-[10px] sm:text-xs text-slate-400">For questions, please contact your account manager.</p>
+              <p className="text-[9px] sm:text-[10px] text-slate-300 mt-1">© {new Date().getFullYear()} Mutant Communications</p>
             </div>
           </div>
         </div>
       </div>
+
       <style jsx global>{`
         .strategy-content strong, .strategy-content b {
           font-weight: 700;
@@ -887,6 +956,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         }
         .strategy-content p {
           margin: 0.25rem 0;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
 

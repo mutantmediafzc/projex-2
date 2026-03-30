@@ -187,6 +187,8 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
   const [editedName, setEditedName] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [isEditingPlatforms, setIsEditingPlatforms] = useState(false);
+  const [editedPlatforms, setEditedPlatforms] = useState<string[]>([]);
 
   useEffect(() => {
     loadProject();
@@ -212,6 +214,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       } as SocialProject;
       setProject(proj);
       setEditedName(proj.name);
+      setEditedPlatforms(proj.platforms);
     }
     setLoading(false);
   }
@@ -226,6 +229,26 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       setProject({ ...project, name: editedName.trim() });
       setIsEditingName(false);
     }
+  }
+
+  async function saveProjectPlatforms() {
+    if (!project) return;
+    const { error } = await supabaseClient
+      .from("social_projects")
+      .update({ platforms: editedPlatforms })
+      .eq("id", project.id);
+    if (!error) {
+      setProject({ ...project, platforms: editedPlatforms });
+      setIsEditingPlatforms(false);
+    }
+  }
+
+  function toggleEditPlatform(platform: string) {
+    setEditedPlatforms((prev) =>
+      prev.includes(platform)
+        ? prev.filter((p) => p !== platform)
+        : [...prev, platform]
+    );
   }
 
   async function handleDeleteCalendar() {
@@ -367,19 +390,55 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
               </svg>
               Generate Ideas
             </button>
-            {(project.platforms || []).map((platform) => {
-              const pData = PLATFORM_ICONS[platform.toLowerCase()];
-              if (!pData) return null;
-              return (
-                <span
-                  key={platform}
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl ${pData.bg} text-white shadow-md`}
-                  title={platform}
+            {/* Platform Icons with Edit */}
+            {isEditingPlatforms ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                {Object.entries(PLATFORM_ICONS).map(([platform, pData]) => (
+                  <button
+                    key={platform}
+                    type="button"
+                    onClick={() => toggleEditPlatform(platform)}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                      editedPlatforms.includes(platform)
+                        ? `${pData.bg} text-white shadow-md`
+                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                    }`}
+                    title={platform}
+                  >
+                    {pData.icon}
+                  </button>
+                ))}
+                <button onClick={saveProjectPlatforms} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 13l4 4L19 7"/></svg>
+                </button>
+                <button onClick={() => { setIsEditingPlatforms(false); setEditedPlatforms(project.platforms); }} className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 group">
+                {(project.platforms || []).map((platform) => {
+                  const pData = PLATFORM_ICONS[platform.toLowerCase()];
+                  if (!pData) return null;
+                  return (
+                    <span
+                      key={platform}
+                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${pData.bg} text-white shadow-md`}
+                      title={platform}
+                    >
+                      {pData.icon}
+                    </span>
+                  );
+                })}
+                <button 
+                  onClick={() => setIsEditingPlatforms(true)} 
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Edit platforms"
                 >
-                  {pData.icon}
-                </span>
-              );
-            })}
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -428,7 +487,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
               }}
               onUpdate={(data) => setProject({ ...project, ...data })}
             />
-            <AnalyticsKPIs projectId={project.id} />
+            <AnalyticsKPIs projectId={project.id} platforms={project.platforms} />
             <StrategyLinkManager projectId={project.id} projectName={project.name} />
           </div>
         )}

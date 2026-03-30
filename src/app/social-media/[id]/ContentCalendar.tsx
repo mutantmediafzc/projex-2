@@ -101,6 +101,10 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   const [isDragging, setIsDragging] = useState(false);
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
   const [contentTypeFilter, setContentTypeFilter] = useState<string | "all">("all");
+  const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; post: Post } | null>(null);
+  const [showBulkEditModal, setShowBulkEditModal] = useState(false);
 
   useEffect(() => {
     loadPosts();
@@ -125,6 +129,78 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
     setPosts((prev) =>
       prev.map((p) => (p.id === postId ? { ...p, scheduled_date: newDate.toISOString() } : p))
     );
+  }
+
+  async function duplicatePost(post: Post) {
+    const { id, created_at, ...postData } = post;
+    const { data, error } = await supabaseClient
+      .from("social_posts")
+      .insert({
+        ...postData,
+        project_id: projectId,
+        subject: post.subject ? `${post.subject} (Copy)` : "(Copy)",
+        status: "draft",
+        workflow_status: "captions",
+      })
+      .select()
+      .single();
+    if (data) {
+      setPosts((prev) => [...prev, data as Post]);
+    }
+    return { data, error };
+  }
+
+  async function duplicateSelectedPosts() {
+    const postsTodup = posts.filter(p => selectedPosts.has(p.id));
+    for (const post of postsTodup) {
+      await duplicatePost(post);
+    }
+    setSelectedPosts(new Set());
+    setSelectionMode(false);
+  }
+
+  async function bulkUpdatePosts(updates: { scheduled_date?: string; workflow_status?: WorkflowStatus }) {
+    const ids = Array.from(selectedPosts);
+    await supabaseClient
+      .from("social_posts")
+      .update(updates)
+      .in("id", ids);
+    setPosts((prev) =>
+      prev.map((p) => (selectedPosts.has(p.id) ? { ...p, ...updates } : p))
+    );
+    setSelectedPosts(new Set());
+    setSelectionMode(false);
+    setShowBulkEditModal(false);
+  }
+
+  async function deleteSelectedPosts() {
+    if (!confirm(`Delete ${selectedPosts.size} selected post(s)?`)) return;
+    const ids = Array.from(selectedPosts);
+    await supabaseClient.from("social_posts").delete().in("id", ids);
+    setPosts((prev) => prev.filter((p) => !selectedPosts.has(p.id)));
+    setSelectedPosts(new Set());
+    setSelectionMode(false);
+  }
+
+  function togglePostSelection(postId: string) {
+    setSelectedPosts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  }
+
+  function selectAllVisible() {
+    setSelectedPosts(new Set(filteredPosts.map(p => p.id)));
+  }
+
+  function clearSelection() {
+    setSelectedPosts(new Set());
+    setSelectionMode(false);
   }
 
   const year = currentDate.getFullYear();
@@ -182,12 +258,49 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
             <button onClick={() => setViewMode("calendar")} className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${viewMode === "calendar" ? "bg-pink-500 text-white shadow" : "text-slate-600 hover:text-slate-900"}`}>Calendar</button>
             <button onClick={() => setViewMode("list")} className={`rounded-md px-3 py-1.5 text-sm font-medium transition-all ${viewMode === "list" ? "bg-pink-500 text-white shadow" : "text-slate-600 hover:text-slate-900"}`}>List</button>
           </div>
+          <button
+            onClick={() => { setSelectionMode(!selectionMode); if (selectionMode) clearSelection(); }}
+            className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+              selectionMode ? "border-pink-300 bg-pink-50 text-pink-700" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              {selectionMode && <path d="M9 12l2 2 4-4" />}
+            </svg>
+            {selectionMode ? "Cancel" : "Select"}
+          </button>
           <button onClick={() => { setEditingPost(null); setShowPostModal(true); }} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 hover:shadow-xl">
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
             New Post
           </button>
         </div>
       </div>
+
+      {/* Selection Actions Bar */}
+      {selectionMode && selectedPosts.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 p-3 text-white shadow-lg">
+          <span className="text-sm font-medium">{selectedPosts.size} selected</span>
+          <div className="h-4 w-px bg-white/30" />
+          <button onClick={selectAllVisible} className="text-sm hover:underline">Select All ({filteredPosts.length})</button>
+          <div className="flex-1" />
+          <button onClick={() => setShowBulkEditModal(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium hover:bg-white/30">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            Edit
+          </button>
+          <button onClick={duplicateSelectedPosts} className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium hover:bg-white/30">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+            Duplicate
+          </button>
+          <button onClick={deleteSelectedPosts} className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/80 px-3 py-1.5 text-sm font-medium hover:bg-red-500">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+            Delete
+          </button>
+          <button onClick={clearSelection} className="rounded-lg p-1.5 hover:bg-white/20">
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
 
       {/* Filters Section */}
       <div className="mb-4 space-y-3">
@@ -288,14 +401,37 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
                       <div className="space-y-1">
                         {dayPosts.slice(0, 3).map((post) => {
                           const style = getWorkflowStyle(post.workflow_status);
+                          const isSelected = selectedPosts.has(post.id);
                           return (
-                            <div key={post.id} draggable
-                              onDragStart={() => { setDraggedPost(post); setIsDragging(true); }}
+                            <div key={post.id} draggable={!selectionMode}
+                              onDragStart={() => { if (!selectionMode) { setDraggedPost(post); setIsDragging(true); } }}
                               onDragEnd={() => { setDraggedPost(null); setDragOverDay(null); setIsDragging(false); }}
-                              onClick={() => { setEditingPost(post); setShowPostModal(true); }}
-                              className={`cursor-grab active:cursor-grabbing rounded-lg overflow-hidden border ${style.border} ${style.bg} transition-all hover:scale-105 hover:shadow-md ${
+                              onClick={(e) => {
+                                if (selectionMode) {
+                                  e.stopPropagation();
+                                  togglePostSelection(post.id);
+                                } else {
+                                  setEditingPost(post);
+                                  setShowPostModal(true);
+                                }
+                              }}
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                setContextMenu({ x: e.clientX, y: e.clientY, post });
+                              }}
+                              className={`relative cursor-grab active:cursor-grabbing rounded-lg overflow-hidden border ${style.border} ${style.bg} transition-all hover:scale-105 hover:shadow-md ${
                                 draggedPost?.id === post.id ? "opacity-50 ring-2 ring-pink-400" : ""
-                              }`}>
+                              } ${isSelected ? "ring-2 ring-pink-500 ring-offset-1" : ""} ${selectionMode ? "cursor-pointer" : ""}`}>
+                              {/* Selection checkbox */}
+                              {selectionMode && (
+                                <div className={`absolute top-1 left-1 z-10 h-4 w-4 rounded border-2 flex items-center justify-center transition-all ${
+                                  isSelected ? "bg-pink-500 border-pink-500" : "bg-white/80 border-slate-300"
+                                }`}>
+                                  {isSelected && (
+                                    <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
+                                  )}
+                                </div>
+                              )}
                               {/* Image Preview or Placeholder */}
                               <div className="h-12 w-full overflow-hidden bg-slate-100 relative">
                                 {post.image_asset_url ? (
@@ -365,10 +501,35 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><p className="text-slate-500">No posts found. {statusFilter !== "all" && "Try changing the filter or create a new post!"}</p></div>
           ) : filteredPosts.map((post) => {
             const style = getWorkflowStyle(post.workflow_status);
+            const isSelected = selectedPosts.has(post.id);
             return (
-              <div key={post.id} onClick={() => { setEditingPost(post); setShowPostModal(true); }}
-                className={`cursor-pointer rounded-2xl border ${style.border} bg-white overflow-hidden transition-all hover:shadow-lg`}>
-                <div className="flex">
+              <div key={post.id} 
+                onClick={() => {
+                  if (selectionMode) {
+                    togglePostSelection(post.id);
+                  } else {
+                    setEditingPost(post);
+                    setShowPostModal(true);
+                  }
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setContextMenu({ x: e.clientX, y: e.clientY, post });
+                }}
+                className={`cursor-pointer rounded-2xl border ${style.border} bg-white overflow-hidden transition-all hover:shadow-lg ${
+                  isSelected ? "ring-2 ring-pink-500 ring-offset-2" : ""
+                }`}>
+                <div className="flex relative">
+                  {/* Selection checkbox for list view */}
+                  {selectionMode && (
+                    <div className={`absolute top-3 left-3 z-10 h-5 w-5 rounded border-2 flex items-center justify-center transition-all ${
+                      isSelected ? "bg-pink-500 border-pink-500" : "bg-white border-slate-300"
+                    }`}>
+                      {isSelected && (
+                        <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
+                      )}
+                    </div>
+                  )}
                   {/* Image Preview or Placeholder */}
                   <div className="w-24 h-24 flex-shrink-0 overflow-hidden bg-slate-100 relative">
                     {post.image_asset_url ? (
@@ -445,6 +606,141 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
       {showPostModal && (
         <PostModal post={editingPost} projectId={projectId} availablePlatforms={platforms} onClose={() => { setShowPostModal(false); setEditingPost(null); }} onSaved={() => { setShowPostModal(false); setEditingPost(null); loadPosts(); }} />
       )}
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div 
+          className="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-slate-200 py-2 min-w-[180px] animate-in fade-in zoom-in-95 duration-100"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={() => setContextMenu(null)}
+        >
+          <button
+            onClick={() => { setEditingPost(contextMenu.post); setShowPostModal(true); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            Edit Post
+          </button>
+          <button
+            onClick={async () => { await duplicatePost(contextMenu.post); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>
+            Duplicate
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            onClick={() => { setSelectionMode(true); togglePostSelection(contextMenu.post.id); }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <svg className="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 12l2 2 4-4" /></svg>
+            Select
+          </button>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            onClick={async () => {
+              if (confirm("Delete this post?")) {
+                await supabaseClient.from("social_posts").delete().eq("id", contextMenu.post.id);
+                setPosts((prev) => prev.filter((p) => p.id !== contextMenu.post.id));
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" /></svg>
+            Delete
+          </button>
+        </div>
+      )}
+
+      {/* Click outside to close context menu */}
+      {contextMenu && (
+        <div className="fixed inset-0 z-[9998]" onClick={() => setContextMenu(null)} />
+      )}
+
+      {/* Bulk Edit Modal */}
+      {showBulkEditModal && (
+        <BulkEditModal
+          selectedCount={selectedPosts.size}
+          onClose={() => setShowBulkEditModal(false)}
+          onSave={bulkUpdatePosts}
+        />
+      )}
+    </div>
+  );
+}
+
+function BulkEditModal({
+  selectedCount,
+  onClose,
+  onSave,
+}: {
+  selectedCount: number;
+  onClose: () => void;
+  onSave: (updates: { scheduled_date?: string; workflow_status?: WorkflowStatus }) => void;
+}) {
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | "">("");
+
+  const handleSave = () => {
+    const updates: { scheduled_date?: string; workflow_status?: WorkflowStatus } = {};
+    if (scheduledDate) updates.scheduled_date = new Date(scheduledDate).toISOString();
+    if (workflowStatus) updates.workflow_status = workflowStatus;
+    if (Object.keys(updates).length > 0) {
+      onSave(updates);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 p-5">
+          <h2 className="text-lg font-semibold text-slate-900">Edit {selectedCount} Posts</h2>
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <p className="text-sm text-slate-500">Leave fields empty to keep current values.</p>
+          
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Scheduled Date</label>
+            <input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => setScheduledDate(e.target.value)}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Workflow Status</label>
+            <select
+              value={workflowStatus}
+              onChange={(e) => setWorkflowStatus(e.target.value as WorkflowStatus | "")}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
+            >
+              <option value="">Keep current status</option>
+              <option value="captions">Captions</option>
+              <option value="creatives_approval">Creatives Approval</option>
+              <option value="final_approval">Final Approval</option>
+              <option value="for_publishing">For Publishing</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-3 border-t border-slate-100 p-5">
+          <button onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!scheduledDate && !workflowStatus}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-pink-500/25 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Update Posts
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

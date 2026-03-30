@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Report = {
@@ -97,6 +97,25 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
   const [kpis, setKpis] = useState<SocialKPI[]>([]);
   const [showKpiModal, setShowKpiModal] = useState(false);
   const [editingKpi, setEditingKpi] = useState<SocialKPI | null>(null);
+  const [expandedKpis, setExpandedKpis] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const toggleExpanded = (id: string) => {
+    setExpandedKpis(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  async function handleDeleteKpi(kpiId: string) {
+    if (!confirm("Are you sure you want to delete this KPI?")) return;
+    setDeleting(kpiId);
+    await supabaseClient.from("social_kpis").delete().eq("id", kpiId);
+    setDeleting(null);
+    loadKpis();
+  }
 
   useEffect(() => {
     loadStrategies();
@@ -141,7 +160,6 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
       {loading ? (
         <div className="flex items-center justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-4 border-pink-500 border-t-transparent" /></div>
       ) : (
-        /* KPIs Tab Content */
         kpis.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
@@ -151,110 +169,179 @@ export default function AnalyticsKPIs({ projectId }: { projectId: string }) {
             <p className="text-sm text-slate-500">Add KPI data linked to your strategies</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {kpis.map((kpi) => (
-              <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
+          <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+            {/* List Header */}
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-600">
+              <div className="col-span-2">Period</div>
+              <div className="col-span-3">Strategy Link</div>
+              <div className="col-span-2 text-center">Social Media</div>
+              <div className="col-span-2 text-center">Email/WA</div>
+              <div className="col-span-1 text-center">SEO</div>
+              <div className="col-span-2 text-right">Actions</div>
+            </div>
+            
+            {/* KPI List Items */}
+            {kpis.map((kpi) => {
+              const isExpanded = expandedKpis.has(kpi.id);
+              const totalSM = kpi.sm_reels + kpi.sm_long_form_video + kpi.sm_static_carousels + kpi.sm_stories;
+              const totalEW = kpi.email_campaigns + kpi.whatsapp_campaigns;
+              const totalSEO = kpi.seo_website_blogs + kpi.seo_linkedin_articles + kpi.seo_pr_offpage;
+              
+              return (
+                <div key={kpi.id} className="border-b border-slate-100 last:border-b-0">
+                  {/* Compact Row */}
+                  <div className="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-slate-50 transition-colors">
+                    <div className="col-span-2">
                       <span className="text-sm font-semibold text-slate-900">{kpi.report_period}</span>
-                      {kpi.strategy && (
-                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+                      <p className="text-[10px] text-slate-400">{new Date(kpi.created_at).toLocaleDateString()}</p>
+                    </div>
+                    <div className="col-span-3">
+                      {kpi.strategy ? (
+                        <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-1 text-xs font-medium text-purple-700 truncate max-w-full">
                           {kpi.strategy.title}
                         </span>
+                      ) : (
+                        <span className="text-xs text-slate-400">Not linked</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">Added {new Date(kpi.created_at).toLocaleDateString()}</p>
+                    <div className="col-span-2 text-center">
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-pink-600">
+                        <span className="text-pink-400">📱</span> {totalSM}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-center">
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <span className="text-green-400">📧</span> {totalEW}
+                      </span>
+                    </div>
+                    <div className="col-span-1 text-center">
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600">
+                        <span className="text-blue-400">🔍</span> {totalSEO}
+                      </span>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => toggleExpanded(kpi.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        title={isExpanded ? "Collapse" : "Expand"}
+                      >
+                        <svg className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M6 9l6 6 6-6" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => { setEditingKpi(kpi); setShowKpiModal(true); }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                        title="Edit"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteKpi(kpi.id)}
+                        disabled={deleting === kpi.id}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        title="Delete"
+                      >
+                        {deleting === kpi.id ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent" />
+                        ) : (
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={() => { setEditingKpi(kpi); setShowKpiModal(true); }}
-                    className="text-slate-400 hover:text-slate-600">
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
-                </div>
-                
-                {/* Social Media Section */}
-                <div className="mb-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-pink-600 mb-3">Social Media</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                    <div className="rounded-lg bg-pink-50 p-3">
-                      <p className="text-[10px] text-pink-600 font-medium">Reels</p>
-                      <p className="text-lg font-bold text-pink-700">{kpi.sm_reels}</p>
-                    </div>
-                    <div className="rounded-lg bg-pink-50 p-3">
-                      <p className="text-[10px] text-pink-600 font-medium">Long-Form Video</p>
-                      <p className="text-lg font-bold text-pink-700">{kpi.sm_long_form_video}</p>
-                    </div>
-                    <div className="rounded-lg bg-pink-50 p-3">
-                      <p className="text-[10px] text-pink-600 font-medium">Static/Carousels</p>
-                      <p className="text-lg font-bold text-pink-700">{kpi.sm_static_carousels}</p>
-                    </div>
-                    <div className="rounded-lg bg-pink-50 p-3">
-                      <p className="text-[10px] text-pink-600 font-medium">Stories</p>
-                      <p className="text-lg font-bold text-pink-700">{kpi.sm_stories}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                    {[
-                      { label: "Impressions", kpi: kpi.sm_impressions_kpi, goal: kpi.sm_impressions_goal },
-                      { label: "Reach", kpi: kpi.sm_reach_kpi, goal: kpi.sm_reach_goal },
-                      { label: "Engagement", kpi: kpi.sm_engagement_kpi, goal: kpi.sm_engagement_goal },
-                      { label: "Followers", kpi: kpi.sm_followers_kpi, goal: kpi.sm_followers_goal },
-                      { label: "Clicks", kpi: kpi.sm_clicks_kpi, goal: kpi.sm_clicks_goal },
-                    ].map((item) => (
-                      <div key={item.label} className="rounded-lg border border-pink-100 bg-white p-2 text-center">
-                        <p className="text-[9px] text-slate-500 mb-0.5">{item.label}</p>
-                        <p className="text-xs font-semibold text-slate-800 truncate">{item.kpi || "—"}</p>
-                        <p className="text-[10px] text-pink-600">Goal: {item.goal?.toLocaleString() || 0}</p>
+                  
+                  {/* Expanded Details */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 pt-2 bg-slate-50/50 border-t border-slate-100">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Social Media */}
+                        <div className="rounded-xl border border-pink-100 bg-white p-4">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-pink-600 mb-3">Social Media</h4>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="rounded-lg bg-pink-50 p-2 text-center">
+                              <p className="text-[10px] text-pink-500">Reels</p>
+                              <p className="text-lg font-bold text-pink-700">{kpi.sm_reels}</p>
+                            </div>
+                            <div className="rounded-lg bg-pink-50 p-2 text-center">
+                              <p className="text-[10px] text-pink-500">Long-Form</p>
+                              <p className="text-lg font-bold text-pink-700">{kpi.sm_long_form_video}</p>
+                            </div>
+                            <div className="rounded-lg bg-pink-50 p-2 text-center">
+                              <p className="text-[10px] text-pink-500">Static</p>
+                              <p className="text-lg font-bold text-pink-700">{kpi.sm_static_carousels}</p>
+                            </div>
+                            <div className="rounded-lg bg-pink-50 p-2 text-center">
+                              <p className="text-[10px] text-pink-500">Stories</p>
+                              <p className="text-lg font-bold text-pink-700">{kpi.sm_stories}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-slate-500">Impressions:</span><span className="font-medium">{kpi.sm_impressions_kpi || "—"} <span className="text-pink-500">(Goal: {kpi.sm_impressions_goal?.toLocaleString()})</span></span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Reach:</span><span className="font-medium">{kpi.sm_reach_kpi || "—"} <span className="text-pink-500">(Goal: {kpi.sm_reach_goal?.toLocaleString()})</span></span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Engagement:</span><span className="font-medium">{kpi.sm_engagement_kpi || "—"} <span className="text-pink-500">(Goal: {kpi.sm_engagement_goal?.toLocaleString()})</span></span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Followers:</span><span className="font-medium">{kpi.sm_followers_kpi || "—"} <span className="text-pink-500">(Goal: {kpi.sm_followers_goal?.toLocaleString()})</span></span></div>
+                            <div className="flex justify-between"><span className="text-slate-500">Clicks:</span><span className="font-medium">{kpi.sm_clicks_kpi || "—"} <span className="text-pink-500">(Goal: {kpi.sm_clicks_goal?.toLocaleString()})</span></span></div>
+                          </div>
+                        </div>
+                        
+                        {/* Email & WhatsApp */}
+                        <div className="rounded-xl border border-green-100 bg-white p-4">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-green-600 mb-3">Email & WhatsApp</h4>
+                          <div className="grid grid-cols-2 gap-2 mb-3">
+                            <div className="rounded-lg bg-green-50 p-2 text-center">
+                              <p className="text-[10px] text-green-500">Email</p>
+                              <p className="text-lg font-bold text-green-700">{kpi.email_campaigns}</p>
+                            </div>
+                            <div className="rounded-lg bg-green-50 p-2 text-center">
+                              <p className="text-[10px] text-green-500">WhatsApp</p>
+                              <p className="text-lg font-bold text-green-700">{kpi.whatsapp_campaigns}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-slate-500">CTR KPI:</span><span className="font-medium">{kpi.ewm_ctr_kpi || "—"} <span className="text-green-500">(Goal: {kpi.ewm_ctr_goal}%)</span></span></div>
+                          </div>
+                        </div>
+                        
+                        {/* SEO & AEO */}
+                        <div className="rounded-xl border border-blue-100 bg-white p-4">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-3">SEO & AEO</h4>
+                          <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="rounded-lg bg-blue-50 p-2 text-center">
+                              <p className="text-[10px] text-blue-500">Blogs</p>
+                              <p className="text-lg font-bold text-blue-700">{kpi.seo_website_blogs}</p>
+                            </div>
+                            <div className="rounded-lg bg-blue-50 p-2 text-center">
+                              <p className="text-[10px] text-blue-500">LinkedIn</p>
+                              <p className="text-lg font-bold text-blue-700">{kpi.seo_linkedin_articles}</p>
+                            </div>
+                            <div className="rounded-lg bg-blue-50 p-2 text-center">
+                              <p className="text-[10px] text-blue-500">PR</p>
+                              <p className="text-lg font-bold text-blue-700">{kpi.seo_pr_offpage}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex justify-between"><span className="text-slate-500">Impressions:</span><span className="font-medium">{kpi.seo_impressions_kpi || "—"} <span className="text-blue-500">(Goal: {kpi.seo_impressions_goal?.toLocaleString()})</span></span></div>
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                      
+                      {kpi.notes && (
+                        <div className="mt-3 rounded-lg bg-slate-100 p-3">
+                          <p className="text-xs font-medium text-slate-500 mb-1">Notes</p>
+                          <p className="text-sm text-slate-700">{kpi.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {/* Email & WhatsApp Section */}
-                <div className="mb-4">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-green-600 mb-3">Email & WhatsApp</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    <div className="rounded-lg bg-green-50 p-3">
-                      <p className="text-[10px] text-green-600 font-medium">Email Campaigns</p>
-                      <p className="text-lg font-bold text-green-700">{kpi.email_campaigns}</p>
-                    </div>
-                    <div className="rounded-lg bg-green-50 p-3">
-                      <p className="text-[10px] text-green-600 font-medium">WhatsApp Campaigns</p>
-                      <p className="text-lg font-bold text-green-700">{kpi.whatsapp_campaigns}</p>
-                    </div>
-                    <div className="rounded-lg border border-green-100 bg-white p-3 text-center">
-                      <p className="text-[10px] text-slate-500">CTR KPI</p>
-                      <p className="text-sm font-semibold text-slate-800">{kpi.ewm_ctr_kpi || "—"}</p>
-                      <p className="text-[10px] text-green-600">Goal: {kpi.ewm_ctr_goal}%</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SEO & AEO Section */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 mb-3">SEO & AEO</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="rounded-lg bg-blue-50 p-3">
-                      <p className="text-[10px] text-blue-600 font-medium">Website Blogs</p>
-                      <p className="text-lg font-bold text-blue-700">{kpi.seo_website_blogs}</p>
-                    </div>
-                    <div className="rounded-lg bg-blue-50 p-3">
-                      <p className="text-[10px] text-blue-600 font-medium">LinkedIn Articles</p>
-                      <p className="text-lg font-bold text-blue-700">{kpi.seo_linkedin_articles}</p>
-                    </div>
-                    <div className="rounded-lg bg-blue-50 p-3">
-                      <p className="text-[10px] text-blue-600 font-medium">PR/Off Page</p>
-                      <p className="text-lg font-bold text-blue-700">{kpi.seo_pr_offpage}</p>
-                    </div>
-                    <div className="rounded-lg border border-blue-100 bg-white p-3 text-center">
-                      <p className="text-[10px] text-slate-500">Impressions KPI</p>
-                      <p className="text-sm font-semibold text-slate-800">{kpi.seo_impressions_kpi || "—"}</p>
-                      <p className="text-[10px] text-blue-600">Goal: {kpi.seo_impressions_goal?.toLocaleString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}
@@ -340,6 +427,128 @@ function ReportModal({ report, projectId, selectedMonth, onClose, onSaved }: { r
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SearchableStrategyDropdown({ 
+  strategies, 
+  value, 
+  onChange 
+}: { 
+  strategies: Strategy[]; 
+  value: string; 
+  onChange: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selectedStrategy = strategies.find(s => s.id === value);
+  const displayName = selectedStrategy ? `${selectedStrategy.title} (${selectedStrategy.quarter})` : "";
+
+  const filteredStrategies = strategies.filter(s => {
+    const searchLower = search.toLowerCase();
+    return s.title.toLowerCase().includes(searchLower) || s.quarter.toLowerCase().includes(searchLower);
+  });
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative">
+      <div
+        className={`flex items-center gap-2 w-full rounded-xl border bg-white px-4 py-2.5 text-sm cursor-pointer transition-all ${
+          isOpen ? "border-pink-400 ring-2 ring-pink-500/20" : "border-slate-200 hover:border-slate-300"
+        }`}
+        onClick={() => {
+          setIsOpen(true);
+          setTimeout(() => inputRef.current?.focus(), 0);
+        }}
+      >
+        {isOpen ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search strategies..."
+            className="flex-1 outline-none text-sm text-black bg-transparent placeholder:text-slate-400"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className={`flex-1 truncate ${value ? "text-slate-900" : "text-slate-400"}`}>
+            {value ? displayName : "Select a strategy link..."}
+          </span>
+        )}
+        {value && !isOpen && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange("");
+            }}
+            className="text-slate-400 hover:text-slate-600"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        <svg className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div
+            className="px-4 py-2.5 text-sm text-slate-500 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+            onClick={() => {
+              onChange("");
+              setIsOpen(false);
+              setSearch("");
+            }}
+          >
+            No strategy link
+          </div>
+          {filteredStrategies.length === 0 ? (
+            <div className="px-4 py-4 text-sm text-slate-400 text-center">No strategies found</div>
+          ) : (
+            filteredStrategies.map((strategy) => (
+              <div
+                key={strategy.id}
+                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+                  strategy.id === value ? "bg-purple-50" : "hover:bg-slate-50"
+                }`}
+                onClick={() => {
+                  onChange(strategy.id);
+                  setIsOpen(false);
+                  setSearch("");
+                }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">{strategy.title}</p>
+                  <p className="text-xs text-purple-600">{strategy.quarter}</p>
+                </div>
+                {strategy.id === value && (
+                  <svg className="h-4 w-4 text-purple-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -445,14 +654,12 @@ function KpiModal({ kpi, projectId, strategies, onClose, onSaved }: {
           {/* Strategy & Period */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Strategy</label>
-              <select value={strategyId} onChange={(e) => setStrategyId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20">
-                <option value="">Select a strategy...</option>
-                {strategies.map((s) => (
-                  <option key={s.id} value={s.id}>{s.title} ({s.quarter})</option>
-                ))}
-              </select>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">Strategy Link</label>
+              <SearchableStrategyDropdown
+                strategies={strategies}
+                value={strategyId}
+                onChange={setStrategyId}
+              />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-slate-700">Report Period *</label>

@@ -229,6 +229,60 @@ export default function ProjectNotesTasksCard({
     setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
     setActivityReloadKey((prev) => prev + 1);
   }
+  
+  // Reload tasks when TaskDetailModal saves changes
+  async function reloadTasks() {
+    try {
+      let query = supabaseClient
+        .from("tasks")
+        .select(
+          "id, project_id, name, content, status, priority, type, activity_date, created_by_name, assigned_user_id, assigned_user_name, created_at, source",
+        )
+        .eq("project_id", projectId);
+      
+      if (source !== "all") {
+        query = query.or(`source.eq.${source},source.is.null`);
+      }
+      
+      const { data, error } = await query.order("activity_date", { ascending: false });
+
+      if (error || !data) {
+        return;
+      }
+      
+      const rows = data as Task[];
+      setTasks(rows);
+
+      const taskIds = rows.map((row) => row.id);
+      if (taskIds.length > 0) {
+        const { data: checklistData } = await supabaseClient
+          .from("task_checklist_items")
+          .select("id, task_id, label, is_completed, sort_order")
+          .in("task_id", taskIds)
+          .order("sort_order", { ascending: true });
+
+        if (checklistData) {
+          const map: Record<string, TaskChecklistItem[]> = {};
+          for (const row of checklistData as any[]) {
+            const taskId = row.task_id as string;
+            if (!map[taskId]) map[taskId] = [];
+            map[taskId].push({
+              id: row.id as string,
+              task_id: taskId,
+              label: (row.label as string | null) ?? "",
+              is_completed: (row.is_completed as boolean | null) ?? false,
+              sort_order: (row.sort_order as number | null) ?? 0,
+            });
+          }
+          setChecklistByTaskId(map);
+        }
+      }
+      
+      setActivityReloadKey((prev) => prev + 1);
+    } catch {
+      // Silently fail - user can refresh if needed
+    }
+  }
 
   const selectedTaskAllCompleted =
     selectedTaskGroup?.statuses.every((status) => status === "completed") ??
@@ -2432,6 +2486,7 @@ export default function ProjectNotesTasksCard({
           taskId={selectedTaskIdForModal}
           onClose={() => setSelectedTaskIdForModal(null)}
           onStatusChange={handleTaskDetailStatusChange}
+          onSave={() => void reloadTasks()}
         />
       )}
 

@@ -39,6 +39,7 @@ interface TaskDetailModalProps {
   taskId: string;
   onClose: () => void;
   onStatusChange?: (taskId: string, status: TaskStatus) => void;
+  onSave?: () => void;
 }
 
 function formatDate(value: string | null): string {
@@ -86,7 +87,7 @@ function linkifyText(text: string): React.ReactNode {
   });
 }
 
-export default function TaskDetailModal({ taskId, onClose, onStatusChange }: TaskDetailModalProps) {
+export default function TaskDetailModal({ taskId, onClose, onStatusChange, onSave }: TaskDetailModalProps) {
   const { role } = useUserRole();
   const isAdmin = role === "admin";
   const [mounted, setMounted] = useState(false);
@@ -387,6 +388,9 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange }: Tas
           updated_by_name: editorName,
         }));
         setIsEditMode(false);
+        
+        // Notify parent to refresh task list
+        onSave?.();
       }
     } catch (err) {
       console.error("Error saving task:", err);

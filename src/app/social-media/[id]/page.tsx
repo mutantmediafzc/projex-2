@@ -37,7 +37,7 @@ type SocialProject = {
 const TABS = [
   { id: "calendar", label: "Content Calendar", icon: CalendarIcon },
   { id: "articles", label: "Articles & Blog", icon: ArticleIcon },
-  { id: "analytics", label: "Analytics & KPIs", icon: ChartIcon },
+  { id: "analytics", label: "Strategies & KPIs", icon: ChartIcon },
   { id: "quarterly", label: "Quarterly Reports", icon: ReportIcon },
   { id: "client", label: "Client Access", icon: LinkIcon },
 ];

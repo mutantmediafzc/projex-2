@@ -211,48 +211,84 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
   return (
     <div className="min-h-screen bg-slate-50 print:bg-white">
-      {/* Header */}
+      {/* Header - Clean branded header with Mutant logo and Client logo */}
       <div className="bg-white border-b border-slate-200 print:border-0">
-        <div className="max-w-5xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-4">
-            {data.project?.company?.logo_url ? (
-              <Image
-                src={data.project.company.logo_url}
-                alt=""
-                width={64}
-                height={64}
-                className="h-16 w-16 rounded-xl object-cover"
-              />
-            ) : (
-              <div
-                className="flex h-16 w-16 items-center justify-center rounded-xl text-white text-2xl font-bold"
-                style={{ background: data.project?.brand_color || "linear-gradient(135deg, #ec4899, #d946ef)" }}
-              >
-                {data.project?.name?.charAt(0) || "?"}
+        {/* Top bar with logos */}
+        <div className="border-b border-slate-100">
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              {/* Mutant Logo */}
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/logos/mutant-logo.avif"
+                  alt="Mutant"
+                  width={120}
+                  height={40}
+                  className="h-10 w-auto object-contain"
+                />
+                <div className="h-8 w-px bg-slate-200" />
+                <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Strategy Report</span>
               </div>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
-              <p className="text-sm text-slate-500">{data.project?.company?.name}</p>
-              <p className="text-xs text-slate-400 mt-1">{data.quarter} Strategy & KPI Report</p>
+              
+              {/* Client Logo */}
+              <div className="flex items-center gap-3">
+                {data.project?.company?.logo_url ? (
+                  <Image
+                    src={data.project.company.logo_url}
+                    alt={data.project?.company?.name || ""}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-lg object-cover border border-slate-100"
+                  />
+                ) : data.project?.logo_url ? (
+                  <Image
+                    src={data.project.logo_url}
+                    alt={data.project?.name || ""}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-lg object-cover border border-slate-100"
+                  />
+                ) : (
+                  <div
+                    className="flex h-12 w-12 items-center justify-center rounded-lg text-white text-lg font-bold"
+                    style={{ background: data.project?.brand_color || "linear-gradient(135deg, #ec4899, #d946ef)" }}
+                  >
+                    {data.project?.name?.charAt(0) || "?"}
+                  </div>
+                )}
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-900">{data.project?.company?.name || data.project?.name}</p>
+                  <p className="text-xs text-slate-500">{data.quarter}</p>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* Platform badges */}
-          <div className="mt-4 flex items-center gap-2">
-            {(data.project?.platforms || []).map((platform) => {
-              const pConfig = PLATFORM_ICONS[platform.toLowerCase()];
-              if (!pConfig) return null;
-              return (
-                <span
-                  key={platform}
-                  className={`inline-flex items-center gap-1.5 rounded-full ${pConfig.bg} px-3 py-1.5 text-xs font-medium text-white`}
-                >
-                  {pConfig.icon}
-                  {pConfig.label}
-                </span>
-              );
-            })}
+        </div>
+        
+        {/* Title section */}
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
+              <p className="text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
+            </div>
+            
+            {/* Platform badges */}
+            <div className="flex items-center gap-2">
+              {(data.project?.platforms || []).map((platform) => {
+                const pConfig = PLATFORM_ICONS[platform.toLowerCase()];
+                if (!pConfig) return null;
+                return (
+                  <span
+                    key={platform}
+                    className={`inline-flex items-center gap-1.5 rounded-full ${pConfig.bg} px-3 py-1.5 text-xs font-medium text-white shadow-sm`}
+                  >
+                    {pConfig.icon}
+                    {pConfig.label}
+                  </span>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -452,8 +488,23 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         )}
 
         {/* Footer */}
-        <div className="text-center text-xs text-slate-400 pt-8 pb-4">
-          <p>This strategy report was generated by Projex. For questions, please contact your account manager.</p>
+        <div className="border-t border-slate-200 mt-12 pt-8 pb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Image
+                src="/logos/mutant-logo.avif"
+                alt="Mutant"
+                width={80}
+                height={28}
+                className="h-7 w-auto object-contain opacity-60"
+              />
+              <span className="text-xs text-slate-400">Integrated Marketing Agency</span>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">For questions, please contact your account manager.</p>
+              <p className="text-[10px] text-slate-300 mt-1">© {new Date().getFullYear()} Mutant Communications</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -13,6 +13,7 @@ import QuarterlyReports from "./QuarterlyReports";
 import SubscriptionsPanel from "./SubscriptionsPanel";
 import StrategyLinkManager from "./StrategyLinkManager";
 import TeamAssignments from "./TeamAssignments";
+import EmailWhatsAppCampaigns from "./EmailWhatsAppCampaigns";
 
 type SocialProject = {
   id: string;
@@ -36,7 +37,7 @@ type SocialProject = {
 
 const TABS = [
   { id: "calendar", label: "Social Media", icon: CalendarIcon },
-  { id: "email", label: "Email & WhatsApp", icon: EmailIcon, isNew: true },
+  { id: "email", label: "Email & WhatsApp", icon: EmailIcon },
   { id: "articles", label: "Website Blogs", icon: ArticleIcon },
   { id: "analytics", label: "Strategies & KPI", icon: ChartIcon },
   { id: "quarterly", label: "Reports", icon: ReportIcon },
@@ -383,11 +384,6 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
             >
               <tab.icon />
               {tab.label}
-              {tab.isNew && (
-                <span className="ml-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  NEW
-                </span>
-              )}
             </button>
           ))}
         </div>
@@ -402,22 +398,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           </div>
         )}
         {activeTab === "email" && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100">
-              <svg className="h-8 w-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
-            </div>
-            <h3 className="mb-2 text-lg font-semibold text-slate-900">Email & WhatsApp Campaigns</h3>
-            <p className="mb-4 text-sm text-slate-500">
-              Plan and manage your email newsletters and WhatsApp broadcast campaigns from here.
-            </p>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Coming Soon
-            </span>
-          </div>
+          <EmailWhatsAppCampaigns projectId={project.id} />
         )}
         {activeTab === "articles" && (
           <ArticlePlanner projectId={project.id} />

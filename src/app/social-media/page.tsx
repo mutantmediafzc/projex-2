@@ -97,6 +97,7 @@ export default function SocialMediaPage() {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [letterFilter, setLetterFilter] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   useEffect(() => {
     loadProjects();
@@ -234,6 +235,43 @@ export default function SocialMediaPage() {
           </svg>
           {sortDirection === "asc" ? "A → Z" : "Z → A"}
         </button>
+        {/* View Mode Toggle */}
+        <div className="flex rounded-xl border border-slate-200 bg-white p-1">
+          <button
+            onClick={() => setViewMode("list")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+              viewMode === "list"
+                ? "bg-pink-500 text-white shadow"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <line x1="3" y1="6" x2="3.01" y2="6" />
+              <line x1="3" y1="12" x2="3.01" y2="12" />
+              <line x1="3" y1="18" x2="3.01" y2="18" />
+            </svg>
+            List
+          </button>
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
+              viewMode === "grid"
+                ? "bg-pink-500 text-white shadow"
+                : "text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+            Grid
+          </button>
+        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -294,107 +332,207 @@ export default function SocialMediaPage() {
         </div>
       )}
 
-      {/* Projects Grid */}
+      {/* Projects List/Grid */}
       {!loading && !error && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <Link
-              key={project.id}
-              href={`/social-media/${project.id}`}
-              className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:border-pink-200 hover:shadow-lg hover:shadow-pink-500/10"
-            >
-              {/* Status badge */}
-              <div className="absolute right-4 top-4">
-                <span className={`inline-flex items-center rounded-full bg-gradient-to-r ${STATUS_COLORS[project.status || 'active']} px-2.5 py-0.5 text-xs font-medium text-white`}>
-                  {project.status || 'Active'}
-                </span>
+        <>
+          {/* List View */}
+          {viewMode === "list" && (
+            <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+              {/* Table Header */}
+              <div className="grid grid-cols-[1fr_150px_180px_120px_80px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
+                <span>Project</span>
+                <span>Company</span>
+                <span>Platforms</span>
+                <span>Status</span>
+                <span></span>
               </div>
-
-              {/* Company info */}
-              <div className="mb-4 flex items-center gap-3">
-                {project.company?.logo_url ? (
-                  <Image
-                    src={project.company.logo_url}
-                    alt=""
-                    width={40}
-                    height={40}
-                    className="h-10 w-10 rounded-xl object-cover"
-                  />
-                ) : (
-                  <div 
-                    className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold text-sm"
-                    style={{ background: project.brand_color || 'linear-gradient(135deg, #ec4899, #d946ef)' }}
-                  >
-                    {project.company?.name?.charAt(0) || project.name.charAt(0)}
-                  </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-base font-semibold text-slate-900 group-hover:text-pink-600">
-                    {project.name}
-                  </h3>
-                  <p className="truncate text-xs text-slate-500">
-                    {project.company?.name || 'No company'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Description */}
-              {project.description && (
-                <p className="mb-4 line-clamp-2 text-sm text-slate-600">
-                  {project.description}
-                </p>
-              )}
-
-              {/* Platforms */}
-              <div className="flex items-center gap-1.5">
-                {(project.platforms || []).map((platform) => {
-                  const platformData = PLATFORM_ICONS[platform.toLowerCase()];
-                  if (!platformData) return null;
-                  return (
-                    <span
-                      key={platform}
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${platformData.color} text-white shadow-sm`}
-                      title={platform}
-                    >
-                      {platformData.icon}
+              {/* Table Rows */}
+              {filteredProjects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/social-media/${project.id}`}
+                  className="grid grid-cols-[1fr_150px_180px_120px_80px] gap-4 items-center px-4 py-3 border-b border-slate-50 hover:bg-pink-50/50 transition-colors group"
+                >
+                  {/* Project Name & Logo */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    {project.company?.logo_url ? (
+                      <Image
+                        src={project.company.logo_url}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded-lg object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div 
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-white font-bold text-sm flex-shrink-0"
+                        style={{ background: project.brand_color || 'linear-gradient(135deg, #ec4899, #d946ef)' }}
+                      >
+                        {project.name.charAt(0)}
+                      </div>
+                    )}
+                    <span className="font-medium text-slate-900 truncate group-hover:text-pink-600">
+                      {project.name}
                     </span>
-                  );
-                })}
-                {(!project.platforms || project.platforms.length === 0) && (
-                  <span className="text-xs text-slate-400">No platforms configured</span>
-                )}
-              </div>
-
-              {/* Hover arrow */}
-              <div className="absolute bottom-4 right-4 opacity-0 transition-opacity group-hover:opacity-100">
-                <svg className="h-5 w-5 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
-              </div>
-            </Link>
-          ))}
-
-          {filteredProjects.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
-                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
-                </svg>
-              </div>
-              <h3 className="mb-1 text-lg font-semibold text-slate-900">No marketing projects yet</h3>
-              <p className="mb-4 text-sm text-slate-500">Create your first integrated marketing project to get started</p>
-              <button
-                onClick={() => setShowNewProjectModal(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25 transition-all hover:shadow-xl"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Create Project
-              </button>
+                  </div>
+                  {/* Company */}
+                  <span className="text-sm text-slate-500 truncate">
+                    {project.company?.name || '—'}
+                  </span>
+                  {/* Platforms */}
+                  <div className="flex items-center gap-1">
+                    {(project.platforms || []).slice(0, 5).map((platform) => {
+                      const platformData = PLATFORM_ICONS[platform.toLowerCase()];
+                      if (!platformData) return null;
+                      return (
+                        <span
+                          key={platform}
+                          className={`flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br ${platformData.color} text-white`}
+                          title={platform}
+                        >
+                          <span className="scale-75">{platformData.icon}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {/* Status */}
+                  <span className={`inline-flex w-fit items-center rounded-full bg-gradient-to-r ${STATUS_COLORS[project.status || 'active']} px-2.5 py-0.5 text-xs font-medium text-white capitalize`}>
+                    {project.status || 'active'}
+                  </span>
+                  {/* Arrow */}
+                  <div className="flex justify-end">
+                    <svg className="h-4 w-4 text-slate-300 group-hover:text-pink-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M9 18l6-6-6-6" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+              {filteredProjects.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
+                    <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg>
+                  </div>
+                  <h3 className="mb-1 text-lg font-semibold text-slate-900">No marketing projects yet</h3>
+                  <p className="mb-4 text-sm text-slate-500">Create your first integrated marketing project to get started</p>
+                  <button
+                    onClick={() => setShowNewProjectModal(true)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Create Project
+                  </button>
+                </div>
+              )}
             </div>
           )}
-        </div>
+
+          {/* Grid View */}
+          {viewMode === "grid" && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredProjects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/social-media/${project.id}`}
+                  className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:border-pink-200 hover:shadow-lg hover:shadow-pink-500/10"
+                >
+                  {/* Status badge */}
+                  <div className="absolute right-4 top-4">
+                    <span className={`inline-flex items-center rounded-full bg-gradient-to-r ${STATUS_COLORS[project.status || 'active']} px-2.5 py-0.5 text-xs font-medium text-white`}>
+                      {project.status || 'Active'}
+                    </span>
+                  </div>
+
+                  {/* Company info */}
+                  <div className="mb-4 flex items-center gap-3">
+                    {project.company?.logo_url ? (
+                      <Image
+                        src={project.company.logo_url}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div 
+                        className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold text-sm"
+                        style={{ background: project.brand_color || 'linear-gradient(135deg, #ec4899, #d946ef)' }}
+                      >
+                        {project.company?.name?.charAt(0) || project.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-base font-semibold text-slate-900 group-hover:text-pink-600">
+                        {project.name}
+                      </h3>
+                      <p className="truncate text-xs text-slate-500">
+                        {project.company?.name || 'No company'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  {project.description && (
+                    <p className="mb-4 line-clamp-2 text-sm text-slate-600">
+                      {project.description}
+                    </p>
+                  )}
+
+                  {/* Platforms */}
+                  <div className="flex items-center gap-1.5">
+                    {(project.platforms || []).map((platform) => {
+                      const platformData = PLATFORM_ICONS[platform.toLowerCase()];
+                      if (!platformData) return null;
+                      return (
+                        <span
+                          key={platform}
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${platformData.color} text-white shadow-sm`}
+                          title={platform}
+                        >
+                          {platformData.icon}
+                        </span>
+                      );
+                    })}
+                    {(!project.platforms || project.platforms.length === 0) && (
+                      <span className="text-xs text-slate-400">No platforms configured</span>
+                    )}
+                  </div>
+
+                  {/* Hover arrow */}
+                  <div className="absolute bottom-4 right-4 opacity-0 transition-opacity group-hover:opacity-100">
+                    <svg className="h-5 w-5 text-pink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              ))}
+
+              {filteredProjects.length === 0 && (
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
+                    <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                    </svg>
+                  </div>
+                  <h3 className="mb-1 text-lg font-semibold text-slate-900">No marketing projects yet</h3>
+                  <p className="mb-4 text-sm text-slate-500">Create your first integrated marketing project to get started</p>
+                  <button
+                    onClick={() => setShowNewProjectModal(true)}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-pink-500/25"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Create Project
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* New Project Modal */}

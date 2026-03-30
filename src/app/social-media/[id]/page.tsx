@@ -35,11 +35,12 @@ type SocialProject = {
 };
 
 const TABS = [
-  { id: "calendar", label: "Content Calendar", icon: CalendarIcon },
-  { id: "articles", label: "Articles & Blog", icon: ArticleIcon },
-  { id: "analytics", label: "Strategies & KPIs", icon: ChartIcon },
-  { id: "quarterly", label: "Quarterly Reports", icon: ReportIcon },
-  { id: "client", label: "Client Access", icon: LinkIcon },
+  { id: "calendar", label: "Social Media", icon: CalendarIcon },
+  { id: "email", label: "Email & WhatsApp", icon: EmailIcon, isNew: true },
+  { id: "articles", label: "Website Blogs", icon: ArticleIcon },
+  { id: "analytics", label: "Strategies & KPI", icon: ChartIcon },
+  { id: "quarterly", label: "Reports", icon: ReportIcon },
+  { id: "client", label: "Share Access", icon: LinkIcon },
 ];
 
 function CalendarIcon() {
@@ -91,6 +92,15 @@ function ReportIcon() {
       <line x1="16" y1="13" x2="8" y2="13" />
       <line x1="16" y1="17" x2="8" y2="17" />
       <polyline points="10 9 9 9 8 9" />
+    </svg>
+  );
+}
+
+function EmailIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
   );
 }
@@ -260,7 +270,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
       <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center gap-2 text-sm">
           <Link href="/social-media" className="text-slate-500 hover:text-pink-600">
-            Social Media
+            Integrated Marketing
           </Link>
           <span className="text-slate-300">/</span>
           <span className="text-slate-900">{project.name}</span>
@@ -373,6 +383,11 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
             >
               <tab.icon />
               {tab.label}
+              {tab.isNew && (
+                <span className="ml-1 rounded-full bg-emerald-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  NEW
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -384,6 +399,24 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           <div className="space-y-6">
             <TeamAssignments projectId={project.id} />
             <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
+          </div>
+        )}
+        {activeTab === "email" && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100">
+              <svg className="h-8 w-8 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">Email & WhatsApp Campaigns</h3>
+            <p className="mb-4 text-sm text-slate-500">
+              Plan and manage your email newsletters and WhatsApp broadcast campaigns from here.
+            </p>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Coming Soon
+            </span>
           </div>
         )}
         {activeTab === "articles" && (

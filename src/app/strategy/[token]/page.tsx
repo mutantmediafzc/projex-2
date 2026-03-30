@@ -52,6 +52,35 @@ type MonthlyKPI = {
   website_clicks: number;
 };
 
+type SocialKPI = {
+  id: string;
+  report_period: string;
+  sm_reels: number;
+  sm_long_form_video: number;
+  sm_static_carousels: number;
+  sm_stories: number;
+  sm_impressions_kpi: string | null;
+  sm_impressions_goal: number;
+  sm_reach_kpi: string | null;
+  sm_reach_goal: number;
+  sm_engagement_kpi: string | null;
+  sm_engagement_goal: number;
+  sm_followers_kpi: string | null;
+  sm_followers_goal: number;
+  sm_clicks_kpi: string | null;
+  sm_clicks_goal: number;
+  email_campaigns: number;
+  whatsapp_campaigns: number;
+  ewm_ctr_kpi: string | null;
+  ewm_ctr_goal: number;
+  seo_website_blogs: number;
+  seo_linkedin_articles: number;
+  seo_pr_offpage: number;
+  seo_impressions_kpi: string | null;
+  seo_impressions_goal: number;
+  notes: string | null;
+};
+
 const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
   instagram: {
     icon: <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/></svg>,
@@ -107,6 +136,8 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
   const [data, setData] = useState<StrategyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [kpis, setKpis] = useState<SocialKPI[]>([]);
+  const [activeTab, setActiveTab] = useState<"overview" | "kpis">("overview");
 
   useEffect(() => {
     loadStrategy();
@@ -165,6 +196,15 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
       follower_growth: r.kpi_data?.follower_growth?.actual || 0,
       website_clicks: r.kpi_data?.website_clicks?.actual || 0,
     }));
+
+    // Load strategy KPIs
+    const { data: kpiData } = await supabaseClient
+      .from("social_kpis")
+      .select("*")
+      .eq("strategy_id", linkData.id)
+      .order("report_period", { ascending: false });
+    
+    if (kpiData) setKpis(kpiData as SocialKPI[]);
 
     setData({
       ...linkData,
@@ -293,7 +333,139 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="max-w-5xl mx-auto px-6 pt-6">
+        <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${activeTab === "overview" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            📋 Strategy Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("kpis")}
+            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${activeTab === "kpis" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+          >
+            📊 KPIs & Metrics
+          </button>
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+        {activeTab === "kpis" ? (
+          /* KPIs Tab Content */
+          kpis.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
+                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+              </div>
+              <h3 className="mb-1 text-lg font-semibold text-slate-900">No KPI data available</h3>
+              <p className="text-sm text-slate-500">KPI metrics will appear here when added</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {kpis.map((kpi) => (
+                <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-6">
+                  <div className="mb-4">
+                    <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
+                      {kpi.report_period}
+                    </span>
+                  </div>
+                  
+                  {/* Social Media Section */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-pink-600 mb-4">📱 Social Media</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      <div className="rounded-xl bg-pink-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_reels}</p>
+                        <p className="text-xs text-pink-600">Reels</p>
+                      </div>
+                      <div className="rounded-xl bg-pink-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_long_form_video}</p>
+                        <p className="text-xs text-pink-600">Long-Form Video</p>
+                      </div>
+                      <div className="rounded-xl bg-pink-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_static_carousels}</p>
+                        <p className="text-xs text-pink-600">Static/Carousels</p>
+                      </div>
+                      <div className="rounded-xl bg-pink-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_stories}</p>
+                        <p className="text-xs text-pink-600">Stories</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                      {[
+                        { label: "Impressions", kpiVal: kpi.sm_impressions_kpi, goal: kpi.sm_impressions_goal },
+                        { label: "Reach", kpiVal: kpi.sm_reach_kpi, goal: kpi.sm_reach_goal },
+                        { label: "Engagement", kpiVal: kpi.sm_engagement_kpi, goal: kpi.sm_engagement_goal },
+                        { label: "Followers", kpiVal: kpi.sm_followers_kpi, goal: kpi.sm_followers_goal },
+                        { label: "Clicks", kpiVal: kpi.sm_clicks_kpi, goal: kpi.sm_clicks_goal },
+                      ].map((item) => (
+                        <div key={item.label} className="rounded-xl border border-pink-100 bg-white p-3 text-center">
+                          <p className="text-[10px] text-slate-500 mb-1">{item.label}</p>
+                          <p className="text-sm font-semibold text-slate-800">{item.kpiVal || "—"}</p>
+                          <p className="text-[10px] text-pink-600">Goal: {item.goal?.toLocaleString() || 0}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Email & WhatsApp Section */}
+                  <div className="mb-6">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-green-600 mb-4">📧 Email & WhatsApp Marketing</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div className="rounded-xl bg-green-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-green-700">{kpi.email_campaigns}</p>
+                        <p className="text-xs text-green-600">Email Campaigns</p>
+                      </div>
+                      <div className="rounded-xl bg-green-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-green-700">{kpi.whatsapp_campaigns}</p>
+                        <p className="text-xs text-green-600">WhatsApp Campaigns</p>
+                      </div>
+                      <div className="rounded-xl border border-green-100 bg-white p-4 text-center">
+                        <p className="text-[10px] text-slate-500 mb-1">CTR KPI</p>
+                        <p className="text-lg font-semibold text-slate-800">{kpi.ewm_ctr_kpi || "—"}</p>
+                        <p className="text-[10px] text-green-600">Goal: {kpi.ewm_ctr_goal}%</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SEO & AEO Section */}
+                  <div>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-4">🔍 SEO & AEO</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      <div className="rounded-xl bg-blue-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_website_blogs}</p>
+                        <p className="text-xs text-blue-600">Website Blogs</p>
+                      </div>
+                      <div className="rounded-xl bg-blue-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_linkedin_articles}</p>
+                        <p className="text-xs text-blue-600">LinkedIn Articles</p>
+                      </div>
+                      <div className="rounded-xl bg-blue-50 p-4 text-center">
+                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_pr_offpage}</p>
+                        <p className="text-xs text-blue-600">PR/Off Page</p>
+                      </div>
+                      <div className="rounded-xl border border-blue-100 bg-white p-4 text-center">
+                        <p className="text-[10px] text-slate-500 mb-1">Impressions KPI</p>
+                        <p className="text-lg font-semibold text-slate-800">{kpi.seo_impressions_kpi || "—"}</p>
+                        <p className="text-[10px] text-blue-600">Goal: {kpi.seo_impressions_goal?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {kpi.notes && (
+                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                      <p className="text-xs font-medium text-slate-500 mb-1">Notes</p>
+                      <p className="text-sm text-slate-700">{kpi.notes}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : (
+        <>
         {/* Subscriptions & Verification */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-4">Subscriptions & Verification</h2>
@@ -485,6 +657,8 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             <h2 className="text-lg font-bold text-slate-900 mb-4">Notes</h2>
             <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.notes}</p>
           </section>
+        )}
+        </>
         )}
 
         {/* Footer */}

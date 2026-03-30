@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import RichTextEditor from "@/components/RichTextEditor";
 
 type StrategyLink = {
   id: string;
@@ -12,7 +13,6 @@ type StrategyLink = {
   kpi_description: string | null;
   content_pillars: string | null;
   platform_specific_strategy: string | null;
-  theme: string | null;
   target_audience: string | null;
   is_published: boolean;
   public_link_token: string | null;
@@ -195,11 +195,10 @@ function StrategyModal({
   const [quarter, setQuarter] = useState(link?.quarter?.split("-")[1] || "Q1");
   const [objectives, setObjectives] = useState(link?.objectives || "");
   const [coreGoals, setCoreGoals] = useState(link?.core_goals || "");
-  const [kpiDescription, setKpiDescription] = useState(link?.kpi_description || "");
   const [contentPillars, setContentPillars] = useState(link?.content_pillars || "");
-  const [platformStrategy, setPlatformStrategy] = useState(link?.platform_specific_strategy || "");
-  const [theme, setTheme] = useState(link?.theme || "");
   const [targetAudience, setTargetAudience] = useState(link?.target_audience || "");
+  const [kpiDescription, setKpiDescription] = useState(link?.kpi_description || "");
+  const [platformStrategy, setPlatformStrategy] = useState(link?.platform_specific_strategy || "");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit() {
@@ -210,11 +209,10 @@ function StrategyModal({
       quarter: `${year}-${quarter}`,
       objectives: objectives || null,
       core_goals: coreGoals || null,
-      kpi_description: kpiDescription || null,
       content_pillars: contentPillars || null,
-      platform_specific_strategy: platformStrategy || null,
-      theme: theme || null,
       target_audience: targetAudience || null,
+      kpi_description: kpiDescription || null,
+      platform_specific_strategy: platformStrategy || null,
     };
 
     if (link) {
@@ -281,78 +279,55 @@ function StrategyModal({
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Objectives</label>
-            <textarea
+            <RichTextEditor
               value={objectives}
-              onChange={(e) => setObjectives(e.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              onChange={setObjectives}
               placeholder="Describe the strategy objectives..."
             />
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Core Goals</label>
-            <textarea
+            <RichTextEditor
               value={coreGoals}
-              onChange={(e) => setCoreGoals(e.target.value)}
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              onChange={setCoreGoals}
               placeholder="List the core goals..."
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">KPI</label>
-            <textarea
-              value={kpiDescription}
-              onChange={(e) => setKpiDescription(e.target.value)}
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
-              placeholder="Describe the key performance indicators..."
-            />
-          </div>
-
-          <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Content Pillars</label>
-            <textarea
+            <RichTextEditor
               value={contentPillars}
-              onChange={(e) => setContentPillars(e.target.value)}
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              onChange={setContentPillars}
               placeholder="Define the content pillars..."
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Platform Specific Strategy</label>
-            <textarea
-              value={platformStrategy}
-              onChange={(e) => setPlatformStrategy(e.target.value)}
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
-              placeholder="Describe platform-specific strategies..."
-            />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Theme</label>
-            <textarea
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              rows={2}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
-              placeholder="Quarter theme..."
-            />
-          </div>
-
-          <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Target Audience</label>
-            <textarea
+            <RichTextEditor
               value={targetAudience}
-              onChange={(e) => setTargetAudience(e.target.value)}
-              rows={2}
-              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-black focus:border-pink-300 focus:outline-none resize-none"
+              onChange={setTargetAudience}
               placeholder="Describe the target audience..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">KPIs</label>
+            <RichTextEditor
+              value={kpiDescription}
+              onChange={setKpiDescription}
+              placeholder="Describe the key performance indicators..."
+            />
+          </div>
+
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">Platform Specific Strategy</label>
+            <RichTextEditor
+              value={platformStrategy}
+              onChange={setPlatformStrategy}
+              placeholder="Describe platform-specific strategies..."
             />
           </div>
 

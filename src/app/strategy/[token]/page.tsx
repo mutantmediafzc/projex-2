@@ -11,12 +11,10 @@ type StrategyData = {
   quarter: string;
   objectives: string | null;
   core_goals: string | null;
-  kpi_description: string | null;
-  content_pillars_text: string | null;
-  platform_specific_strategy: string | null;
-  theme: string | null;
+  content_pillars: string | null;
   target_audience: string | null;
-  content_pillars: string[];
+  kpi_description: string | null;
+  platform_specific_strategy: string | null;
   kpi_targets: Record<string, { target: number; description: string }>;
   deliverables: Deliverable[];
   subscriptions: {
@@ -318,50 +316,44 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         {/* Strategy Overview - Single Column with Glass Morphism */}
-        {(data.objectives || data.core_goals || data.kpi_description || data.content_pillars_text || data.platform_specific_strategy || data.theme || data.target_audience) && (
+        {(data.objectives || data.core_goals || data.content_pillars || data.target_audience || data.kpi_description || data.platform_specific_strategy) && (
           <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
             <h2 className="text-xl font-bold text-slate-900 mb-6">Strategy Overview</h2>
             <div className="space-y-6">
               {data.objectives && (
                 <div className="rounded-2xl bg-gradient-to-br from-violet-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-violet-100/50">
                   <h3 className="text-sm font-semibold text-violet-700 mb-3">Objectives</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.objectives}</p>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.objectives }} />
                 </div>
               )}
               {data.core_goals && (
                 <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
                   <h3 className="text-sm font-semibold text-emerald-700 mb-3">Core Goals</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.core_goals}</p>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
                 </div>
               )}
-              {data.kpi_description && (
-                <div className="rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/80 backdrop-blur-sm p-5 border border-pink-100/50">
-                  <h3 className="text-sm font-semibold text-pink-700 mb-3">KPI</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.kpi_description}</p>
-                </div>
-              )}
-              {data.content_pillars_text && (
+              {data.content_pillars && (
                 <div className="rounded-2xl bg-gradient-to-br from-indigo-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-indigo-100/50">
                   <h3 className="text-sm font-semibold text-indigo-700 mb-3">Content Pillars</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.content_pillars_text}</p>
-                </div>
-              )}
-              {data.platform_specific_strategy && (
-                <div className="rounded-2xl bg-gradient-to-br from-cyan-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-cyan-100/50">
-                  <h3 className="text-sm font-semibold text-cyan-700 mb-3">Platform Specific Strategy</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.platform_specific_strategy}</p>
-                </div>
-              )}
-              {data.theme && (
-                <div className="rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/80 backdrop-blur-sm p-5 border border-amber-100/50">
-                  <h3 className="text-sm font-semibold text-amber-700 mb-3">Theme</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.theme}</p>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
                 </div>
               )}
               {data.target_audience && (
                 <div className="rounded-2xl bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-sm p-5 border border-sky-100/50">
                   <h3 className="text-sm font-semibold text-sky-700 mb-3">Target Audience</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.target_audience}</p>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
+                </div>
+              )}
+              {data.kpi_description && (
+                <div className="rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/80 backdrop-blur-sm p-5 border border-pink-100/50">
+                  <h3 className="text-sm font-semibold text-pink-700 mb-3">KPIs</h3>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
+                </div>
+              )}
+              {data.platform_specific_strategy && (
+                <div className="rounded-2xl bg-gradient-to-br from-cyan-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-cyan-100/50">
+                  <h3 className="text-sm font-semibold text-cyan-700 mb-3">Platform Specific Strategy</h3>
+                  <div className="text-sm text-slate-700 leading-relaxed prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
                 </div>
               )}
             </div>

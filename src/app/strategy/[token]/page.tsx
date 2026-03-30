@@ -137,7 +137,6 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [kpis, setKpis] = useState<SocialKPI[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "kpis">("overview");
 
   useEffect(() => {
     loadStrategy();
@@ -333,67 +332,90 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="max-w-5xl mx-auto px-6 pt-6">
-        <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${activeTab === "overview" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            📋 Strategy Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("kpis")}
-            className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${activeTab === "kpis" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
-          >
-            📊 KPIs & Metrics
-          </button>
-        </div>
-      </div>
-
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        {activeTab === "kpis" ? (
-          /* KPIs Tab Content */
-          kpis.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-100 to-fuchsia-100 text-pink-500">
-                <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
-              </div>
-              <h3 className="mb-1 text-lg font-semibold text-slate-900">No KPI data available</h3>
-              <p className="text-sm text-slate-500">KPI metrics will appear here when added</p>
+        {/* Strategy Overview - Single Column with Glass Morphism */}
+        {(data.objectives || data.core_goals || data.theme || data.target_audience) && (
+          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Strategy Overview</h2>
+            <div className="space-y-6">
+              {data.objectives && (
+                <div className="rounded-2xl bg-gradient-to-br from-violet-50/80 to-purple-50/80 backdrop-blur-sm p-5 border border-violet-100/50">
+                  <h3 className="text-sm font-semibold text-violet-700 mb-3 flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100">🎯</span>
+                    Objectives
+                  </h3>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.objectives}</p>
+                </div>
+              )}
+              {data.core_goals && (
+                <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-teal-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
+                  <h3 className="text-sm font-semibold text-emerald-700 mb-3 flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100">🚀</span>
+                    Core Goals
+                  </h3>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.core_goals}</p>
+                </div>
+              )}
+              {data.theme && (
+                <div className="rounded-2xl bg-gradient-to-br from-amber-50/80 to-orange-50/80 backdrop-blur-sm p-5 border border-amber-100/50">
+                  <h3 className="text-sm font-semibold text-amber-700 mb-3 flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100">✨</span>
+                    Theme
+                  </h3>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.theme}</p>
+                </div>
+              )}
+              {data.target_audience && (
+                <div className="rounded-2xl bg-gradient-to-br from-sky-50/80 to-blue-50/80 backdrop-blur-sm p-5 border border-sky-100/50">
+                  <h3 className="text-sm font-semibold text-sky-700 mb-3 flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-100">👥</span>
+                    Target Audience
+                  </h3>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.target_audience}</p>
+                </div>
+              )}
             </div>
-          ) : (
+          </section>
+        )}
+
+        {/* KPIs Section - Glass Morphism */}
+        {kpis.length > 0 && (
+          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">📊 Strategy KPIs</h2>
             <div className="space-y-6">
               {kpis.map((kpi) => (
-                <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-6">
-                  <div className="mb-4">
-                    <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-1 text-sm font-semibold text-purple-700">
+                <div key={kpi.id} className="space-y-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="inline-flex items-center rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25">
                       {kpi.report_period}
                     </span>
                   </div>
                   
                   {/* Social Media Section */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-pink-600 mb-4">📱 Social Media</h4>
+                  <div className="rounded-2xl bg-gradient-to-br from-pink-50/80 to-rose-50/80 backdrop-blur-sm p-5 border border-pink-100/50">
+                    <h4 className="text-sm font-bold text-pink-700 mb-4 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100">📱</span>
+                      Social Media Content
+                    </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                      <div className="rounded-xl bg-pink-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_reels}</p>
-                        <p className="text-xs text-pink-600">Reels</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_reels}</p>
+                        <p className="text-xs text-pink-500 font-medium">Reels</p>
                       </div>
-                      <div className="rounded-xl bg-pink-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_long_form_video}</p>
-                        <p className="text-xs text-pink-600">Long-Form Video</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_long_form_video}</p>
+                        <p className="text-xs text-pink-500 font-medium">Long-Form Video</p>
                       </div>
-                      <div className="rounded-xl bg-pink-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_static_carousels}</p>
-                        <p className="text-xs text-pink-600">Static/Carousels</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_static_carousels}</p>
+                        <p className="text-xs text-pink-500 font-medium">Static/Carousels</p>
                       </div>
-                      <div className="rounded-xl bg-pink-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-pink-700">{kpi.sm_stories}</p>
-                        <p className="text-xs text-pink-600">Stories</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-pink-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-pink-600">{kpi.sm_stories}</p>
+                        <p className="text-xs text-pink-500 font-medium">Stories</p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {[
                         { label: "Impressions", kpiVal: kpi.sm_impressions_kpi, goal: kpi.sm_impressions_goal },
                         { label: "Reach", kpiVal: kpi.sm_reach_kpi, goal: kpi.sm_reach_goal },
@@ -401,61 +423,67 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                         { label: "Followers", kpiVal: kpi.sm_followers_kpi, goal: kpi.sm_followers_goal },
                         { label: "Clicks", kpiVal: kpi.sm_clicks_kpi, goal: kpi.sm_clicks_goal },
                       ].map((item) => (
-                        <div key={item.label} className="rounded-xl border border-pink-100 bg-white p-3 text-center">
-                          <p className="text-[10px] text-slate-500 mb-1">{item.label}</p>
-                          <p className="text-sm font-semibold text-slate-800">{item.kpiVal || "—"}</p>
-                          <p className="text-[10px] text-pink-600">Goal: {item.goal?.toLocaleString() || 0}</p>
+                        <div key={item.label} className="rounded-xl bg-white/80 backdrop-blur-sm p-3 text-center border border-pink-50">
+                          <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
+                          <p className="text-xs font-semibold text-slate-800">{item.kpiVal || "—"}</p>
+                          <p className="text-[9px] text-pink-500">Goal: {item.goal?.toLocaleString() || 0}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Email & WhatsApp Section */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-green-600 mb-4">📧 Email & WhatsApp Marketing</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="rounded-xl bg-green-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-green-700">{kpi.email_campaigns}</p>
-                        <p className="text-xs text-green-600">Email Campaigns</p>
+                  <div className="rounded-2xl bg-gradient-to-br from-emerald-50/80 to-green-50/80 backdrop-blur-sm p-5 border border-emerald-100/50">
+                    <h4 className="text-sm font-bold text-emerald-700 mb-4 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100">📧</span>
+                      Email & WhatsApp Marketing
+                    </h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-emerald-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-emerald-600">{kpi.email_campaigns}</p>
+                        <p className="text-xs text-emerald-500 font-medium">Email Campaigns</p>
                       </div>
-                      <div className="rounded-xl bg-green-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-green-700">{kpi.whatsapp_campaigns}</p>
-                        <p className="text-xs text-green-600">WhatsApp Campaigns</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-emerald-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-emerald-600">{kpi.whatsapp_campaigns}</p>
+                        <p className="text-xs text-emerald-500 font-medium">WhatsApp Campaigns</p>
                       </div>
-                      <div className="rounded-xl border border-green-100 bg-white p-4 text-center">
-                        <p className="text-[10px] text-slate-500 mb-1">CTR KPI</p>
+                      <div className="rounded-xl bg-white/80 backdrop-blur-sm p-4 text-center border border-emerald-50">
+                        <p className="text-[10px] text-slate-500 mb-0.5">CTR KPI</p>
                         <p className="text-lg font-semibold text-slate-800">{kpi.ewm_ctr_kpi || "—"}</p>
-                        <p className="text-[10px] text-green-600">Goal: {kpi.ewm_ctr_goal}%</p>
+                        <p className="text-[9px] text-emerald-500">Goal: {kpi.ewm_ctr_goal}%</p>
                       </div>
                     </div>
                   </div>
 
                   {/* SEO & AEO Section */}
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-blue-600 mb-4">🔍 SEO & AEO</h4>
+                  <div className="rounded-2xl bg-gradient-to-br from-blue-50/80 to-indigo-50/80 backdrop-blur-sm p-5 border border-blue-100/50">
+                    <h4 className="text-sm font-bold text-blue-700 mb-4 flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100">🔍</span>
+                      SEO & AEO
+                    </h4>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      <div className="rounded-xl bg-blue-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_website_blogs}</p>
-                        <p className="text-xs text-blue-600">Website Blogs</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_website_blogs}</p>
+                        <p className="text-xs text-blue-500 font-medium">Website Blogs</p>
                       </div>
-                      <div className="rounded-xl bg-blue-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_linkedin_articles}</p>
-                        <p className="text-xs text-blue-600">LinkedIn Articles</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_linkedin_articles}</p>
+                        <p className="text-xs text-blue-500 font-medium">LinkedIn Articles</p>
                       </div>
-                      <div className="rounded-xl bg-blue-50 p-4 text-center">
-                        <p className="text-2xl font-bold text-blue-700">{kpi.seo_pr_offpage}</p>
-                        <p className="text-xs text-blue-600">PR/Off Page</p>
+                      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-4 text-center border border-blue-100/50 shadow-sm">
+                        <p className="text-2xl font-bold text-blue-600">{kpi.seo_pr_offpage}</p>
+                        <p className="text-xs text-blue-500 font-medium">PR/Off Page</p>
                       </div>
-                      <div className="rounded-xl border border-blue-100 bg-white p-4 text-center">
-                        <p className="text-[10px] text-slate-500 mb-1">Impressions KPI</p>
+                      <div className="rounded-xl bg-white/80 backdrop-blur-sm p-4 text-center border border-blue-50">
+                        <p className="text-[10px] text-slate-500 mb-0.5">Impressions KPI</p>
                         <p className="text-lg font-semibold text-slate-800">{kpi.seo_impressions_kpi || "—"}</p>
-                        <p className="text-[10px] text-blue-600">Goal: {kpi.seo_impressions_goal?.toLocaleString()}</p>
+                        <p className="text-[9px] text-blue-500">Goal: {kpi.seo_impressions_goal?.toLocaleString()}</p>
                       </div>
                     </div>
                   </div>
 
                   {kpi.notes && (
-                    <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                    <div className="rounded-2xl bg-slate-50/80 backdrop-blur-sm p-4 border border-slate-100/50">
                       <p className="text-xs font-medium text-slate-500 mb-1">Notes</p>
                       <p className="text-sm text-slate-700">{kpi.notes}</p>
                     </div>
@@ -463,107 +491,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                 </div>
               ))}
             </div>
-          )
-        ) : (
-        <>
-        {/* Subscriptions & Verification */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-6">
-          <h2 className="text-lg font-bold text-slate-900 mb-4">Subscriptions & Verification</h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Meta Verified */}
-            <div className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span className="text-xs font-medium text-blue-700">Meta Verified</span>
-              </div>
-              {data.subscriptions.meta_verified ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                  Verified
-                </span>
-              ) : (
-                <span className="text-sm text-slate-500">Not Verified</span>
-              )}
-            </div>
-
-            {/* Manychat */}
-            <div className="rounded-xl bg-gradient-to-br from-purple-50 to-fuchsia-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="h-5 w-5 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                </svg>
-                <span className="text-xs font-medium text-purple-700">Manychat</span>
-              </div>
-              <p className="text-xl font-bold text-purple-700">{data.subscriptions.manychat_subscribers.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">subscribers</p>
-            </div>
-
-            {/* WhatsApp */}
-            <div className="rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="h-5 w-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-                <span className="text-xs font-medium text-green-700">WhatsApp</span>
-              </div>
-              <p className="text-xl font-bold text-green-700">{data.subscriptions.whatsapp_subscribers.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">subscribers</p>
-            </div>
-
-            {/* Newsletter */}
-            <div className="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="h-5 w-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                <span className="text-xs font-medium text-amber-700">Newsletter</span>
-              </div>
-              <p className="text-xl font-bold text-amber-700">{data.subscriptions.newsletter_subscribers.toLocaleString()}</p>
-              <p className="text-xs text-slate-500">subscribers</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Objectives & Goals */}
-        {(data.objectives || data.core_goals || data.theme) && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Strategy Overview</h2>
-            <div className="grid gap-6 sm:grid-cols-2">
-              {data.objectives && (
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Objectives</h3>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.objectives}</p>
-                </div>
-              )}
-              {data.core_goals && (
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Core Goals</h3>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.core_goals}</p>
-                </div>
-              )}
-              {data.theme && (
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Theme</h3>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.theme}</p>
-                </div>
-              )}
-              {data.target_audience && (
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Target Audience</h3>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.target_audience}</p>
-                </div>
-              )}
-            </div>
           </section>
         )}
 
         {/* Quarterly Deliverables */}
         {data.deliverables.length > 0 && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Quarterly Deliverables</h2>
+          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">📦 Quarterly Deliverables</h2>
             
             {/* Overall Progress */}
             <div className="mb-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4">
@@ -620,8 +554,8 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
         {/* KPI Performance */}
         {data.monthly_kpis.length > 0 && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">KPI Performance</h2>
+          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">📈 KPI Performance</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -653,12 +587,10 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
         {/* Notes */}
         {data.notes && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Notes</h2>
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{data.notes}</p>
+          <section className="rounded-3xl border border-white/20 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-slate-200/50">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">📝 Notes</h2>
+            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{data.notes}</p>
           </section>
-        )}
-        </>
         )}
 
         {/* Footer */}

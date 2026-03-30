@@ -710,71 +710,73 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
 
             <p className="text-xs font-semibold text-pink-600 mb-2">B. KPI</p>
             
-            {/* Reach KPI - RichText with platform breakdown */}
-            <div className="mb-4">
-              <label className="mb-1.5 block text-xs font-medium text-slate-700">
-                Reach KPI <span className="text-slate-400">(Rich Text - include platform-specific ranges)</span>
-              </label>
-              <RichTextEditor
-                value={smReachKpi}
-                onChange={setSmReachKpi}
-                placeholder="e.g., Consistent Reach KPI Range:&#10;Instagram: 6,790 - 10,184&#10;Facebook: 565 - 848&#10;TikTok: 225,062 - 337,594"
-                minHeight="120px"
-              />
+            {/* All 5 KPI fields as Rich Text */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Impressions KPI</label>
+                <RichTextEditor
+                  value={smImpressionsKpi}
+                  onChange={setSmImpressionsKpi}
+                  placeholder="Enter impressions KPI ranges..."
+                  minHeight="100px"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Reach KPI</label>
+                <RichTextEditor
+                  value={smReachKpi}
+                  onChange={setSmReachKpi}
+                  placeholder="e.g., Consistent Reach KPI Range:&#10;Instagram: 6,790 - 10,184&#10;Facebook: 565 - 848"
+                  minHeight="100px"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Engagement KPI</label>
+                <RichTextEditor
+                  value={smEngagementKpi}
+                  onChange={setSmEngagementKpi}
+                  placeholder="Enter engagement KPI ranges..."
+                  minHeight="100px"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Followers KPI</label>
+                <RichTextEditor
+                  value={smFollowersKpi}
+                  onChange={setSmFollowersKpi}
+                  placeholder="Enter followers KPI ranges..."
+                  minHeight="100px"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1.5 block text-xs font-medium text-slate-700">Clicks KPI</label>
+                <RichTextEditor
+                  value={smClicksKpi}
+                  onChange={setSmClicksKpi}
+                  placeholder="Enter clicks KPI ranges..."
+                  minHeight="100px"
+                />
+              </div>
             </div>
 
-            {/* Platform-specific Goals */}
+            {/* Platform-specific Goals - Simple text fields per platform */}
             {platforms.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-slate-600 mb-2">Goals by Platform</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <p className="text-xs font-medium text-slate-600 mb-3">Goals by Platform</p>
+                <div className="space-y-3">
                   {platforms.map((platform) => (
-                    <div key={platform} className="rounded-lg border border-pink-100 bg-white p-3">
-                      <p className="text-xs font-semibold text-pink-700 mb-2 capitalize">{PLATFORM_LABELS[platform] || platform}</p>
-                      <div className="grid grid-cols-5 gap-2">
-                        {[
-                          { label: "Reach", key: "reach" },
-                          { label: "Impr.", key: "impressions" },
-                          { label: "Eng.", key: "engagement" },
-                          { label: "Foll.", key: "followers" },
-                          { label: "Clicks", key: "clicks" },
-                        ].map((kpi) => (
-                          <div key={kpi.key}>
-                            <label className="mb-0.5 block text-[9px] text-slate-500">{kpi.label}</label>
-                            <input 
-                              type="number" 
-                              placeholder="0"
-                              className="w-full rounded border border-pink-200 bg-white px-1.5 py-1 text-[10px] text-black focus:border-pink-400 focus:outline-none"
-                            />
-                          </div>
-                        ))}
-                      </div>
+                    <div key={platform}>
+                      <label className="mb-1 block text-xs font-medium text-pink-700 capitalize">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <input 
+                        type="text" 
+                        placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
+                        className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
+                      />
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Overall KPI Goals */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                { label: "Impressions Goal", goalVal: smImpressionsGoal, setGoal: setSmImpressionsGoal },
-                { label: "Reach Goal", goalVal: smReachGoal, setGoal: setSmReachGoal },
-                { label: "Engagement Goal", goalVal: smEngagementGoal, setGoal: setSmEngagementGoal },
-                { label: "Followers Goal", goalVal: smFollowersGoal, setGoal: setSmFollowersGoal },
-              ].map((item) => (
-                <div key={item.label}>
-                  <label className="mb-1 block text-[10px] text-slate-500">{item.label}</label>
-                  <input type="number" value={item.goalVal} onChange={(e) => item.setGoal(parseInt(e.target.value) || 0)}
-                    className="w-full rounded-lg border border-pink-200 bg-white px-2 py-1.5 text-xs text-black focus:border-pink-400 focus:outline-none" />
-                </div>
-              ))}
-            </div>
-            <div className="mt-2">
-              <label className="mb-1 block text-[10px] text-slate-500">Clicks Goal</label>
-              <input type="number" value={smClicksGoal} onChange={(e) => setSmClicksGoal(parseInt(e.target.value) || 0)}
-                className="w-full rounded-lg border border-pink-200 bg-white px-2 py-1.5 text-xs text-black focus:border-pink-400 focus:outline-none" />
-            </div>
           </div>
 
           {/* Email & WhatsApp Section */}

@@ -245,7 +245,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
     loadData();

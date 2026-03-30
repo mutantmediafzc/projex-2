@@ -520,38 +520,27 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             <div className="space-y-6">
               {kpis.map((kpi) => (
                 <div key={kpi.id} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-                  <div className="flex items-center gap-3 mb-5">
-                    <span className="inline-flex items-center rounded-full bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-1.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/25">
-                      {kpi.report_period}
-                    </span>
-                  </div>
-                  
-                  {/* Colorful KPI Cards Grid - Like the screenshot */}
+                  {/* KPI Cards Grid - All Purple */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-                    <div className="rounded-xl bg-gradient-to-br from-red-500 to-orange-500 p-4 text-white shadow-lg">
-                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Reach</p>
-                      <p className="text-xs font-bold mb-1">KPI Range</p>
-                      <div className="text-[9px] opacity-90 leading-relaxed strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
+                    <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
+                      <p className="text-sm font-bold mb-2">Views/Impressions</p>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_impressions_kpi || "—" }} />
                     </div>
-                    <div className="rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 p-4 text-white shadow-lg">
-                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Engagement</p>
-                      <p className="text-xs font-bold mb-1">KPI Range</p>
-                      <p className="text-[9px] opacity-90">{kpi.sm_engagement_kpi || "—"}</p>
+                    <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
+                      <p className="text-sm font-bold mb-2">Reach</p>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
                     </div>
-                    <div className="rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 p-4 text-white shadow-lg">
-                      <p className="text-[10px] font-medium opacity-90 mb-1">Consistent Views</p>
-                      <p className="text-xs font-bold mb-1">KPI Range</p>
-                      <p className="text-[9px] opacity-90">{kpi.sm_impressions_kpi || "—"}</p>
+                    <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
+                      <p className="text-sm font-bold mb-2">Engagement</p>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_engagement_kpi || "—" }} />
                     </div>
-                    <div className="rounded-xl bg-gradient-to-br from-yellow-500 to-lime-500 p-4 text-white shadow-lg">
-                      <p className="text-[10px] font-medium opacity-90 mb-1">Followers</p>
-                      <p className="text-xs font-bold mb-1">Growth</p>
-                      <p className="text-[9px] opacity-90">{kpi.sm_followers_kpi || "—"}</p>
+                    <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
+                      <p className="text-sm font-bold mb-2">Followers</p>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_followers_kpi || "—" }} />
                     </div>
-                    <div className="rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 p-4 text-white shadow-lg">
-                      <p className="text-[10px] font-medium opacity-90 mb-1">Clicks</p>
-                      <p className="text-xs font-bold mb-1">KPI Range</p>
-                      <p className="text-[9px] opacity-90">{kpi.sm_clicks_kpi || "—"}</p>
+                    <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
+                      <p className="text-sm font-bold mb-2">Clicks</p>
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_clicks_kpi || "—" }} />
                     </div>
                   </div>
                   

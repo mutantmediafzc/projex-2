@@ -665,15 +665,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     onClick={() => setViewingContent({ type: 'social', item: post })}
                     className="p-3 sm:p-4 hover:bg-pink-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
                   >
-                    {post.image_url ? (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                        <Image src={post.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-gradient-to-br from-pink-100 to-rose-100 flex-shrink-0 flex items-center justify-center">
+                      {post.image_url ? (
+                        <img src={post.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
                         <span className="text-base sm:text-lg">📷</span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-slate-900 line-clamp-1 mb-1">{post.subject || "Untitled"}</p>
                       <div className="flex items-center gap-2 flex-wrap">
@@ -721,15 +719,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     onClick={() => setViewingContent({ type: 'email', item: campaign })}
                     className="p-3 sm:p-4 hover:bg-emerald-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
                   >
-                    {campaign.image_url ? (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                        <Image src={campaign.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-gradient-to-br from-emerald-100 to-green-100 flex-shrink-0 flex items-center justify-center">
+                      {campaign.image_url ? (
+                        <img src={campaign.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
                         <span className="text-base sm:text-lg">{campaign.campaign_type === 'email' ? '✉️' : '💬'}</span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${campaign.campaign_type === 'email' ? 'bg-violet-100 text-violet-700' : 'bg-green-100 text-green-700'}`}>
@@ -775,15 +771,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     onClick={() => setViewingContent({ type: 'blog', item: blog })}
                     className="p-3 sm:p-4 hover:bg-violet-50/50 cursor-pointer transition-colors flex items-center gap-3 sm:gap-4"
                   >
-                    {blog.image_url ? (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
-                        <Image src={blog.image_url} alt="" width={64} height={48} className="w-full h-full object-cover" />
-                      </div>
-                    ) : (
-                      <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 sm:w-16 sm:h-12 rounded-lg overflow-hidden bg-gradient-to-br from-violet-100 to-purple-100 flex-shrink-0 flex items-center justify-center">
+                      {blog.image_url ? (
+                        <img src={blog.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
                         <span className="text-base sm:text-lg">{blog.publication_type === 'website_blog' ? '📝' : '💼'}</span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
@@ -1030,21 +1024,19 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   </div>
 
                   {/* Image */}
-                  {(viewingContent.item as ContentPost).image_url ? (
-                    <div className="bg-slate-100">
-                      <Image 
+                  <div className="bg-slate-100">
+                    {(viewingContent.item as ContentPost).image_url ? (
+                      <img 
                         src={(viewingContent.item as ContentPost).image_url!} 
                         alt="" 
-                        width={600} 
-                        height={600} 
                         className="w-full h-auto object-cover"
                       />
-                    </div>
-                  ) : (
-                    <div className="bg-slate-100 aspect-square flex items-center justify-center">
-                      <span className="text-4xl">📷</span>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="aspect-square flex items-center justify-center">
+                        <span className="text-4xl">📷</span>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Post Details */}
                   <div className="p-4 space-y-4">
@@ -1143,11 +1135,9 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   {/* Image - After title */}
                   {(viewingContent.item as EmailCampaign).image_url && (
                     <div className="rounded-xl overflow-hidden bg-slate-100">
-                      <Image 
+                      <img 
                         src={(viewingContent.item as EmailCampaign).image_url!} 
                         alt="" 
-                        width={600} 
-                        height={400} 
                         className="w-full h-auto object-cover"
                       />
                     </div>
@@ -1172,11 +1162,9 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   {/* Image - Before title */}
                   {(viewingContent.item as BlogArticle).image_url && (
                     <div className="rounded-xl overflow-hidden bg-slate-100 -mx-6 -mt-6 mb-4">
-                      <Image 
+                      <img 
                         src={(viewingContent.item as BlogArticle).image_url!} 
                         alt="" 
-                        width={600} 
-                        height={400} 
                         className="w-full h-auto object-cover"
                       />
                     </div>

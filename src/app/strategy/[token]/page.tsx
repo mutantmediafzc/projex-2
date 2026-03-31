@@ -41,11 +41,15 @@ type StrategyData = {
 type ContentPost = {
   id: string;
   scheduled_date: string | null;
+  scheduled_time: string | null;
   platform: string;
+  platforms: string[];
   content_type: string;
+  subject: string | null;
   caption: string | null;
   image_url: string | null;
   status: string;
+  post_type: 'organic' | 'boosted';
 };
 
 type EmailCampaign = {
@@ -270,7 +274,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     // Load ALL content posts within 3 months (regardless of status)
     const { data: posts } = await supabaseClient
       .from("social_posts")
-      .select("id, scheduled_date, platforms, content_type, caption, image_asset_url, status")
+      .select("id, scheduled_date, scheduled_time, platforms, content_type, subject, caption, image_asset_url, status, post_type")
       .eq("project_id", linkData.project_id)
       .gte("scheduled_date", startDate)
       .lte("scheduled_date", endDate)
@@ -281,11 +285,15 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
       setContentPosts(posts.map((p: any) => ({
         id: p.id,
         scheduled_date: p.scheduled_date,
+        scheduled_time: p.scheduled_time,
         platform: Array.isArray(p.platforms) ? p.platforms.join(", ") : p.platforms || "",
+        platforms: Array.isArray(p.platforms) ? p.platforms : [],
         content_type: p.content_type || "",
+        subject: p.subject,
         caption: p.caption,
         image_url: p.image_asset_url,
         status: p.status,
+        post_type: p.post_type || 'organic',
       })) as ContentPost[]);
     }
 
@@ -667,15 +675,18 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <p className="text-xs sm:text-sm font-medium text-slate-900 line-clamp-1 mb-1">{post.subject || "Untitled"}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 capitalize">{post.platform}</span>
                         <span className="text-[10px] sm:text-xs text-slate-400">{post.content_type}</span>
+                        <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full capitalize ${post.status === 'published' ? 'bg-emerald-100 text-emerald-700' : post.status === 'approved' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{post.status}</span>
+                        {post.post_type === 'boosted' && (
+                          <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💰 Boosted</span>
+                        )}
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-700 line-clamp-1">{post.caption || "No caption"}</p>
                     </div>
                     <div className="text-right flex-shrink-0 hidden sm:block">
                       <p className="text-xs text-slate-500">{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "—"}</p>
-                      <span className={`text-xs font-medium capitalize ${post.status === 'published' ? 'text-emerald-600' : post.status === 'approved' ? 'text-blue-600' : 'text-amber-600'}`}>{post.status}</span>
                     </div>
                     <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6" />
@@ -996,52 +1007,115 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Image */}
-              {(viewingContent.item as any).image_url && (
-                <div className="mb-6 rounded-xl overflow-hidden bg-slate-100">
-                  <Image 
-                    src={(viewingContent.item as any).image_url} 
-                    alt="" 
-                    width={600} 
-                    height={400} 
-                    className="w-full h-auto object-cover"
-                  />
+            <div className="flex-1 overflow-y-auto">
+              {/* SOCIAL MEDIA POST - Instagram-like layout */}
+              {viewingContent.type === 'social' && (
+                <div>
+                  {/* Header: Logo + Username */}
+                  <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+                    {data?.project?.logo_url ? (
+                      <Image src={data.project.logo_url} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-white font-bold">
+                        {data?.project?.name?.charAt(0) || '?'}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-slate-900">{data?.project?.name || 'Brand'}</p>
+                      <p className="text-xs text-slate-500">{data?.project?.company?.name || ''}</p>
+                    </div>
+                    {(viewingContent.item as ContentPost).post_type === 'boosted' && (
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-100 text-purple-700">💰 Boosted</span>
+                    )}
+                  </div>
+
+                  {/* Image */}
+                  {(viewingContent.item as ContentPost).image_url ? (
+                    <div className="bg-slate-100">
+                      <Image 
+                        src={(viewingContent.item as ContentPost).image_url!} 
+                        alt="" 
+                        width={600} 
+                        height={600} 
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="bg-slate-100 aspect-square flex items-center justify-center">
+                      <span className="text-4xl">📷</span>
+                    </div>
+                  )}
+
+                  {/* Post Details */}
+                  <div className="p-4 space-y-4">
+                    {/* Date & Time */}
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <span>📅</span>
+                      <span>
+                        {(viewingContent.item as ContentPost).scheduled_date 
+                          ? new Date((viewingContent.item as ContentPost).scheduled_date!).toLocaleDateString('en-US', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })
+                          : "—"}
+                        {(viewingContent.item as ContentPost).scheduled_time && ` at ${(viewingContent.item as ContentPost).scheduled_time}`}
+                      </span>
+                    </div>
+
+                    {/* Subject */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Subject</label>
+                      <p className="mt-1 text-base font-semibold text-slate-900">
+                        {(viewingContent.item as ContentPost).subject || "Untitled"}
+                      </p>
+                    </div>
+
+                    {/* Caption */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Caption</label>
+                      <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
+                        {(viewingContent.item as ContentPost).caption || "No caption"}
+                      </p>
+                    </div>
+
+                    {/* Format */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Format</label>
+                      <p className="mt-1 text-sm text-slate-700">
+                        {(viewingContent.item as ContentPost).content_type || "—"}
+                      </p>
+                    </div>
+
+                    {/* Placements */}
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Placements</label>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(viewingContent.item as ContentPost).platforms.map((p) => (
+                          <span key={p} className="text-xs font-medium px-3 py-1 rounded-full bg-pink-100 text-pink-700 capitalize">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Content Details */}
-              <div className="space-y-4">
-                {/* Title/Caption */}
-                {viewingContent.type === 'social' ? (
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Caption</label>
-                    <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">
-                      {(viewingContent.item as ContentPost).caption || "No caption"}
-                    </p>
-                  </div>
-                ) : (
+              {/* EMAIL/WHATSAPP CAMPAIGN */}
+              {viewingContent.type === 'email' && (
+                <div className="p-6 space-y-4">
+                  {/* Title */}
                   <div>
                     <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Title</label>
-                    <p className="mt-1 text-base font-semibold text-slate-900">
-                      {(viewingContent.item as EmailCampaign | BlogArticle).title}
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {(viewingContent.item as EmailCampaign).title}
                     </p>
                   </div>
-                )}
 
-                {/* Type/Platform Badge */}
-                <div className="flex items-center gap-3">
-                  {viewingContent.type === 'social' && (
-                    <>
-                      <span className="text-xs font-medium px-3 py-1 rounded-full bg-pink-100 text-pink-700 capitalize">
-                        {(viewingContent.item as ContentPost).platform}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {(viewingContent.item as ContentPost).content_type}
-                      </span>
-                    </>
-                  )}
-                  {viewingContent.type === 'email' && (
+                  {/* Type Badge */}
+                  <div>
                     <span className={`text-xs font-medium px-3 py-1 rounded-full ${
                       (viewingContent.item as EmailCampaign).campaign_type === 'email' 
                         ? 'bg-violet-100 text-violet-700' 
@@ -1049,40 +1123,107 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     }`}>
                       {(viewingContent.item as EmailCampaign).campaign_type === 'email' ? '✉️ Email Campaign' : '💬 WhatsApp Campaign'}
                     </span>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Published Date</label>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {(viewingContent.item as EmailCampaign).scheduled_date 
+                        ? new Date((viewingContent.item as EmailCampaign).scheduled_date!).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })
+                        : "—"}
+                    </p>
+                  </div>
+
+                  {/* Image - After title */}
+                  {(viewingContent.item as EmailCampaign).image_url && (
+                    <div className="rounded-xl overflow-hidden bg-slate-100">
+                      <Image 
+                        src={(viewingContent.item as EmailCampaign).image_url!} 
+                        alt="" 
+                        width={600} 
+                        height={400} 
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
                   )}
-                  {viewingContent.type === 'blog' && (
+
+                  {/* Content - After image */}
+                  {(viewingContent.item as EmailCampaign).content && (
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Content</label>
+                      <div 
+                        className="mt-2 text-sm text-slate-700 leading-relaxed strategy-content prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: (viewingContent.item as EmailCampaign).content || '' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* BLOG ARTICLE */}
+              {viewingContent.type === 'blog' && (
+                <div className="p-6 space-y-4">
+                  {/* Image - Before title */}
+                  {(viewingContent.item as BlogArticle).image_url && (
+                    <div className="rounded-xl overflow-hidden bg-slate-100 -mx-6 -mt-6 mb-4">
+                      <Image 
+                        src={(viewingContent.item as BlogArticle).image_url!} 
+                        alt="" 
+                        width={600} 
+                        height={400} 
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  )}
+
+                  {/* Title */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Title</label>
+                    <p className="mt-1 text-lg font-semibold text-slate-900">
+                      {(viewingContent.item as BlogArticle).title}
+                    </p>
+                  </div>
+
+                  {/* Type Badge */}
+                  <div>
                     <span className="text-xs font-medium px-3 py-1 rounded-full bg-violet-100 text-violet-700">
                       {(viewingContent.item as BlogArticle).publication_type === 'website_blog' ? '📝 Website Blog' : '💼 LinkedIn Article'}
                     </span>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Published Date</label>
+                    <p className="mt-1 text-sm text-slate-700">
+                      {(viewingContent.item as BlogArticle).scheduled_date 
+                        ? new Date((viewingContent.item as BlogArticle).scheduled_date!).toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })
+                        : "—"}
+                    </p>
+                  </div>
+
+                  {/* Content */}
+                  {(viewingContent.item as BlogArticle).content && (
+                    <div>
+                      <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Content</label>
+                      <div 
+                        className="mt-2 text-sm text-slate-700 leading-relaxed strategy-content prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: (viewingContent.item as BlogArticle).content || '' }}
+                      />
+                    </div>
                   )}
                 </div>
-
-                {/* Date */}
-                <div>
-                  <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Published Date</label>
-                  <p className="mt-1 text-sm text-slate-700">
-                    {(viewingContent.item as any).scheduled_date 
-                      ? new Date((viewingContent.item as any).scheduled_date).toLocaleDateString('en-US', { 
-                          weekday: 'long', 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })
-                      : "—"}
-                  </p>
-                </div>
-
-                {/* Content (for email/blog) */}
-                {(viewingContent.type === 'email' || viewingContent.type === 'blog') && (viewingContent.item as EmailCampaign | BlogArticle).content && (
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Content</label>
-                    <div 
-                      className="mt-2 text-sm text-slate-700 leading-relaxed strategy-content prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ __html: (viewingContent.item as EmailCampaign | BlogArticle).content || '' }}
-                    />
-                  </div>
-                )}
-              </div>
+              )}
             </div>
 
             {/* Modal Footer */}

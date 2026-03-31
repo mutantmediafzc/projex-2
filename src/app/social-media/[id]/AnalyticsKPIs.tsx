@@ -27,6 +27,15 @@ type Strategy = {
   quarter: string;
 };
 
+type PlatformGoals = {
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  tiktok: string;
+  youtube: string;
+  x: string;
+};
+
 type SocialKPI = {
   id: string;
   project_id: string;
@@ -48,6 +57,37 @@ type SocialKPI = {
   sm_followers_goal: number;
   sm_clicks_kpi: string | null;
   sm_clicks_goal: number;
+  // Platform-specific goals
+  impressions_facebook_goal: string | null;
+  impressions_instagram_goal: string | null;
+  impressions_linkedin_goal: string | null;
+  impressions_tiktok_goal: string | null;
+  impressions_youtube_goal: string | null;
+  impressions_x_goal: string | null;
+  reach_facebook_goal: string | null;
+  reach_instagram_goal: string | null;
+  reach_linkedin_goal: string | null;
+  reach_tiktok_goal: string | null;
+  reach_youtube_goal: string | null;
+  reach_x_goal: string | null;
+  engagement_facebook_goal: string | null;
+  engagement_instagram_goal: string | null;
+  engagement_linkedin_goal: string | null;
+  engagement_tiktok_goal: string | null;
+  engagement_youtube_goal: string | null;
+  engagement_x_goal: string | null;
+  followers_facebook_goal: string | null;
+  followers_instagram_goal: string | null;
+  followers_linkedin_goal: string | null;
+  followers_tiktok_goal: string | null;
+  followers_youtube_goal: string | null;
+  followers_x_goal: string | null;
+  clicks_facebook_goal: string | null;
+  clicks_instagram_goal: string | null;
+  clicks_linkedin_goal: string | null;
+  clicks_tiktok_goal: string | null;
+  clicks_youtube_goal: string | null;
+  clicks_x_goal: string | null;
   // Email & WhatsApp
   email_campaigns: number;
   whatsapp_campaigns: number;
@@ -592,6 +632,48 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
   const [smClicksKpi, setSmClicksKpi] = useState(kpi?.sm_clicks_kpi || "");
   const [smClicksGoal, setSmClicksGoal] = useState(kpi?.sm_clicks_goal || 0);
   
+  // Platform-specific goals
+  const [impressionsGoals, setImpressionsGoals] = useState<PlatformGoals>({
+    facebook: kpi?.impressions_facebook_goal || "",
+    instagram: kpi?.impressions_instagram_goal || "",
+    linkedin: kpi?.impressions_linkedin_goal || "",
+    tiktok: kpi?.impressions_tiktok_goal || "",
+    youtube: kpi?.impressions_youtube_goal || "",
+    x: kpi?.impressions_x_goal || "",
+  });
+  const [reachGoals, setReachGoals] = useState<PlatformGoals>({
+    facebook: kpi?.reach_facebook_goal || "",
+    instagram: kpi?.reach_instagram_goal || "",
+    linkedin: kpi?.reach_linkedin_goal || "",
+    tiktok: kpi?.reach_tiktok_goal || "",
+    youtube: kpi?.reach_youtube_goal || "",
+    x: kpi?.reach_x_goal || "",
+  });
+  const [engagementGoals, setEngagementGoals] = useState<PlatformGoals>({
+    facebook: kpi?.engagement_facebook_goal || "",
+    instagram: kpi?.engagement_instagram_goal || "",
+    linkedin: kpi?.engagement_linkedin_goal || "",
+    tiktok: kpi?.engagement_tiktok_goal || "",
+    youtube: kpi?.engagement_youtube_goal || "",
+    x: kpi?.engagement_x_goal || "",
+  });
+  const [followersGoals, setFollowersGoals] = useState<PlatformGoals>({
+    facebook: kpi?.followers_facebook_goal || "",
+    instagram: kpi?.followers_instagram_goal || "",
+    linkedin: kpi?.followers_linkedin_goal || "",
+    tiktok: kpi?.followers_tiktok_goal || "",
+    youtube: kpi?.followers_youtube_goal || "",
+    x: kpi?.followers_x_goal || "",
+  });
+  const [clicksGoals, setClicksGoals] = useState<PlatformGoals>({
+    facebook: kpi?.clicks_facebook_goal || "",
+    instagram: kpi?.clicks_instagram_goal || "",
+    linkedin: kpi?.clicks_linkedin_goal || "",
+    tiktok: kpi?.clicks_tiktok_goal || "",
+    youtube: kpi?.clicks_youtube_goal || "",
+    x: kpi?.clicks_x_goal || "",
+  });
+  
   // Email & WhatsApp
   const [emailCampaigns, setEmailCampaigns] = useState(kpi?.email_campaigns || 0);
   const [whatsappCampaigns, setWhatsappCampaigns] = useState(kpi?.whatsapp_campaigns || 0);
@@ -630,6 +712,37 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
       sm_followers_goal: smFollowersGoal,
       sm_clicks_kpi: smClicksKpi || null,
       sm_clicks_goal: smClicksGoal,
+      // Platform-specific goals
+      impressions_facebook_goal: impressionsGoals.facebook || null,
+      impressions_instagram_goal: impressionsGoals.instagram || null,
+      impressions_linkedin_goal: impressionsGoals.linkedin || null,
+      impressions_tiktok_goal: impressionsGoals.tiktok || null,
+      impressions_youtube_goal: impressionsGoals.youtube || null,
+      impressions_x_goal: impressionsGoals.x || null,
+      reach_facebook_goal: reachGoals.facebook || null,
+      reach_instagram_goal: reachGoals.instagram || null,
+      reach_linkedin_goal: reachGoals.linkedin || null,
+      reach_tiktok_goal: reachGoals.tiktok || null,
+      reach_youtube_goal: reachGoals.youtube || null,
+      reach_x_goal: reachGoals.x || null,
+      engagement_facebook_goal: engagementGoals.facebook || null,
+      engagement_instagram_goal: engagementGoals.instagram || null,
+      engagement_linkedin_goal: engagementGoals.linkedin || null,
+      engagement_tiktok_goal: engagementGoals.tiktok || null,
+      engagement_youtube_goal: engagementGoals.youtube || null,
+      engagement_x_goal: engagementGoals.x || null,
+      followers_facebook_goal: followersGoals.facebook || null,
+      followers_instagram_goal: followersGoals.instagram || null,
+      followers_linkedin_goal: followersGoals.linkedin || null,
+      followers_tiktok_goal: followersGoals.tiktok || null,
+      followers_youtube_goal: followersGoals.youtube || null,
+      followers_x_goal: followersGoals.x || null,
+      clicks_facebook_goal: clicksGoals.facebook || null,
+      clicks_instagram_goal: clicksGoals.instagram || null,
+      clicks_linkedin_goal: clicksGoals.linkedin || null,
+      clicks_tiktok_goal: clicksGoals.tiktok || null,
+      clicks_youtube_goal: clicksGoals.youtube || null,
+      clicks_x_goal: clicksGoals.x || null,
       email_campaigns: emailCampaigns,
       whatsapp_campaigns: whatsappCampaigns,
       ewm_ctr_kpi: ewmCtrKpi || null,
@@ -710,73 +823,140 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
 
             <p className="text-xs font-semibold text-pink-600 mb-2">B. KPI</p>
             
-            {/* All 5 KPI fields as Rich Text */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">Impressions KPI</label>
-                <RichTextEditor
-                  value={smImpressionsKpi}
-                  onChange={setSmImpressionsKpi}
-                  placeholder="Enter impressions KPI ranges..."
-                  minHeight="100px"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">Reach KPI</label>
-                <RichTextEditor
-                  value={smReachKpi}
-                  onChange={setSmReachKpi}
-                  placeholder="e.g., Consistent Reach KPI Range:&#10;Instagram: 6,790 - 10,184&#10;Facebook: 565 - 848"
-                  minHeight="100px"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">Engagement KPI</label>
-                <RichTextEditor
-                  value={smEngagementKpi}
-                  onChange={setSmEngagementKpi}
-                  placeholder="Enter engagement KPI ranges..."
-                  minHeight="100px"
-                />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">Followers KPI</label>
-                <RichTextEditor
-                  value={smFollowersKpi}
-                  onChange={setSmFollowersKpi}
-                  placeholder="Enter followers KPI ranges..."
-                  minHeight="100px"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="mb-1.5 block text-xs font-medium text-slate-700">Clicks KPI</label>
-                <RichTextEditor
-                  value={smClicksKpi}
-                  onChange={setSmClicksKpi}
-                  placeholder="Enter clicks KPI ranges..."
-                  minHeight="100px"
-                />
-              </div>
-            </div>
-
-            {/* Platform-specific Goals - Simple text fields per platform */}
-            {platforms.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs font-medium text-slate-600 mb-3">Goals by Platform</p>
-                <div className="space-y-3">
+            {/* Impressions KPI with platform goals */}
+            <div className="mb-6 border-b border-pink-100 pb-4">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">Impressions KPI</label>
+              <RichTextEditor
+                value={smImpressionsKpi}
+                onChange={setSmImpressionsKpi}
+                placeholder="Enter impressions KPI ranges..."
+                minHeight="100px"
+              />
+              {platforms.length > 0 && (
+                <div className="mt-3 space-y-2">
                   {platforms.map((platform) => (
                     <div key={platform}>
-                      <label className="mb-1 block text-xs font-medium text-pink-700 capitalize">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
                         type="text" 
+                        value={impressionsGoals[platform as keyof PlatformGoals] || ""}
+                        onChange={(e) => setImpressionsGoals(prev => ({ ...prev, [platform]: e.target.value }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Reach KPI with platform goals */}
+            <div className="mb-6 border-b border-pink-100 pb-4">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">Reach KPI</label>
+              <RichTextEditor
+                value={smReachKpi}
+                onChange={setSmReachKpi}
+                placeholder="e.g., Consistent Reach KPI Range:&#10;Instagram: 6,790 - 10,184&#10;Facebook: 565 - 848"
+                minHeight="100px"
+              />
+              {platforms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {platforms.map((platform) => (
+                    <div key={platform}>
+                      <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <input 
+                        type="text" 
+                        value={reachGoals[platform as keyof PlatformGoals] || ""}
+                        onChange={(e) => setReachGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
+                        className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Engagement KPI with platform goals */}
+            <div className="mb-6 border-b border-pink-100 pb-4">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">Engagement KPI</label>
+              <RichTextEditor
+                value={smEngagementKpi}
+                onChange={setSmEngagementKpi}
+                placeholder="Enter engagement KPI ranges..."
+                minHeight="100px"
+              />
+              {platforms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {platforms.map((platform) => (
+                    <div key={platform}>
+                      <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <input 
+                        type="text" 
+                        value={engagementGoals[platform as keyof PlatformGoals] || ""}
+                        onChange={(e) => setEngagementGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
+                        className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Followers KPI with platform goals */}
+            <div className="mb-6 border-b border-pink-100 pb-4">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">Followers KPI</label>
+              <RichTextEditor
+                value={smFollowersKpi}
+                onChange={setSmFollowersKpi}
+                placeholder="Enter followers KPI ranges..."
+                minHeight="100px"
+              />
+              {platforms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {platforms.map((platform) => (
+                    <div key={platform}>
+                      <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <input 
+                        type="text" 
+                        value={followersGoals[platform as keyof PlatformGoals] || ""}
+                        onChange={(e) => setFollowersGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
+                        className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Clicks KPI with platform goals */}
+            <div className="mb-4">
+              <label className="mb-1.5 block text-xs font-medium text-slate-700">Clicks KPI</label>
+              <RichTextEditor
+                value={smClicksKpi}
+                onChange={setSmClicksKpi}
+                placeholder="Enter clicks KPI ranges..."
+                minHeight="100px"
+              />
+              {platforms.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {platforms.map((platform) => (
+                    <div key={platform}>
+                      <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
+                      <input 
+                        type="text" 
+                        value={clicksGoals[platform as keyof PlatformGoals] || ""}
+                        onChange={(e) => setClicksGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
+                        className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Email & WhatsApp Section */}

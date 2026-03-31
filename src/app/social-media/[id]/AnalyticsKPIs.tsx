@@ -28,12 +28,12 @@ type Strategy = {
 };
 
 type PlatformGoals = {
-  facebook: string;
-  instagram: string;
-  linkedin: string;
-  tiktok: string;
-  youtube: string;
-  x: string;
+  facebook: number;
+  instagram: number;
+  linkedin: number;
+  tiktok: number;
+  youtube: number;
+  x: number;
 };
 
 type SocialKPI = {
@@ -634,44 +634,44 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
   
   // Platform-specific goals
   const [impressionsGoals, setImpressionsGoals] = useState<PlatformGoals>({
-    facebook: kpi?.impressions_facebook_goal || "",
-    instagram: kpi?.impressions_instagram_goal || "",
-    linkedin: kpi?.impressions_linkedin_goal || "",
-    tiktok: kpi?.impressions_tiktok_goal || "",
-    youtube: kpi?.impressions_youtube_goal || "",
-    x: kpi?.impressions_x_goal || "",
+    facebook: Number(kpi?.impressions_facebook_goal) || 0,
+    instagram: Number(kpi?.impressions_instagram_goal) || 0,
+    linkedin: Number(kpi?.impressions_linkedin_goal) || 0,
+    tiktok: Number(kpi?.impressions_tiktok_goal) || 0,
+    youtube: Number(kpi?.impressions_youtube_goal) || 0,
+    x: Number(kpi?.impressions_x_goal) || 0,
   });
   const [reachGoals, setReachGoals] = useState<PlatformGoals>({
-    facebook: kpi?.reach_facebook_goal || "",
-    instagram: kpi?.reach_instagram_goal || "",
-    linkedin: kpi?.reach_linkedin_goal || "",
-    tiktok: kpi?.reach_tiktok_goal || "",
-    youtube: kpi?.reach_youtube_goal || "",
-    x: kpi?.reach_x_goal || "",
+    facebook: Number(kpi?.reach_facebook_goal) || 0,
+    instagram: Number(kpi?.reach_instagram_goal) || 0,
+    linkedin: Number(kpi?.reach_linkedin_goal) || 0,
+    tiktok: Number(kpi?.reach_tiktok_goal) || 0,
+    youtube: Number(kpi?.reach_youtube_goal) || 0,
+    x: Number(kpi?.reach_x_goal) || 0,
   });
   const [engagementGoals, setEngagementGoals] = useState<PlatformGoals>({
-    facebook: kpi?.engagement_facebook_goal || "",
-    instagram: kpi?.engagement_instagram_goal || "",
-    linkedin: kpi?.engagement_linkedin_goal || "",
-    tiktok: kpi?.engagement_tiktok_goal || "",
-    youtube: kpi?.engagement_youtube_goal || "",
-    x: kpi?.engagement_x_goal || "",
+    facebook: Number(kpi?.engagement_facebook_goal) || 0,
+    instagram: Number(kpi?.engagement_instagram_goal) || 0,
+    linkedin: Number(kpi?.engagement_linkedin_goal) || 0,
+    tiktok: Number(kpi?.engagement_tiktok_goal) || 0,
+    youtube: Number(kpi?.engagement_youtube_goal) || 0,
+    x: Number(kpi?.engagement_x_goal) || 0,
   });
   const [followersGoals, setFollowersGoals] = useState<PlatformGoals>({
-    facebook: kpi?.followers_facebook_goal || "",
-    instagram: kpi?.followers_instagram_goal || "",
-    linkedin: kpi?.followers_linkedin_goal || "",
-    tiktok: kpi?.followers_tiktok_goal || "",
-    youtube: kpi?.followers_youtube_goal || "",
-    x: kpi?.followers_x_goal || "",
+    facebook: Number(kpi?.followers_facebook_goal) || 0,
+    instagram: Number(kpi?.followers_instagram_goal) || 0,
+    linkedin: Number(kpi?.followers_linkedin_goal) || 0,
+    tiktok: Number(kpi?.followers_tiktok_goal) || 0,
+    youtube: Number(kpi?.followers_youtube_goal) || 0,
+    x: Number(kpi?.followers_x_goal) || 0,
   });
   const [clicksGoals, setClicksGoals] = useState<PlatformGoals>({
-    facebook: kpi?.clicks_facebook_goal || "",
-    instagram: kpi?.clicks_instagram_goal || "",
-    linkedin: kpi?.clicks_linkedin_goal || "",
-    tiktok: kpi?.clicks_tiktok_goal || "",
-    youtube: kpi?.clicks_youtube_goal || "",
-    x: kpi?.clicks_x_goal || "",
+    facebook: Number(kpi?.clicks_facebook_goal) || 0,
+    instagram: Number(kpi?.clicks_instagram_goal) || 0,
+    linkedin: Number(kpi?.clicks_linkedin_goal) || 0,
+    tiktok: Number(kpi?.clicks_tiktok_goal) || 0,
+    youtube: Number(kpi?.clicks_youtube_goal) || 0,
+    x: Number(kpi?.clicks_x_goal) || 0,
   });
   
   // Email & WhatsApp
@@ -838,9 +838,10 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
                     <div key={platform}>
                       <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
-                        type="text" 
+                        type="number" 
+                        step="any"
                         value={impressionsGoals[platform as keyof PlatformGoals] || ""}
-                        onChange={(e) => setImpressionsGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        onChange={(e) => setImpressionsGoals(prev => ({ ...prev, [platform]: parseFloat(e.target.value) || 0 }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
@@ -865,9 +866,10 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
                     <div key={platform}>
                       <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
-                        type="text" 
+                        type="number" 
+                        step="any"
                         value={reachGoals[platform as keyof PlatformGoals] || ""}
-                        onChange={(e) => setReachGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        onChange={(e) => setReachGoals(prev => ({ ...prev, [platform]: parseFloat(e.target.value) || 0 }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
@@ -892,9 +894,10 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
                     <div key={platform}>
                       <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
-                        type="text" 
+                        type="number" 
+                        step="any"
                         value={engagementGoals[platform as keyof PlatformGoals] || ""}
-                        onChange={(e) => setEngagementGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        onChange={(e) => setEngagementGoals(prev => ({ ...prev, [platform]: parseFloat(e.target.value) || 0 }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
@@ -919,9 +922,10 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
                     <div key={platform}>
                       <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
-                        type="text" 
+                        type="number" 
+                        step="any"
                         value={followersGoals[platform as keyof PlatformGoals] || ""}
-                        onChange={(e) => setFollowersGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        onChange={(e) => setFollowersGoals(prev => ({ ...prev, [platform]: parseFloat(e.target.value) || 0 }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
@@ -946,9 +950,10 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
                     <div key={platform}>
                       <label className="mb-1 block text-xs text-slate-500">{PLATFORM_LABELS[platform] || platform} Goal</label>
                       <input 
-                        type="text" 
+                        type="number" 
+                        step="any"
                         value={clicksGoals[platform as keyof PlatformGoals] || ""}
-                        onChange={(e) => setClicksGoals(prev => ({ ...prev, [platform]: e.target.value }))}
+                        onChange={(e) => setClicksGoals(prev => ({ ...prev, [platform]: parseFloat(e.target.value) || 0 }))}
                         placeholder={`Enter ${PLATFORM_LABELS[platform] || platform} goal...`}
                         className="w-full rounded-lg border border-pink-200 bg-white px-3 py-2 text-sm text-black focus:border-pink-400 focus:outline-none"
                       />
@@ -986,7 +991,7 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-slate-600">CTR Goal (%)</label>
-                <input type="number" value={ewmCtrGoal} onChange={(e) => setEwmCtrGoal(parseInt(e.target.value) || 0)}
+                <input type="number" step="any" value={ewmCtrGoal} onChange={(e) => setEwmCtrGoal(parseFloat(e.target.value) || 0)}
                   className="w-full rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-black focus:border-green-400 focus:outline-none" />
               </div>
             </div>
@@ -1024,7 +1029,7 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-slate-600">Impressions Goal</label>
-                <input type="number" value={seoImpressionsGoal} onChange={(e) => setSeoImpressionsGoal(parseInt(e.target.value) || 0)}
+                <input type="number" step="any" value={seoImpressionsGoal} onChange={(e) => setSeoImpressionsGoal(parseFloat(e.target.value) || 0)}
                   className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-black focus:border-blue-400 focus:outline-none" />
               </div>
             </div>

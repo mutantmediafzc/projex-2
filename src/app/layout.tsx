@@ -77,8 +77,8 @@ export default function RootLayout({
               
               <div className="relative mb-5 flex justify-center px-2">
                 <Image
-                  src="/logos/projex-2.avif"
-                  alt="Aliice logo"
+                  src="/logos/cream-logo.png"
+                  alt="Cream logo"
                   width={120}
                   height={28}
                   className="h-8 w-auto"

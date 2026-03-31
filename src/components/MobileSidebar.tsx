@@ -273,8 +273,8 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
         {/* Header with logo and close button */}
         <div className="relative flex items-center justify-between px-4 py-4 border-b border-slate-200/50">
           <Image
-            src="/logos/projex-2.avif"
-            alt="Projex logo"
+            src="/logos/cream-logo.png"
+            alt="Cream logo"
             width={100}
             height={24}
             className="h-7 w-auto"

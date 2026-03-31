@@ -49,8 +49,34 @@ type ContentPost = {
   caption: string | null;
   image_url: string | null;
   status: string;
+  workflow_status: string;
   post_type: 'organic' | 'boosted';
 };
+
+const WORKFLOW_LABELS: Record<string, string> = {
+  captions: "Captions",
+  creatives_approval: "Creative Approval",
+  final_approval: "Final Approval",
+  for_publishing: "For Publishing",
+  published: "Published",
+};
+
+function getQuarterDateRange(quarter: string): { start: string; end: string } {
+  const match = quarter.match(/Q(\d)\s+(\d{4})/);
+  if (!match) {
+    const today = new Date();
+    return { start: today.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
+  }
+  const q = parseInt(match[1]);
+  const year = parseInt(match[2]);
+  const quarters: Record<number, { start: string; end: string }> = {
+    1: { start: `${year}-01-01`, end: `${year}-03-31` },
+    2: { start: `${year}-04-01`, end: `${year}-06-30` },
+    3: { start: `${year}-07-01`, end: `${year}-09-30` },
+    4: { start: `${year}-10-01`, end: `${year}-12-31` },
+  };
+  return quarters[q] || { start: `${year}-01-01`, end: `${year}-12-31` };
+}
 
 type EmailCampaign = {
   id: string;
@@ -264,17 +290,13 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     
     if (kpiData) setKpis(kpiData as SocialKPI[]);
 
-    // Get date range: today to 3 months in the future
-    const today = new Date();
-    const startDate = today.toISOString().split("T")[0];
-    const futureDate = new Date(today);
-    futureDate.setMonth(futureDate.getMonth() + 3);
-    const endDate = futureDate.toISOString().split("T")[0];
+    // Get date range based on the strategy's quarter
+    const { start: startDate, end: endDate } = getQuarterDateRange(linkData.quarter || "");
 
-    // Load ALL content posts within 3 months (regardless of status)
+    // Load ALL content posts within the quarter
     const { data: posts } = await supabaseClient
       .from("social_posts")
-      .select("id, scheduled_date, scheduled_time, platforms, content_type, subject, caption, image_asset_url, status, post_type")
+      .select("id, scheduled_date, scheduled_time, platforms, content_type, subject, caption, image_asset_url, status, workflow_status, post_type")
       .eq("project_id", linkData.project_id)
       .gte("scheduled_date", startDate)
       .lte("scheduled_date", endDate)
@@ -293,11 +315,12 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         caption: p.caption,
         image_url: p.image_asset_url,
         status: p.status,
+        workflow_status: p.workflow_status || "captions",
         post_type: p.post_type || 'organic',
       })) as ContentPost[]);
     }
 
-    // Load ALL email/WhatsApp campaigns within 3 months (regardless of status)
+    // Load ALL email/WhatsApp campaigns within the quarter
     const { data: campaigns } = await supabaseClient
       .from("email_campaigns")
       .select("id, campaign_type, status, scheduled_date, title, content, image_url")
@@ -309,7 +332,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     
     if (campaigns) setEmailCampaigns(campaigns as EmailCampaign[]);
 
-    // Load ALL blog articles within 3 months (regardless of status)
+    // Load ALL blog articles within the quarter
     const { data: blogs } = await supabaseClient
       .from("website_blogs")
       .select("id, publication_type, status, scheduled_date, title, content, image_url")
@@ -656,7 +679,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {contentPosts.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50">
-                <p className="text-sm text-slate-600">Upcoming content for the next 3 months</p>
+                <p className="text-sm text-slate-600">Content for <span className="font-semibold">{data.quarter}</span></p>
               </div>
               <div className="divide-y divide-slate-100">
                 {contentPosts.map((post) => (
@@ -677,7 +700,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 capitalize">{post.platform}</span>
                         <span className="text-[10px] sm:text-xs text-slate-400">{post.content_type}</span>
-                        <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full capitalize ${post.status === 'published' ? 'bg-emerald-100 text-emerald-700' : post.status === 'approved' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{post.status}</span>
+                        <span className={`text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full ${post.workflow_status === 'published' ? 'bg-emerald-100 text-emerald-700' : post.workflow_status === 'for_publishing' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{WORKFLOW_LABELS[post.workflow_status] || post.workflow_status}</span>
                         {post.post_type === 'boosted' && (
                           <span className="text-[10px] sm:text-xs font-medium px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">💰 Boosted</span>
                         )}
@@ -710,7 +733,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {emailCampaigns.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50">
-                <p className="text-sm text-slate-600">Upcoming campaigns for the next 3 months</p>
+                <p className="text-sm text-slate-600">Campaigns for <span className="font-semibold">{data.quarter}</span></p>
               </div>
               <div className="divide-y divide-slate-100">
                 {emailCampaigns.map((campaign) => (
@@ -762,7 +785,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {blogArticles.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50">
-                <p className="text-sm text-slate-600">Upcoming articles for the next 3 months</p>
+                <p className="text-sm text-slate-600">Articles for <span className="font-semibold">{data.quarter}</span></p>
               </div>
               <div className="divide-y divide-slate-100">
                 {blogArticles.map((blog) => (

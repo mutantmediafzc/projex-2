@@ -983,17 +983,13 @@ function KpiModal({ kpi, projectId, strategies, platforms, onClose, onSaved }: {
             </div>
 
             <p className="text-xs font-semibold text-green-600 mb-2">B. KPI</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-xs text-slate-600">CTR KPI</label>
-                <input type="text" value={ewmCtrKpi} onChange={(e) => setEwmCtrKpi(e.target.value)}
-                  className="w-full rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-black focus:border-green-400 focus:outline-none" />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-slate-600">CTR Goal (%)</label>
+            <div className="flex items-center gap-2">
+              <div className="w-24">
+                <label className="mb-1 block text-xs text-slate-600">CTR (%)</label>
                 <input type="number" step="any" value={ewmCtrGoal} onChange={(e) => setEwmCtrGoal(parseFloat(e.target.value) || 0)}
                   className="w-full rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-black focus:border-green-400 focus:outline-none" />
               </div>
+              <span className="text-sm font-medium text-green-700 mt-5">CTR</span>
             </div>
           </div>
 

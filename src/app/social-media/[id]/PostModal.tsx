@@ -11,6 +11,17 @@ function getImageUrl(url: string | null): string {
   return url.split("/").map((segment, i) => i === 0 ? segment : encodeURIComponent(decodeURIComponent(segment))).join("/");
 }
 
+// Validate image URL exists (returns true if valid, false if 404)
+async function validateImageUrl(url: string): Promise<boolean> {
+  if (!url) return true;
+  try {
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
 type PostType = "organic" | "boosted";
 type ShootStatus = "pending" | "scheduled" | "completed" | "cancelled";
@@ -183,6 +194,17 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
     setValidationErrors([]);
     
     setSaving(true);
+    
+    // Validate image URL before saving - clear if invalid (404)
+    let validImageUrl: string | null = imageAssetUrl;
+    if (imageAssetUrl) {
+      const isValid = await validateImageUrl(imageAssetUrl);
+      if (!isValid) {
+        validImageUrl = null;
+        setImageAssetUrl("");
+      }
+    }
+    
     const postData = {
       project_id: projectId,
       platforms,
@@ -195,7 +217,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
       hashtags: hashtags.split(/\s+/).filter(Boolean).map((h) => h.replace(/^#/, "")),
       post_type: postType,
       content_type: contentType || null,
-      image_asset_url: imageAssetUrl || null,
+      image_asset_url: validImageUrl || null,
       video_url: videoUrl || null,
       first_comment: firstComment || null,
       shoot_status: shootStatus,
@@ -254,10 +276,10 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   }
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-start justify-center bg-black/50 overflow-y-auto py-4">
-      <div className="flex w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
-        {/* Left: Image/Video Preview Area */}
-        <div className="w-48 bg-slate-100 flex-shrink-0 flex flex-col items-center justify-center p-4 border-r border-slate-200">
+    <div className="fixed inset-0 z-[99999] flex items-start justify-center bg-black/50 overflow-y-auto py-4 px-2 sm:px-4">
+      <div className="flex flex-col sm:flex-row w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
+        {/* Left: Image/Video Preview Area - Hidden on mobile, shown at top */}
+        <div className="hidden sm:flex w-48 bg-slate-100 flex-shrink-0 flex-col items-center justify-center p-4 border-r border-slate-200">
           {imageAssetUrl ? (
             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-white shadow">
               <img src={getImageUrl(imageAssetUrl)} alt="Post asset" className="w-full h-full object-cover" />
@@ -297,10 +319,10 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
         {/* Main Editor */}
         <div className="flex-1 overflow-y-auto max-h-[85vh]">
           {/* Header with workflow tabs */}
-          <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-3 z-10">
+          <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 z-10">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold text-slate-900">{post ? "Edit Post" : "Create Post"}</h2>
-              <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-base sm:text-lg font-semibold text-slate-900">{post ? "Edit Post" : "Create Post"}</h2>
+              <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
@@ -348,7 +370,32 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
             )}
           </div>
 
-          <div className="p-6 space-y-5">
+          <div className="p-4 sm:p-6 space-y-5">
+            {/* Mobile Image Upload - Only shown on mobile */}
+            <div className="sm:hidden">
+              <label className="mb-1.5 block text-xs font-medium text-slate-600">📷 Image</label>
+              <div className="flex items-center gap-3">
+                {imageAssetUrl ? (
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0">
+                    <img src={getImageUrl(imageAssetUrl)} alt="Post" className="w-full h-full object-cover" />
+                    <button onClick={() => setImageAssetUrl("")} className="absolute -top-1 -right-1 p-1 bg-red-500 text-white rounded-full">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}
+                    className="w-16 h-16 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center hover:border-purple-400 flex-shrink-0">
+                    {uploadingImage ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-purple-500 border-t-transparent" />
+                    ) : (
+                      <svg className="w-6 h-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                    )}
+                  </button>
+                )}
+                <span className="text-xs text-slate-500">{imageAssetUrl ? "Tap X to remove" : "Tap to upload"}</span>
+              </div>
+            </div>
+            
             {/* Post Details Section */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">

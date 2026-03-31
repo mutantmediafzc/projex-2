@@ -260,54 +260,58 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     
     if (kpiData) setKpis(kpiData as SocialKPI[]);
 
-    // Parse quarter to get date range (e.g., "2026-Q1" -> Jan-Mar 2026)
-    const quarterMatch = linkData.quarter?.match(/(\d{4})-Q(\d)/);
-    if (quarterMatch) {
-      const year = parseInt(quarterMatch[1]);
-      const q = parseInt(quarterMatch[2]);
-      const startMonth = (q - 1) * 3; // 0, 3, 6, or 9
-      const startDate = new Date(year, startMonth, 1).toISOString().split("T")[0];
-      const endDate = new Date(year, startMonth + 3, 0).toISOString().split("T")[0];
+    // Get date range: today to 3 months in the future
+    const today = new Date();
+    const startDate = today.toISOString().split("T")[0];
+    const futureDate = new Date(today);
+    futureDate.setMonth(futureDate.getMonth() + 3);
+    const endDate = futureDate.toISOString().split("T")[0];
 
-      // Load content posts for the quarter (published only)
-      const { data: posts } = await supabaseClient
-        .from("social_content_calendar")
-        .select("id, scheduled_date, platform, content_type, caption, image_url, status")
-        .eq("project_id", linkData.project_id)
-        .eq("status", "published")
-        .gte("scheduled_date", startDate)
-        .lte("scheduled_date", endDate)
-        .order("scheduled_date", { ascending: false })
-        .limit(20);
-      
-      if (posts) setContentPosts(posts as ContentPost[]);
-
-      // Load email campaigns for the quarter (published only)
-      const { data: campaigns } = await supabaseClient
-        .from("email_campaigns")
-        .select("id, campaign_type, status, scheduled_date, title, content, image_url")
-        .eq("project_id", linkData.project_id)
-        .eq("status", "published")
-        .gte("scheduled_date", startDate)
-        .lte("scheduled_date", endDate)
-        .order("scheduled_date", { ascending: false })
-        .limit(20);
-      
-      if (campaigns) setEmailCampaigns(campaigns as EmailCampaign[]);
-
-      // Load blog articles for the quarter (published only)
-      const { data: blogs } = await supabaseClient
-        .from("website_blogs")
-        .select("id, publication_type, status, scheduled_date, title, content, image_url")
-        .eq("project_id", linkData.project_id)
-        .eq("status", "published")
-        .gte("scheduled_date", startDate)
-        .lte("scheduled_date", endDate)
-        .order("scheduled_date", { ascending: false })
-        .limit(20);
-      
-      if (blogs) setBlogArticles(blogs as BlogArticle[]);
+    // Load ALL content posts within 3 months (regardless of status)
+    const { data: posts } = await supabaseClient
+      .from("social_posts")
+      .select("id, scheduled_date, platforms, content_type, caption, image_asset_url, status")
+      .eq("project_id", linkData.project_id)
+      .gte("scheduled_date", startDate)
+      .lte("scheduled_date", endDate)
+      .order("scheduled_date", { ascending: true })
+      .limit(50);
+    
+    if (posts) {
+      setContentPosts(posts.map((p: any) => ({
+        id: p.id,
+        scheduled_date: p.scheduled_date,
+        platform: Array.isArray(p.platforms) ? p.platforms.join(", ") : p.platforms || "",
+        content_type: p.content_type || "",
+        caption: p.caption,
+        image_url: p.image_asset_url,
+        status: p.status,
+      })) as ContentPost[]);
     }
+
+    // Load ALL email/WhatsApp campaigns within 3 months (regardless of status)
+    const { data: campaigns } = await supabaseClient
+      .from("email_campaigns")
+      .select("id, campaign_type, status, scheduled_date, title, content, image_url")
+      .eq("project_id", linkData.project_id)
+      .gte("scheduled_date", startDate)
+      .lte("scheduled_date", endDate)
+      .order("scheduled_date", { ascending: true })
+      .limit(50);
+    
+    if (campaigns) setEmailCampaigns(campaigns as EmailCampaign[]);
+
+    // Load ALL blog articles within 3 months (regardless of status)
+    const { data: blogs } = await supabaseClient
+      .from("website_blogs")
+      .select("id, publication_type, status, scheduled_date, title, content, image_url")
+      .eq("project_id", linkData.project_id)
+      .gte("scheduled_date", startDate)
+      .lte("scheduled_date", endDate)
+      .order("scheduled_date", { ascending: true })
+      .limit(50);
+    
+    if (blogs) setBlogArticles(blogs as BlogArticle[]);
 
     setData({
       ...linkData,
@@ -644,7 +648,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {contentPosts.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50">
-                <p className="text-sm text-slate-600">Published content for <span className="font-semibold">{data.quarter}</span></p>
+                <p className="text-sm text-slate-600">Upcoming content for the next 3 months</p>
               </div>
               <div className="divide-y divide-slate-100">
                 {contentPosts.map((post) => (
@@ -671,7 +675,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     </div>
                     <div className="text-right flex-shrink-0 hidden sm:block">
                       <p className="text-xs text-slate-500">{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "—"}</p>
-                      <span className="text-xs text-emerald-600 font-medium">Published</span>
+                      <span className={`text-xs font-medium capitalize ${post.status === 'published' ? 'text-emerald-600' : post.status === 'approved' ? 'text-blue-600' : 'text-amber-600'}`}>{post.status}</span>
                     </div>
                     <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6" />
@@ -682,7 +686,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="text-sm text-slate-500">No published social media content for this quarter.</p>
+              <p className="text-sm text-slate-500">No social media content for this quarter.</p>
             </div>
           )}
         </section>
@@ -697,7 +701,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {emailCampaigns.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50">
-                <p className="text-sm text-slate-600">Published campaigns for <span className="font-semibold">{data.quarter}</span></p>
+                <p className="text-sm text-slate-600">Upcoming campaigns for the next 3 months</p>
               </div>
               <div className="divide-y divide-slate-100">
                 {emailCampaigns.map((campaign) => (
@@ -725,7 +729,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     </div>
                     <div className="text-right flex-shrink-0 hidden sm:block">
                       <p className="text-xs text-slate-500">{campaign.scheduled_date ? new Date(campaign.scheduled_date).toLocaleDateString() : "—"}</p>
-                      <span className="text-xs text-emerald-600 font-medium">Published</span>
+                      <span className={`text-xs font-medium capitalize ${campaign.status === 'published' ? 'text-emerald-600' : campaign.status === 'approved' ? 'text-blue-600' : 'text-amber-600'}`}>{campaign.status}</span>
                     </div>
                     <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6" />
@@ -736,7 +740,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="text-sm text-slate-500">No published campaigns for this quarter.</p>
+              <p className="text-sm text-slate-500">No campaigns for this quarter.</p>
             </div>
           )}
         </section>
@@ -751,7 +755,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           {blogArticles.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
               <div className="p-4 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50">
-                <p className="text-sm text-slate-600">Published articles for <span className="font-semibold">{data.quarter}</span></p>
+                <p className="text-sm text-slate-600">Upcoming articles for the next 3 months</p>
               </div>
               <div className="divide-y divide-slate-100">
                 {blogArticles.map((blog) => (
@@ -779,7 +783,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                     </div>
                     <div className="text-right flex-shrink-0 hidden sm:block">
                       <p className="text-xs text-slate-500">{blog.scheduled_date ? new Date(blog.scheduled_date).toLocaleDateString() : "—"}</p>
-                      <span className="text-xs text-emerald-600 font-medium">Published</span>
+                      <span className={`text-xs font-medium capitalize ${blog.status === 'published' ? 'text-emerald-600' : blog.status === 'approved' ? 'text-blue-600' : 'text-amber-600'}`}>{blog.status}</span>
                     </div>
                     <svg className="h-4 w-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M9 18l6-6-6-6" />
@@ -790,7 +794,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             </div>
           ) : (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="text-sm text-slate-500">No published articles for this quarter.</p>
+              <p className="text-sm text-slate-500">No articles for this quarter.</p>
             </div>
           )}
         </section>

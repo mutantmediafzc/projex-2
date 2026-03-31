@@ -622,3 +622,69 @@ textarea::placeholder {
     box-shadow: 0 4px 12px rgba(148, 163, 184, 0.2) !important;
   }
 }
+
+/* ============================================
+   STRATEGY CONTENT - Text Overflow & Mobile Fixes
+   ============================================ */
+.strategy-content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.strategy-content p,
+.strategy-content li,
+.strategy-content span,
+.strategy-content div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.strategy-content ul,
+.strategy-content ol {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+
+.strategy-content li {
+  margin-bottom: 0.25rem;
+}
+
+/* Mobile-specific strategy content fixes */
+@media (max-width: 640px) {
+  .strategy-content {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+  
+  .strategy-content ul,
+  .strategy-content ol {
+    padding-left: 1rem;
+  }
+}
+
+/* Ensure KPI cards don't overflow on mobile */
+@media (max-width: 640px) {
+  .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  
+  .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 > div {
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

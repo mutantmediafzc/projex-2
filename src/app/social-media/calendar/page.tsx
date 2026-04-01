@@ -13,14 +13,26 @@ type Post = {
   platforms: string[];
   subject: string | null;
   caption: string | null;
+  media_urls: { url: string; type: "image" | "video" }[];
   scheduled_date: string | null;
   scheduled_time: string | null;
   status: "draft" | "pending" | "approved" | "published";
   workflow_status: WorkflowStatus;
+  hashtags: string[];
+  post_type: "organic" | "boosted";
   content_type: string | null;
   image_asset_url: string | null;
+  video_url: string | null;
+  first_comment: string | null;
   shoot_status: "pending" | "scheduled" | "completed" | "cancelled";
   shoot_date: string | null;
+  shoot_time: string | null;
+  shoot_count: number;
+  shoot_notes: string | null;
+  creative_notes: string | null;
+  danote_board_id: string | null;
+  platform_budgets: Record<string, number>;
+  published_urls: Record<string, string>;
   created_at: string;
   project?: {
     id: string;
@@ -137,9 +149,10 @@ export default function ContentCalendar2026() {
     const { data: postsData } = await supabaseClient
       .from("social_posts")
       .select(`
-        id, project_id, platforms, subject, caption, scheduled_date, scheduled_time,
-        status, workflow_status, content_type, image_asset_url,
-        shoot_status, shoot_date, created_at,
+        id, project_id, platforms, subject, caption, media_urls, scheduled_date, scheduled_time,
+        status, workflow_status, hashtags, post_type, content_type, image_asset_url, video_url,
+        first_comment, shoot_status, shoot_date, shoot_time, shoot_count, shoot_notes,
+        creative_notes, danote_board_id, platform_budgets, published_urls, created_at,
         project:social_projects!inner(id, name, brand_color, status, company:companies(id, name, logo_url))
       `)
       .eq("project.status", "active")

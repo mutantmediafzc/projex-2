@@ -257,11 +257,27 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
       platform_budgets: platformBudgets,
     };
 
+    // DEBUG: Log what we're saving
+    console.log("=== SAVING POST DATA ===");
+    console.log("video_url:", videoUrl);
+    console.log("shoot_notes:", shootNotes);
+    console.log("shoot_status:", shootStatus);
+    console.log("shoot_date:", shootDate);
+    console.log("shoot_time:", shootTime);
+    console.log("Full postData:", postData);
+
     const oldStatus = post?.workflow_status;
     let savedPostId = post?.id;
 
     if (post) {
-      const { error: updateError } = await supabaseClient.from("social_posts").update(postData).eq("id", post.id);
+      const { data: updateData, error: updateError } = await supabaseClient.from("social_posts").update(postData).eq("id", post.id).select();
+      console.log("=== UPDATE RESPONSE ===");
+      console.log("updateData:", updateData);
+      console.log("updateError:", updateError);
+      if (updateData && updateData[0]) {
+        console.log("Saved video_url:", updateData[0].video_url);
+        console.log("Saved shoot_notes:", updateData[0].shoot_notes);
+      }
       if (updateError) {
         console.error("Error updating post:", updateError);
         setValidationErrors([`Failed to save: ${updateError.message}`]);

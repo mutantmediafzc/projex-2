@@ -8,15 +8,18 @@ CREATE TABLE IF NOT EXISTS project_subscriptions (
   project_id UUID NOT NULL REFERENCES social_projects(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   amount DECIMAL(10, 2) NOT NULL DEFAULT 0,
-  subscription_month INTEGER NOT NULL CHECK (subscription_month >= 1 AND subscription_month <= 12),
-  subscription_year INTEGER NOT NULL CHECK (subscription_year >= 2020 AND subscription_year <= 2100),
+  start_month INTEGER NOT NULL CHECK (start_month >= 1 AND start_month <= 12),
+  start_year INTEGER NOT NULL CHECK (start_year >= 2020 AND start_year <= 2100),
+  end_month INTEGER NOT NULL CHECK (end_month >= 1 AND end_month <= 12),
+  end_year INTEGER NOT NULL CHECK (end_year >= 2020 AND end_year <= 2100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Create index for faster queries
 CREATE INDEX IF NOT EXISTS idx_project_subscriptions_project_id ON project_subscriptions(project_id);
-CREATE INDEX IF NOT EXISTS idx_project_subscriptions_year_month ON project_subscriptions(subscription_year, subscription_month);
+CREATE INDEX IF NOT EXISTS idx_project_subscriptions_start ON project_subscriptions(start_year, start_month);
+CREATE INDEX IF NOT EXISTS idx_project_subscriptions_end ON project_subscriptions(end_year, end_month);
 
 -- Enable RLS
 ALTER TABLE project_subscriptions ENABLE ROW LEVEL SECURITY;

@@ -167,11 +167,11 @@ export default function SocialMediaPage() {
       const { data: subscriptions } = await supabaseClient
         .from("project_subscriptions")
         .select(`
-          id, name, amount, subscription_month, subscription_year,
+          id, name, amount, start_month, start_year, end_month, end_year,
           project:social_projects(id, name)
         `)
-        .order("subscription_year", { ascending: false })
-        .order("subscription_month", { ascending: false });
+        .order("start_year", { ascending: false })
+        .order("start_month", { ascending: false });
 
       // Fetch all boosted posts
       const { data: boostedPosts } = await supabaseClient
@@ -185,13 +185,15 @@ export default function SocialMediaPage() {
       const months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
       // Create subscriptions CSV
-      const subHeaders = ["Project", "Subscription Name", "Amount", "Month", "Year"];
+      const subHeaders = ["Project", "Subscription Name", "Amount", "Start Month", "Start Year", "End Month", "End Year"];
       const subRows = (subscriptions || []).map((sub: any) => [
         sub.project?.name || "Unknown",
         sub.name,
         sub.amount?.toFixed(2) || "0.00",
-        months[sub.subscription_month] || sub.subscription_month,
-        sub.subscription_year,
+        months[sub.start_month] || sub.start_month,
+        sub.start_year,
+        months[sub.end_month] || sub.end_month,
+        sub.end_year,
       ]);
       const subCsvContent = [
         subHeaders.join(","),

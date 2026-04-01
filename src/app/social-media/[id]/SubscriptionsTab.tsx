@@ -8,8 +8,10 @@ type Subscription = {
   project_id: string;
   name: string;
   amount: number;
-  subscription_month: number;
-  subscription_year: number;
+  start_month: number;
+  start_year: number;
+  end_month: number;
+  end_year: number;
   created_at: string;
 };
 
@@ -43,8 +45,10 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
   // Form state
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [startMonth, setStartMonth] = useState(new Date().getMonth() + 1);
+  const [startYear, setStartYear] = useState(new Date().getFullYear());
+  const [endMonth, setEndMonth] = useState(new Date().getMonth() + 1);
+  const [endYear, setEndYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     loadSubscriptions();
@@ -56,8 +60,8 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
       .from("project_subscriptions")
       .select("*")
       .eq("project_id", projectId)
-      .order("subscription_year", { ascending: false })
-      .order("subscription_month", { ascending: false });
+      .order("start_year", { ascending: false })
+      .order("start_month", { ascending: false });
 
     if (data) setSubscriptions(data as Subscription[]);
     setLoading(false);
@@ -67,8 +71,10 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
     setEditingSubscription(null);
     setName("");
     setAmount("");
-    setMonth(new Date().getMonth() + 1);
-    setYear(new Date().getFullYear());
+    setStartMonth(new Date().getMonth() + 1);
+    setStartYear(new Date().getFullYear());
+    setEndMonth(new Date().getMonth() + 1);
+    setEndYear(new Date().getFullYear());
     setShowModal(true);
   }
 
@@ -76,8 +82,10 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
     setEditingSubscription(sub);
     setName(sub.name);
     setAmount(String(sub.amount));
-    setMonth(sub.subscription_month);
-    setYear(sub.subscription_year);
+    setStartMonth(sub.start_month);
+    setStartYear(sub.start_year);
+    setEndMonth(sub.end_month);
+    setEndYear(sub.end_year);
     setShowModal(true);
   }
 
@@ -89,8 +97,10 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
       project_id: projectId,
       name: name.trim(),
       amount: parseFloat(amount),
-      subscription_month: month,
-      subscription_year: year,
+      start_month: startMonth,
+      start_year: startYear,
+      end_month: endMonth,
+      end_year: endYear,
     };
 
     if (editingSubscription) {
@@ -119,12 +129,14 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
       return;
     }
 
-    const headers = ["Name", "Amount", "Month", "Year"];
+    const headers = ["Name", "Amount", "Start Month", "Start Year", "End Month", "End Year"];
     const rows = subscriptions.map((sub) => [
       sub.name,
       sub.amount.toFixed(2),
-      MONTHS.find((m) => m.value === sub.subscription_month)?.label || sub.subscription_month,
-      sub.subscription_year,
+      MONTHS.find((m) => m.value === sub.start_month)?.label || sub.start_month,
+      sub.start_year,
+      MONTHS.find((m) => m.value === sub.end_month)?.label || sub.end_month,
+      sub.end_year,
     ]);
 
     const csvContent = [
@@ -200,8 +212,7 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
               <tr className="border-b border-slate-200">
                 <th className="text-left py-3 px-2 text-xs font-semibold text-slate-600">Name</th>
                 <th className="text-right py-3 px-2 text-xs font-semibold text-slate-600">Amount</th>
-                <th className="text-center py-3 px-2 text-xs font-semibold text-slate-600">Month</th>
-                <th className="text-center py-3 px-2 text-xs font-semibold text-slate-600">Year</th>
+                <th className="text-center py-3 px-2 text-xs font-semibold text-slate-600">Period</th>
                 <th className="text-right py-3 px-2 text-xs font-semibold text-slate-600">Actions</th>
               </tr>
             </thead>
@@ -211,9 +222,12 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
                   <td className="py-3 px-2 font-medium text-slate-900">{sub.name}</td>
                   <td className="py-3 px-2 text-right text-slate-700">${sub.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-2 text-center text-slate-600">
-                    {MONTHS.find((m) => m.value === sub.subscription_month)?.label}
+                    <span className="inline-flex items-center gap-1">
+                      {MONTHS.find((m) => m.value === sub.start_month)?.label?.slice(0, 3)} {sub.start_year}
+                      <svg className="h-3 w-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                      {MONTHS.find((m) => m.value === sub.end_month)?.label?.slice(0, 3)} {sub.end_year}
+                    </span>
                   </td>
-                  <td className="py-3 px-2 text-center text-slate-600">{sub.subscription_year}</td>
                   <td className="py-3 px-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -280,29 +294,53 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
                   placeholder="0.00"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Month</label>
-                  <select
-                    value={month}
-                    onChange={(e) => setMonth(parseInt(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-black focus:border-pink-300 focus:outline-none"
-                  >
-                    {MONTHS.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Year</label>
-                  <input
-                    type="number"
-                    value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value))}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-black focus:border-pink-300 focus:outline-none"
-                    min="2020"
-                    max="2100"
-                  />
+              <div className="space-y-3">
+                <label className="block text-xs font-medium text-slate-700">Subscription Period</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="rounded-lg border border-slate-200 p-3">
+                    <p className="text-[10px] font-medium text-slate-500 uppercase mb-2">Start</p>
+                    <div className="flex gap-2">
+                      <select
+                        value={startMonth}
+                        onChange={(e) => setStartMonth(parseInt(e.target.value))}
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-black focus:border-pink-300 focus:outline-none"
+                      >
+                        {MONTHS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label.slice(0, 3)}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={startYear}
+                        onChange={(e) => setStartYear(parseInt(e.target.value))}
+                        className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-black focus:border-pink-300 focus:outline-none"
+                        min="2020"
+                        max="2100"
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 p-3">
+                    <p className="text-[10px] font-medium text-slate-500 uppercase mb-2">End</p>
+                    <div className="flex gap-2">
+                      <select
+                        value={endMonth}
+                        onChange={(e) => setEndMonth(parseInt(e.target.value))}
+                        className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-black focus:border-pink-300 focus:outline-none"
+                      >
+                        {MONTHS.map((m) => (
+                          <option key={m.value} value={m.value}>{m.label.slice(0, 3)}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={endYear}
+                        onChange={(e) => setEndYear(parseInt(e.target.value))}
+                        className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-black focus:border-pink-300 focus:outline-none"
+                        min="2020"
+                        max="2100"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

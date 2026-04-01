@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/",
     label: "Dashboard",
-    gradient: { from: "from-violet-100 to-purple-100", to: "from-violet-500 to-purple-500", hover: "from-violet-50 to-purple-50", shadow: "shadow-violet-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 11.5 12 4l8 7.5" />
@@ -29,7 +29,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/companies",
     label: "Companies",
     adminOnly: true,
-    gradient: { from: "from-sky-100 to-cyan-100", to: "from-sky-500 to-cyan-500", hover: "from-sky-50 to-cyan-50", shadow: "shadow-sky-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 21h18" />
@@ -43,7 +43,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/contacts",
     label: "Contacts",
     adminOnly: true,
-    gradient: { from: "from-rose-100 to-pink-100", to: "from-rose-500 to-pink-500", hover: "from-rose-50 to-pink-50", shadow: "shadow-rose-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -56,7 +56,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/accounts",
     label: "Accounts",
     adminOnly: true,
-    gradient: { from: "from-teal-100 to-emerald-100", to: "from-teal-500 to-emerald-500", hover: "from-teal-50 to-emerald-50", shadow: "shadow-teal-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -69,7 +69,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/projects",
     label: "Projects",
-    gradient: { from: "from-emerald-100 to-teal-100", to: "from-emerald-500 to-teal-500", hover: "from-emerald-50 to-teal-50", shadow: "shadow-emerald-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -81,7 +81,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/social-media",
     label: "Integrated Marketing",
-    gradient: { from: "from-pink-100 to-fuchsia-100", to: "from-pink-500 to-fuchsia-500", hover: "from-pink-50 to-fuchsia-50", shadow: "shadow-pink-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
@@ -91,7 +91,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/appointments",
     label: "Calendar",
-    gradient: { from: "from-amber-100 to-orange-100", to: "from-amber-500 to-orange-500", hover: "from-amber-50 to-orange-50", shadow: "shadow-amber-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="5" width="18" height="16" rx="2" />
@@ -103,7 +103,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/financials",
     label: "Financials",
     adminOnly: true,
-    gradient: { from: "from-indigo-100 to-blue-100", to: "from-indigo-500 to-blue-500", hover: "from-indigo-50 to-blue-50", shadow: "shadow-indigo-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="6" width="18" height="12" rx="2" />
@@ -114,7 +114,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/tasks",
     label: "Tasks",
-    gradient: { from: "from-lime-100 to-green-100", to: "from-lime-500 to-green-500", hover: "from-lime-50 to-green-50", shadow: "shadow-lime-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
@@ -125,7 +125,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/motion",
     label: "Motion",
-    gradient: { from: "from-fuchsia-100 to-purple-100", to: "from-fuchsia-500 to-purple-500", hover: "from-fuchsia-50 to-purple-50", shadow: "shadow-fuchsia-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
@@ -139,7 +139,7 @@ const NAV_ITEMS: NavItem[] = [
     href: "/users",
     label: "User Management",
     adminOnly: true,
-    gradient: { from: "from-slate-200 to-gray-200", to: "from-slate-600 to-gray-600", hover: "from-slate-100 to-gray-100", shadow: "shadow-slate-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -152,7 +152,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/chat",
     label: "Chat with Colton",
-    gradient: { from: "from-violet-100 to-indigo-100", to: "from-violet-500 to-indigo-500", hover: "from-violet-50 to-indigo-50", shadow: "shadow-violet-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -165,7 +165,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/danote",
     label: "Danote",
-    gradient: { from: "from-cyan-100 to-teal-100", to: "from-cyan-500 to-teal-500", hover: "from-cyan-50 to-teal-50", shadow: "shadow-cyan-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1" />
@@ -178,7 +178,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/dischat",
     label: "Dischat",
-    gradient: { from: "from-indigo-100 to-violet-100", to: "from-indigo-500 to-violet-500", hover: "from-indigo-50 to-violet-50", shadow: "shadow-indigo-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -191,7 +191,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: "/ws-reports",
     label: "WS Reports",
-    gradient: { from: "from-purple-100 to-indigo-100", to: "from-purple-500 to-indigo-500", hover: "from-purple-50 to-indigo-50", shadow: "shadow-purple-500/25" },
+    gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />

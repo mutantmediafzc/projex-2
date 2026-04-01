@@ -40,7 +40,7 @@ type SocialProject = {
 
 const TABS = [
   { id: "team", label: "Team", icon: TeamIcon },
-  { id: "calendar", label: "Social Media", icon: CalendarIcon },
+  { id: "calendar", label: "Social Media & Ads", icon: CalendarIcon },
   { id: "email", label: "Email & WhatsApp", icon: EmailIcon },
   { id: "articles", label: "Blogs & Articles", icon: ArticleIcon },
   { id: "analytics", label: "Strategies & KPIs", icon: ChartIcon },

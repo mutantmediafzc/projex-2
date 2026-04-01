@@ -131,6 +131,33 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   const captionRef = useRef<HTMLTextAreaElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync state when post prop changes (rehydration)
+  useEffect(() => {
+    if (post) {
+      setPlatforms(post.platforms || ["instagram", "facebook"]);
+      setSubject(post.subject || "");
+      setCaption(post.caption || "");
+      setScheduledDate(post.scheduled_date ? post.scheduled_date.slice(0, 10) : "");
+      setScheduledTime(post.scheduled_time || "12:00");
+      setStatus(post.status || "draft");
+      setWorkflowStatus(post.workflow_status || "captions");
+      setHashtags(post.hashtags?.join(" ") || "");
+      setPostType(post.post_type || "organic");
+      setContentType(post.content_type || "");
+      setImageAssetUrl(post.image_asset_url || "");
+      setVideoUrl(post.video_url || "");
+      setFirstComment(post.first_comment || "");
+      setPlatformBudgets(post.platform_budgets || {});
+      setShootStatus(post.shoot_status || "pending");
+      setShootDate(post.shoot_date || "");
+      setShootTime(post.shoot_time || "");
+      setShootCount(post.shoot_count || 0);
+      setShootNotes(post.shoot_notes || "");
+      setCreativeNotes(post.creative_notes || "");
+      setDanoteBoardId(post.danote_board_id || "");
+    }
+  }, [post]);
+
   // Fetch Danote boards
   useEffect(() => {
     async function fetchBoards() {

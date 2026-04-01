@@ -15,6 +15,7 @@ import StrategyLinkManager from "./StrategyLinkManager";
 import TeamAssignments from "./TeamAssignments";
 import EmailWhatsAppCampaigns from "./EmailWhatsAppCampaigns";
 import BlogsArticles from "./BlogsArticles";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type SocialProject = {
   id: string;
@@ -179,6 +180,8 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; color: string; bg:
 export default function SocialProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const router = useRouter();
+  const { role } = useUserRole();
+  const isAdmin = role === "admin";
   const [project, setProject] = useState<SocialProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("calendar");
@@ -419,10 +422,9 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
                 className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                 title="Settings"
               >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <circle cx="5" cy="12" r="2" />
-                  <circle cx="12" cy="12" r="2" />
-                  <circle cx="19" cy="12" r="2" />
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
               </button>
               
@@ -514,18 +516,20 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
                     )}
                   </div>
 
-                  {/* Delete Section */}
-                  <div>
-                    <button
-                      onClick={() => { setShowPlatforms(false); setShowDeleteConfirm(true); }}
-                      className="w-full py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                      </svg>
-                      Delete Calendar
-                    </button>
-                  </div>
+                  {/* Delete Section - Admin Only */}
+                  {isAdmin && (
+                    <div>
+                      <button
+                        onClick={() => { setShowPlatforms(false); setShowDeleteConfirm(true); }}
+                        className="w-full py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                        </svg>
+                        Delete Calendar
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

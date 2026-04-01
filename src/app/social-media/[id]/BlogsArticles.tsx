@@ -96,15 +96,49 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
     const fileName = `blog-${Date.now()}.${ext}`;
     const filePath = `blogs/${projectId}/${fileName}`;
 
+    // If there's an existing image, delete it first
+    if (imageUrl) {
+      await handleImageDelete(false);
+    }
+
     const { error: uploadError } = await supabaseClient.storage
       .from("media")
       .upload(filePath, file);
 
-    if (!uploadError) {
+    if (uploadError) {
+      console.error("Error uploading image:", uploadError);
+      alert("Failed to upload image. Please try again.");
+    } else {
       const { data } = supabaseClient.storage.from("media").getPublicUrl(filePath);
+      console.log("Image uploaded successfully:", data.publicUrl);
       setImageUrl(data.publicUrl);
     }
     setUploading(false);
+  }
+
+  async function handleImageDelete(clearUrl = true) {
+    if (!imageUrl) return;
+    
+    try {
+      // Extract file path from URL
+      const url = new URL(imageUrl);
+      const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/media\/(.+)/);
+      if (pathMatch) {
+        const filePath = decodeURIComponent(pathMatch[1]);
+        const { error } = await supabaseClient.storage.from("media").remove([filePath]);
+        if (error) {
+          console.error("Error deleting image from storage:", error);
+        } else {
+          console.log("Image deleted from storage:", filePath);
+        }
+      }
+    } catch (err) {
+      console.error("Error parsing image URL:", err);
+    }
+    
+    if (clearUrl) {
+      setImageUrl("");
+    }
   }
 
   async function handleSave() {
@@ -422,15 +456,32 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
                       <div className="relative h-40 w-full overflow-hidden rounded-xl bg-slate-100">
                         <Image src={imageUrl} alt="" fill className="object-cover" />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl("")}
-                        className="absolute right-2 top-2 rounded-lg bg-red-500 p-1.5 text-white hover:bg-red-600"
-                      >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M18 6L6 18M6 6l12 12" />
-                        </svg>
-                      </button>
+                      <div className="absolute right-2 top-2 flex gap-1">
+                        <label className="cursor-pointer rounded-lg bg-blue-500 p-1.5 text-white hover:bg-blue-600" title="Replace image">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            disabled={uploading}
+                          />
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="17 8 12 3 7 8" />
+                            <line x1="12" y1="3" x2="12" y2="15" />
+                          </svg>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleImageDelete()}
+                          className="rounded-lg bg-red-500 p-1.5 text-white hover:bg-red-600"
+                          title="Delete image"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 hover:border-violet-300 hover:bg-violet-50/50 transition-colors">

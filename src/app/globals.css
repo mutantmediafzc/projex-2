@@ -635,6 +635,36 @@ textarea::placeholder {
   overflow: hidden;
 }
 
+/* Preserve line breaks and spacing from rich text editor */
+.strategy-content p {
+  margin-bottom: 0.75em;
+  min-height: 1em; /* Preserve empty paragraphs as spacing */
+}
+
+.strategy-content p:empty,
+.strategy-content p:has(br:only-child) {
+  margin-bottom: 0.5em;
+  min-height: 1.25em;
+}
+
+.strategy-content br {
+  display: block;
+  content: "";
+  margin-top: 0.25em;
+}
+
+/* Handle Quill's empty paragraph with br: <p><br></p> */
+.strategy-content p:only-child:has(> br:only-child),
+.strategy-content p br:only-child {
+  display: block;
+  height: 1em;
+}
+
+/* Double line breaks (empty lines) */
+.strategy-content p + p {
+  margin-top: 0;
+}
+
 .strategy-content p,
 .strategy-content li,
 .strategy-content span,
@@ -647,11 +677,28 @@ textarea::placeholder {
 .strategy-content ul,
 .strategy-content ol {
   padding-left: 1.25rem;
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
 }
 
 .strategy-content li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+
+/* Ensure proper spacing between sections */
+.strategy-content h1,
+.strategy-content h2,
+.strategy-content h3,
+.strategy-content h4,
+.strategy-content h5,
+.strategy-content h6 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.strategy-content strong,
+.strategy-content b {
+  font-weight: 600;
 }
 
 /* Mobile-specific strategy content fixes */

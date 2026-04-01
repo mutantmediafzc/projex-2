@@ -286,36 +286,45 @@ export default function SocialMediaPage() {
           <h1 className="text-2xl font-bold text-slate-900">Integrated Marketing</h1>
           <p className="text-sm text-slate-500">Plan, execute, and track your marketing campaigns and content calendar in one place.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={downloadAllReports}
-            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-medium text-violet-700 transition-all hover:bg-violet-100 hover:border-violet-300"
+            title="Download All Subscription and Boost Report"
+            className="relative group inline-flex items-center justify-center rounded-xl border border-violet-200 bg-violet-50 p-2.5 text-violet-700 transition-all hover:bg-violet-100 hover:border-violet-300"
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
             </svg>
-            Download All Subscription and Boost Report
+            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-50">
+              Download Reports
+            </span>
           </button>
           <Link
             href="/social-media/calendar"
-            className="inline-flex items-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-sm font-medium text-pink-700 transition-all hover:bg-pink-100 hover:border-pink-300"
+            title="Content Calendar 2026"
+            className="relative group inline-flex items-center justify-center rounded-xl border border-pink-200 bg-pink-50 p-2.5 text-pink-700 transition-all hover:bg-pink-100 hover:border-pink-300"
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            Content Calendar 2026
+            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-50">
+              Content Calendar 2026
+            </span>
           </Link>
           <button
             onClick={() => setShowNewProjectModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-pink-500/25 transition-all hover:from-pink-600 hover:to-fuchsia-700 hover:shadow-xl hover:shadow-pink-500/30"
+            title="New Social Project"
+            className="relative group inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 p-2.5 text-white shadow-lg shadow-pink-500/25 transition-all hover:from-pink-600 hover:to-fuchsia-700 hover:shadow-xl hover:shadow-pink-500/30"
           >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            New Social Project
+            <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-50">
+              New Social Project
+            </span>
           </button>
         </div>
       </div>

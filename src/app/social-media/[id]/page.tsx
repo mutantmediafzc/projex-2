@@ -549,20 +549,29 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
 
         {/* Tabs */}
         <div className="mt-6 flex gap-1 overflow-x-auto">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-t-xl px-4 py-2.5 text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/25"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              <tab.icon />
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                title={!isActive ? tab.label : undefined}
+                className={`relative group flex items-center gap-2 whitespace-nowrap rounded-t-xl text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/25 px-4 py-2.5"
+                    : "text-slate-600 hover:bg-slate-100 p-2.5"
+                }`}
+              >
+                <tab.icon />
+                {isActive && <span>{tab.label}</span>}
+                {!isActive && (
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none z-50">
+                    {tab.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 

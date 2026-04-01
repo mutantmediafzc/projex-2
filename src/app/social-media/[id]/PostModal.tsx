@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { PLATFORM_ICONS, EMOJI_LIST } from "./socialMediaUtils";
 
@@ -59,9 +60,21 @@ type DanoteBoard = {
   name: string;
 };
 
+type ProjectInfo = {
+  id: string;
+  name: string;
+  brand_color: string | null;
+  company: {
+    id: string;
+    name: string;
+    logo_url: string | null;
+  } | null;
+};
+
 type Props = {
   post: Post | null;
   projectId: string;
+  projectInfo?: ProjectInfo | null;
   availablePlatforms: string[];
   onClose: () => void;
   onSaved: () => void;
@@ -86,7 +99,7 @@ const CONTENT_TYPES = [
   "Ad Creatives (Check dimensions on notes)",
 ];
 
-export default function PostModal({ post, projectId, availablePlatforms, onClose, onSaved }: Props) {
+export default function PostModal({ post, projectId, projectInfo, availablePlatforms, onClose, onSaved }: Props) {
   // Basic fields - auto-select IG and FB for new posts
   const [platforms, setPlatforms] = useState<string[]>(post?.platforms || ["instagram", "facebook"]);
   const [subject, setSubject] = useState(post?.subject || "");
@@ -334,7 +347,31 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
     <div className="fixed inset-0 z-[99999] flex items-start justify-center bg-black/50 overflow-y-auto py-4 px-2 sm:px-4">
       <div className="flex flex-col sm:flex-row w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
         {/* Left: Image/Video Preview Area - Hidden on mobile, shown at top */}
-        <div className="hidden sm:flex w-48 bg-slate-100 flex-shrink-0 flex-col items-center justify-center p-4 border-r border-slate-200">
+        <div className="hidden sm:flex w-48 bg-slate-100 flex-shrink-0 flex-col items-center p-4 border-r border-slate-200">
+          {/* Brand Header Link */}
+          {projectInfo && (
+            <Link
+              href={`/social-media/${projectInfo.id}`}
+              className="w-full mb-4 flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:border-pink-300 hover:bg-pink-50 transition-all group"
+              title={`Go to ${projectInfo.name} calendar`}
+            >
+              {projectInfo.company?.logo_url ? (
+                <img src={projectInfo.company.logo_url} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+              ) : (
+                <span 
+                  className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+                  style={{ backgroundColor: projectInfo.brand_color || "#ec4899" }}
+                >
+                  {projectInfo.name[0]}
+                </span>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-slate-900 truncate group-hover:text-pink-600">{projectInfo.name}</p>
+                <p className="text-[10px] text-slate-400">View Calendar →</p>
+              </div>
+            </Link>
+          )}
+          
           {imageAssetUrl ? (
             <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-white shadow">
               <img src={getImageUrl(imageAssetUrl)} alt="Post asset" className="w-full h-full object-cover" />

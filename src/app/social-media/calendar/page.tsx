@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 import PostModal from "../[id]/PostModal";
 
 type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
@@ -95,6 +96,9 @@ const PLATFORM_ICONS: Record<string, string> = {
 };
 
 export default function ContentCalendar2026() {
+  const { role, userId, loading: roleLoading } = useUserRole();
+  const isAdmin = role === "admin" || role === "hr";
+  
   const [posts, setPosts] = useState<Post[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,24 +127,47 @@ export default function ContentCalendar2026() {
   const [showPostModal, setShowPostModal] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!roleLoading) {
+      loadData();
+    }
+  }, [roleLoading, userId, isAdmin]);
 
   async function loadData() {
     setLoading(true);
     
-    // Load all projects with company info (both active and paused)
+    // Load all projects with company info and team assignments (both active and paused)
     const { data: projectsData } = await supabaseClient
       .from("social_projects")
       .select(`
         id, name, brand_color, status,
-        company:companies(id, name, logo_url)
+        company:companies(id, name, logo_url),
+        project_manager_id, account_manager_id, creative_team_lead_id, creative_id,
+        social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id,
+        website_blogs_specialist_id, content_creator_id
       `)
       .in("status", ["active", "paused"])
       .order("name");
     
     if (projectsData) {
-      const transformed = projectsData.map((p: any) => ({
+      // Filter projects based on user access (admins see all, users see only assigned)
+      const filteredProjects = projectsData.filter((p: any) => {
+        if (isAdmin) return true;
+        if (!userId) return false;
+        // Check if user is assigned to any team role
+        return (
+          p.project_manager_id === userId ||
+          p.account_manager_id === userId ||
+          p.creative_team_lead_id === userId ||
+          p.creative_id === userId ||
+          p.social_media_specialist_id === userId ||
+          p.performance_marketer_id === userId ||
+          p.email_whatsapp_specialist_id === userId ||
+          p.website_blogs_specialist_id === userId ||
+          p.content_creator_id === userId
+        );
+      });
+      
+      const transformed = filteredProjects.map((p: any) => ({
         ...p,
         company: Array.isArray(p.company) ? p.company[0] || null : p.company,
       }));
@@ -160,8 +187,32 @@ export default function ContentCalendar2026() {
       .in("project.status", ["active", "paused"])
       .order("scheduled_date", { ascending: true });
 
-    if (postsData) {
-      const transformed = postsData.map((post: any) => ({
+    if (postsData && projectsData) {
+      // Get list of accessible project IDs
+      const accessibleProjectIds = new Set(
+        projectsData
+          .filter((p: any) => {
+            if (isAdmin) return true;
+            if (!userId) return false;
+            return (
+              p.project_manager_id === userId ||
+              p.account_manager_id === userId ||
+              p.creative_team_lead_id === userId ||
+              p.creative_id === userId ||
+              p.social_media_specialist_id === userId ||
+              p.performance_marketer_id === userId ||
+              p.email_whatsapp_specialist_id === userId ||
+              p.website_blogs_specialist_id === userId ||
+              p.content_creator_id === userId
+            );
+          })
+          .map((p: any) => p.id)
+      );
+      
+      // Filter posts to only show those from accessible projects
+      const filteredPosts = postsData.filter((post: any) => accessibleProjectIds.has(post.project_id));
+      
+      const transformed = filteredPosts.map((post: any) => ({
         ...post,
         project: post.project ? {
           ...post.project,
@@ -626,40 +677,34 @@ export default function ContentCalendar2026() {
                   const displayName = project.name;
                   const statusColor = project.status === "active" ? "#22c55e" : "#eab308"; // green for active, yellow for paused
                   return (
-                    <div
+                    <button
                       key={project.id}
+                      onClick={() => {
+                        setSelectedBrands((prev) =>
+                          isSelected
+                            ? prev.filter((id) => id !== project.id)
+                            : [...prev, project.id]
+                        );
+                      }}
                       className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                         isSelected
                           ? "bg-pink-100 text-pink-700 font-medium"
                           : "text-slate-600 hover:bg-slate-100"
                       }`}
+                      title={`Filter by ${displayName}`}
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: statusColor }}
                         title={project.status === "active" ? "Active" : "Paused"}
                       />
-                      <Link
-                        href={`/social-media/${project.id}`}
-                        className="truncate flex-1 text-xs hover:text-pink-600 hover:underline"
-                        title={`Go to ${displayName} calendar`}
-                      >
+                      <span className="truncate flex-1 text-xs">
                         {displayName}
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setSelectedBrands((prev) =>
-                            isSelected
-                              ? prev.filter((id) => id !== project.id)
-                              : [...prev, project.id]
-                          );
-                        }}
-                        className="text-[10px] text-slate-400 hover:text-pink-600"
-                        title="Filter by this calendar"
-                      >
+                      </span>
+                      <span className="text-[10px] text-slate-400">
                         ({postCount})
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   );
                 })}
               </div>
@@ -718,7 +763,12 @@ export default function ContentCalendar2026() {
                               </span>
                             </td>
                             <td className="px-4 py-3 w-44">
-                              <div className="flex items-center gap-2">
+                              <Link
+                                href={`/social-media/${post.project_id}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                title={`Go to ${post.project?.name || "Unknown"} calendar`}
+                              >
                                 {post.project?.company?.logo_url ? (
                                   <img src={post.project.company.logo_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
                                 ) : (
@@ -726,10 +776,10 @@ export default function ContentCalendar2026() {
                                     {(post.project?.name || "?")[0]}
                                   </span>
                                 )}
-                                <span className="text-sm text-slate-700 truncate max-w-[120px]">
+                                <span className="text-sm text-slate-700 truncate max-w-[120px] hover:text-pink-600 hover:underline">
                                   {post.project?.name || "Unknown"}
                                 </span>
-                              </div>
+                              </Link>
                             </td>
                             <td className="px-4 py-3 w-16">
                               {post.image_asset_url ? (
@@ -966,6 +1016,7 @@ export default function ContentCalendar2026() {
         <PostModal
           post={editingPost as any}
           projectId={editingPost.project_id}
+          projectInfo={editingPost.project as any}
           availablePlatforms={["instagram", "facebook", "tiktok", "linkedin", "x", "youtube", "whatsapp"]}
           onClose={() => { setShowPostModal(false); setEditingPost(null); }}
           onSaved={() => { setShowPostModal(false); setEditingPost(null); loadData(); }}

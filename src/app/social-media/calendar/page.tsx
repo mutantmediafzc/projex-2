@@ -50,6 +50,7 @@ type Project = {
   id: string;
   name: string;
   brand_color: string | null;
+  status: "active" | "paused";
   company: {
     id: string;
     name: string;
@@ -104,6 +105,7 @@ export default function ContentCalendar2026() {
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
   const [shootFilter, setShootFilter] = useState<"all" | "pending" | "scheduled" | "completed">("all");
+  const [projectStatusFilter, setProjectStatusFilter] = useState<"all" | "active" | "paused">("all");
   
   // Drag and drop
   const [draggedPost, setDraggedPost] = useState<Post | null>(null);
@@ -127,14 +129,14 @@ export default function ContentCalendar2026() {
   async function loadData() {
     setLoading(true);
     
-    // Load all projects with company info
+    // Load all projects with company info (both active and paused)
     const { data: projectsData } = await supabaseClient
       .from("social_projects")
       .select(`
-        id, name, brand_color,
+        id, name, brand_color, status,
         company:companies(id, name, logo_url)
       `)
-      .eq("status", "active")
+      .in("status", ["active", "paused"])
       .order("name");
     
     if (projectsData) {
@@ -145,7 +147,7 @@ export default function ContentCalendar2026() {
       setProjects(transformed);
     }
 
-    // Load all posts with project info - only from active projects
+    // Load all posts with project info - from active and paused projects
     const { data: postsData } = await supabaseClient
       .from("social_posts")
       .select(`
@@ -155,7 +157,7 @@ export default function ContentCalendar2026() {
         creative_notes, danote_board_id, platform_budgets, published_urls, created_at,
         project:social_projects!inner(id, name, brand_color, status, company:companies(id, name, logo_url))
       `)
-      .eq("project.status", "active")
+      .in("project.status", ["active", "paused"])
       .order("scheduled_date", { ascending: true });
 
     if (postsData) {
@@ -583,10 +585,21 @@ export default function ContentCalendar2026() {
           <div className="w-64 flex-shrink-0 border-r border-slate-200 bg-white overflow-y-auto max-h-[calc(100vh-160px)] sticky top-40">
             {/* Sidebar Header */}
             <div className="px-3 py-2.5 border-b border-slate-200 bg-gradient-to-r from-pink-50 to-purple-50">
-              <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
-                <span className="text-pink-500">📅</span>
-                Calendars
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                  <span className="text-pink-500">📅</span>
+                  Calendars
+                </h3>
+                <select
+                  value={projectStatusFilter}
+                  onChange={(e) => setProjectStatusFilter(e.target.value as "all" | "active" | "paused")}
+                  className="text-[10px] px-2 py-1 rounded border border-slate-200 bg-white text-slate-600 focus:outline-none focus:border-pink-300"
+                >
+                  <option value="all">All</option>
+                  <option value="active">Active</option>
+                  <option value="paused">Paused</option>
+                </select>
+              </div>
             </div>
             
             <div className="p-3">
@@ -599,26 +612,22 @@ export default function ContentCalendar2026() {
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  All Calendars ({projects.length})
+                  All Calendars ({projects.filter(p => projectStatusFilter === "all" || p.status === projectStatusFilter).length})
                 </button>
-                {[...projects].sort((a, b) => {
-                  const nameA = a.name.toLowerCase();
-                  const nameB = b.name.toLowerCase();
-                  return nameA.localeCompare(nameB);
-                }).map((project) => {
+                {[...projects]
+                  .filter(p => projectStatusFilter === "all" || p.status === projectStatusFilter)
+                  .sort((a, b) => {
+                    const nameA = a.name.toLowerCase();
+                    const nameB = b.name.toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  }).map((project) => {
                   const postCount = posts.filter(p => p.project_id === project.id).length;
                   const isSelected = selectedBrands.includes(project.id);
                   const displayName = project.name;
+                  const statusColor = project.status === "active" ? "#22c55e" : "#eab308"; // green for active, yellow for paused
                   return (
-                    <button
+                    <div
                       key={project.id}
-                      onClick={() => {
-                        setSelectedBrands((prev) =>
-                          isSelected
-                            ? prev.filter((id) => id !== project.id)
-                            : [...prev, project.id]
-                        );
-                      }}
                       className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
                         isSelected
                           ? "bg-pink-100 text-pink-700 font-medium"
@@ -627,11 +636,30 @@ export default function ContentCalendar2026() {
                     >
                       <span
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: project.brand_color || "#ec4899" }}
+                        style={{ backgroundColor: statusColor }}
+                        title={project.status === "active" ? "Active" : "Paused"}
                       />
-                      <span className="truncate flex-1 text-xs">{displayName}</span>
-                      <span className="text-[10px] text-slate-400">({postCount})</span>
-                    </button>
+                      <Link
+                        href={`/social-media/${project.id}`}
+                        className="truncate flex-1 text-xs hover:text-pink-600 hover:underline"
+                        title={`Go to ${displayName} calendar`}
+                      >
+                        {displayName}
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setSelectedBrands((prev) =>
+                            isSelected
+                              ? prev.filter((id) => id !== project.id)
+                              : [...prev, project.id]
+                          );
+                        }}
+                        className="text-[10px] text-slate-400 hover:text-pink-600"
+                        title="Filter by this calendar"
+                      >
+                        ({postCount})
+                      </button>
+                    </div>
                   );
                 })}
               </div>

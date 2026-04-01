@@ -33,7 +33,6 @@ type Post = {
   image_asset_url: string | null;
   video_url: string | null;
   first_comment: string | null;
-  script_content: string | null;
   shoot_status: "pending" | "scheduled" | "completed" | "cancelled";
   shoot_date: string | null;
   shoot_time: string | null;

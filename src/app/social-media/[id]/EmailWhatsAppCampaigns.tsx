@@ -57,7 +57,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
       .from("email_campaigns")
       .select("*")
       .eq("project_id", projectId)
-      .order("created_at", { ascending: false });
+      .order("scheduled_date", { ascending: true });
 
     if (!error && data) {
       setCampaigns(data as Campaign[]);

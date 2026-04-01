@@ -61,13 +61,40 @@ const WORKFLOW_LABELS: Record<string, string> = {
 };
 
 function getQuarterDateRange(quarter: string): { start: string; end: string } {
-  const match = quarter.match(/Q(\d)\s+(\d{4})/);
-  if (!match) {
+  // Handle formats: "Q2 2026", "2026-Q2", "Q2-2026"
+  let q: number | null = null;
+  let year: number | null = null;
+  
+  // Try "Q2 2026" format
+  let match = quarter.match(/Q(\d)\s+(\d{4})/);
+  if (match) {
+    q = parseInt(match[1]);
+    year = parseInt(match[2]);
+  }
+  
+  // Try "2026-Q2" format
+  if (!q || !year) {
+    match = quarter.match(/(\d{4})-Q(\d)/);
+    if (match) {
+      year = parseInt(match[1]);
+      q = parseInt(match[2]);
+    }
+  }
+  
+  // Try "Q2-2026" format
+  if (!q || !year) {
+    match = quarter.match(/Q(\d)-(\d{4})/);
+    if (match) {
+      q = parseInt(match[1]);
+      year = parseInt(match[2]);
+    }
+  }
+  
+  if (!q || !year) {
     const today = new Date();
     return { start: today.toISOString().split('T')[0], end: today.toISOString().split('T')[0] };
   }
-  const q = parseInt(match[1]);
-  const year = parseInt(match[2]);
+  
   const quarters: Record<number, { start: string; end: string }> = {
     1: { start: `${year}-01-01`, end: `${year}-03-31` },
     2: { start: `${year}-04-01`, end: `${year}-06-30` },
@@ -610,7 +637,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                       </div>
                       <div className="rounded-xl bg-white p-3 text-center border border-emerald-100 shadow-sm col-span-2 sm:col-span-1">
                         <p className="text-xl sm:text-2xl font-bold text-emerald-600">{kpi.ewm_ctr_goal}%</p>
-                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">{kpi.ewm_ctr_kpi || "CTR Goal"}</p>
+                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">CTR Goal</p>
                       </div>
                     </div>
                   </div>

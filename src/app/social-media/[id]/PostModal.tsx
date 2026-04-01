@@ -42,6 +42,7 @@ type Post = {
   image_asset_url: string | null;
   video_url: string | null;
   first_comment: string | null;
+  script_content: string | null;
   shoot_status: ShootStatus;
   shoot_date: string | null;
   shoot_time: string | null;
@@ -103,6 +104,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
   const [imageAssetUrl, setImageAssetUrl] = useState(post?.image_asset_url || "");
   const [videoUrl, setVideoUrl] = useState(post?.video_url || "");
   const [firstComment, setFirstComment] = useState(post?.first_comment || "");
+  const [scriptContent, setScriptContent] = useState(post?.script_content || "");
   const [platformBudgets, setPlatformBudgets] = useState<Record<string, number>>(post?.platform_budgets || {});
   
   // Shoot details
@@ -220,6 +222,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
       image_asset_url: validImageUrl || null,
       video_url: videoUrl || null,
       first_comment: firstComment || null,
+      script_content: scriptContent || null,
       shoot_status: shootStatus,
       shoot_date: shootDate || null,
       shoot_time: shootTime || null,
@@ -599,6 +602,21 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 {showBoardDropdown && (
                   <div className="fixed inset-0 z-10" onClick={() => setShowBoardDropdown(false)} />
                 )}
+              </div>
+            </div>
+
+            {/* Script Content Section */}
+            <div className="border-t border-slate-200 pt-5 space-y-4">
+              <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                <svg className="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Script Content
+              </h3>
+              
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">📝 Script</label>
+                <textarea value={scriptContent} onChange={(e) => setScriptContent(e.target.value)} rows={4}
+                  placeholder="Enter the script content for this post..."
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
               </div>
             </div>
 

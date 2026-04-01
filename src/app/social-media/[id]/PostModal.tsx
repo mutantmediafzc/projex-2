@@ -234,9 +234,21 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
     let savedPostId = post?.id;
 
     if (post) {
-      await supabaseClient.from("social_posts").update(postData).eq("id", post.id);
+      const { error: updateError } = await supabaseClient.from("social_posts").update(postData).eq("id", post.id);
+      if (updateError) {
+        console.error("Error updating post:", updateError);
+        setValidationErrors([`Failed to save: ${updateError.message}`]);
+        setSaving(false);
+        return;
+      }
     } else {
-      const { data: newPost } = await supabaseClient.from("social_posts").insert(postData).select("id").single();
+      const { data: newPost, error: insertError } = await supabaseClient.from("social_posts").insert(postData).select("id").single();
+      if (insertError) {
+        console.error("Error inserting post:", insertError);
+        setValidationErrors([`Failed to save: ${insertError.message}`]);
+        setSaving(false);
+        return;
+      }
       savedPostId = newPost?.id;
     }
 
@@ -330,8 +342,8 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
             {/* Workflow Status Tabs */}
             <div className="flex gap-1 overflow-x-auto pb-1">
               {WORKFLOW_STEPS.map((step) => {
-                // Rule: Items in Captions cannot move if caption AND subject are blank
-                const cannotLeaveCaptions = workflowStatus === "captions" && step.key !== "captions" && !caption.trim() && !subject.trim();
+                // Rule: Items in Captions cannot move if caption is blank
+                const cannotLeaveCaptions = workflowStatus === "captions" && step.key !== "captions" && !caption.trim();
                 // Rule: Boosted items in Publishing cannot move to Published if total boost is 0
                 const totalBudget = Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0);
                 const cannotPublishBoosted = workflowStatus === "for_publishing" && step.key === "published" && postType === "boosted" && totalBudget === 0;
@@ -342,7 +354,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                     key={step.key} 
                     onClick={() => !isDisabled && setWorkflowStatus(step.key)}
                     disabled={isDisabled}
-                    title={cannotLeaveCaptions ? "Add caption or subject first" : cannotPublishBoosted ? "Set boost budget first" : ""}
+                    title={cannotLeaveCaptions ? "Add caption first" : cannotPublishBoosted ? "Set boost budget first" : ""}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                       workflowStatus === step.key 
                         ? "bg-purple-600 text-white" 
@@ -356,10 +368,10 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               })}
             </div>
             {/* Validation warnings */}
-            {workflowStatus === "captions" && !caption.trim() && !subject.trim() && (
+            {workflowStatus === "captions" && !caption.trim() && (
               <p className="text-xs text-amber-600 flex items-center gap-1">
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                Add caption or subject to move to other steps
+                Add caption to move to other steps
               </p>
             )}
             {workflowStatus === "for_publishing" && postType === "boosted" && Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0) === 0 && (

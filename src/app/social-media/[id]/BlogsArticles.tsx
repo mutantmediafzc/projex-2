@@ -125,12 +125,14 @@ export default function BlogsArticles({ projectId }: { projectId: string }) {
     };
 
     if (editingBlog) {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from("website_blogs")
         .update(data)
         .eq("id", editingBlog.id);
+      if (error) console.error("Error updating blog:", error);
     } else {
-      await supabaseClient.from("website_blogs").insert(data);
+      const { error } = await supabaseClient.from("website_blogs").insert(data);
+      if (error) console.error("Error inserting blog:", error);
     }
 
     // If status changed to published, notify (placeholder for now)

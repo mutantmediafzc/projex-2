@@ -125,12 +125,14 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     };
 
     if (editingCampaign) {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from("email_campaigns")
         .update(data)
         .eq("id", editingCampaign.id);
+      if (error) console.error("Error updating campaign:", error);
     } else {
-      await supabaseClient.from("email_campaigns").insert(data);
+      const { error } = await supabaseClient.from("email_campaigns").insert(data);
+      if (error) console.error("Error inserting campaign:", error);
     }
 
     // If status changed to published, notify (placeholder for now)

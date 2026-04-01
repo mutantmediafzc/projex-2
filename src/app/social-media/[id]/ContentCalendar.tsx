@@ -212,18 +212,35 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
   for (let i = 1; i <= daysInMonth; i++) calendarDays.push(i);
 
-  // Filter posts by status and content type
-  const filteredPosts = posts.filter(p => {
-    if (statusFilter !== "all" && p.workflow_status !== statusFilter) return false;
+  // Posts filtered by status only (for content type counts)
+  const statusFilteredPosts = statusFilter === "all" 
+    ? posts 
+    : posts.filter(p => p.workflow_status === statusFilter);
+
+  // Filter posts by both status and content type
+  const filteredPosts = statusFilteredPosts.filter(p => {
     if (contentTypeFilter !== "all" && p.content_type !== contentTypeFilter) return false;
     return true;
   });
 
-  // Content type counts for filter badges
+  // Status counts (always based on all posts)
+  const statusCounts = {
+    all: posts.length,
+    captions: posts.filter(p => p.workflow_status === "captions").length,
+    creatives_approval: posts.filter(p => p.workflow_status === "creatives_approval").length,
+    final_approval: posts.filter(p => p.workflow_status === "final_approval").length,
+    for_publishing: posts.filter(p => p.workflow_status === "for_publishing").length,
+    published: posts.filter(p => p.workflow_status === "published").length,
+  };
+
+  // Content type counts - based on status filtered posts (hierarchical)
   const contentTypeCounts = CONTENT_TYPES.reduce((acc, type) => {
-    acc[type] = posts.filter(p => p.content_type === type).length;
+    acc[type] = statusFilteredPosts.filter(p => p.content_type === type).length;
     return acc;
   }, {} as Record<string, number>);
+
+  // Total count for "All" format button - based on status filtered posts
+  const allFormatsCount = statusFilteredPosts.length;
 
   const getPostsForDay = (day: number) =>
     filteredPosts.filter((post) => {
@@ -304,28 +321,28 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
 
       {/* Filters Section */}
       <div className="mb-4 space-y-3">
-        {/* Workflow Status Filter */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-xs font-medium text-slate-500 flex items-center mr-1">Status:</span>
+        {/* Workflow Status Filter - Primary filter */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-500 mr-1">Status:</span>
           <button
             onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              statusFilter === "all" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              statusFilter === "all" ? "bg-slate-800 text-white" : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
             }`}
           >
-            All ({posts.length})
+            All ({statusCounts.all})
           </button>
           {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
-            const count = posts.filter(p => p.workflow_status === status).length;
+            const count = statusCounts[status];
             const colors = WORKFLOW_COLORS[status];
             return (
               <button
                 key={status}
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
                   statusFilter === status 
                     ? `${colors.bg} ${colors.text} ring-2 ring-offset-1 ring-current` 
-                    : `${colors.bg} ${colors.text} opacity-70 hover:opacity-100`
+                    : `bg-white text-slate-600 hover:bg-slate-100 border border-slate-200`
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
@@ -335,7 +352,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
           })}
         </div>
 
-        {/* Content Type Filter */}
+        {/* Content Type Filter - Secondary filter (counts based on selected status) */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-slate-500 mr-1">Format:</span>
           <button

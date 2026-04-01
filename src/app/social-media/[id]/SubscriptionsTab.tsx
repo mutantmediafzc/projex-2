@@ -191,7 +191,7 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
           </div>
           <div className="text-right">
             <p className="text-xs font-medium text-violet-600">Total Amount</p>
-            <p className="text-2xl font-bold text-violet-700">${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-2xl font-bold text-violet-700">AED {totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
       </div>
@@ -220,7 +220,7 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
               {subscriptions.map((sub) => (
                 <tr key={sub.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="py-3 px-2 font-medium text-slate-900">{sub.name}</td>
-                  <td className="py-3 px-2 text-right text-slate-700">${sub.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                  <td className="py-3 px-2 text-right text-slate-700">AED {sub.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   <td className="py-3 px-2 text-center text-slate-600">
                     <span className="inline-flex items-center gap-1">
                       {MONTHS.find((m) => m.value === sub.start_month)?.label?.slice(0, 3)} {sub.start_year}
@@ -284,7 +284,7 @@ export default function SubscriptionsTab({ projectId, projectName }: Props) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Amount ($)</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Amount (AED)</label>
                 <input
                   type="number"
                   step="0.01"

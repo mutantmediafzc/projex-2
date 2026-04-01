@@ -243,6 +243,17 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
     }
   }
 
+  async function updateProjectStatus(newStatus: string) {
+    if (!project) return;
+    const { error } = await supabaseClient
+      .from("social_projects")
+      .update({ status: newStatus })
+      .eq("id", project.id);
+    if (!error) {
+      setProject({ ...project, status: newStatus });
+    }
+  }
+
   function toggleEditPlatform(platform: string) {
     setEditedPlatforms((prev) =>
       prev.includes(platform)
@@ -369,6 +380,21 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Status Dropdown */}
+            <select
+              value={project.status || 'active'}
+              onChange={(e) => updateProjectStatus(e.target.value)}
+              className={`appearance-none cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-white border-0 outline-none shadow-md`}
+              style={{ 
+                backgroundImage: project.status === 'paused' 
+                  ? 'linear-gradient(to right, #f59e0b, #f97316)' 
+                  : 'linear-gradient(to right, #10b981, #14b8a6)' 
+              }}
+            >
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+            </select>
+
             {/* Delete Button */}
             <button
               onClick={() => setShowDeleteConfirm(true)}

@@ -144,6 +144,23 @@ export default function SocialMediaPage() {
     setCompanies(data || []);
   }
 
+  async function updateProjectStatus(projectId: string, newStatus: string) {
+    const { error } = await supabaseClient
+      .from("social_projects")
+      .update({ status: newStatus })
+      .eq("id", projectId);
+    
+    if (error) {
+      console.error("Error updating project status:", error);
+      return;
+    }
+    
+    // Update local state
+    setProjects(prev => prev.map(p => 
+      p.id === projectId ? { ...p, status: newStatus } : p
+    ));
+  }
+
   const filteredProjects = projects
     .filter((project) => {
       // Hide completed and archived projects by default
@@ -395,10 +412,27 @@ export default function SocialMediaPage() {
                       );
                     })}
                   </div>
-                  {/* Status */}
-                  <span className={`inline-flex w-fit items-center rounded-full bg-gradient-to-r ${STATUS_COLORS[project.status || 'active']} px-2.5 py-0.5 text-xs font-medium text-white capitalize`}>
-                    {project.status || 'active'}
-                  </span>
+                  {/* Status - Clickable Dropdown */}
+                  <div onClick={(e) => e.preventDefault()}>
+                    <select
+                      value={project.status || 'active'}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        updateProjectStatus(project.id, e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`appearance-none cursor-pointer rounded-full px-3 py-1 text-xs font-medium text-white border-0 outline-none ${
+                        project.status === 'paused' 
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
+                          : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                      }`}
+                      style={{ backgroundImage: project.status === 'paused' ? 'linear-gradient(to right, #f59e0b, #f97316)' : 'linear-gradient(to right, #10b981, #14b8a6)' }}
+                    >
+                      <option value="active">Active</option>
+                      <option value="paused">Paused</option>
+                    </select>
+                  </div>
                   {/* Arrow */}
                   <div className="flex justify-end">
                     <svg className="h-4 w-4 text-slate-300 group-hover:text-pink-500 transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -439,11 +473,22 @@ export default function SocialMediaPage() {
                   href={`/social-media/${project.id}`}
                   className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:border-pink-200 hover:shadow-lg hover:shadow-pink-500/10"
                 >
-                  {/* Status badge */}
-                  <div className="absolute right-4 top-4">
-                    <span className={`inline-flex items-center rounded-full bg-gradient-to-r ${STATUS_COLORS[project.status || 'active']} px-2.5 py-0.5 text-xs font-medium text-white`}>
-                      {project.status || 'Active'}
-                    </span>
+                  {/* Status dropdown */}
+                  <div className="absolute right-4 top-4" onClick={(e) => e.preventDefault()}>
+                    <select
+                      value={project.status || 'active'}
+                      onChange={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        updateProjectStatus(project.id, e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`appearance-none cursor-pointer rounded-full px-3 py-1 text-xs font-medium text-white border-0 outline-none`}
+                      style={{ backgroundImage: project.status === 'paused' ? 'linear-gradient(to right, #f59e0b, #f97316)' : 'linear-gradient(to right, #10b981, #14b8a6)' }}
+                    >
+                      <option value="active">Active</option>
+                      <option value="paused">Paused</option>
+                    </select>
                   </div>
 
                   {/* Company info */}

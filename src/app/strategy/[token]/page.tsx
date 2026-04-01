@@ -559,23 +559,23 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
                       <p className="text-sm font-bold mb-2">Views/Impressions</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_impressions_kpi || "—" }} />
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_impressions_kpi || "—" }} />
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
                       <p className="text-sm font-bold mb-2">Reach</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
                       <p className="text-sm font-bold mb-2">Engagement</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_engagement_kpi || "—" }} />
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_engagement_kpi || "—" }} />
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
                       <p className="text-sm font-bold mb-2">Followers</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_followers_kpi || "—" }} />
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_followers_kpi || "—" }} />
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
                       <p className="text-sm font-bold mb-2">Clicks</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" dangerouslySetInnerHTML={{ __html: kpi.sm_clicks_kpi || "—" }} />
+                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_clicks_kpi || "—" }} />
                     </div>
                   </div>
                   
@@ -976,7 +976,14 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           margin: 0.25rem 0;
         }
         .strategy-content p {
-          margin: 0.25rem 0;
+          margin: 0.5rem 0;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          hyphens: auto;
+        }
+        .strategy-content * {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         .scrollbar-hide::-webkit-scrollbar {
           display: none;

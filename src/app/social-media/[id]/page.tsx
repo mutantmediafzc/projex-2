@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -189,6 +189,25 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
   const [deleting, setDeleting] = useState(false);
   const [isEditingPlatforms, setIsEditingPlatforms] = useState(false);
   const [editedPlatforms, setEditedPlatforms] = useState<string[]>([]);
+  const [showPlatforms, setShowPlatforms] = useState(false);
+  const platformsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  function handlePlatformsMouseEnter() {
+    if (platformsTimeoutRef.current) clearTimeout(platformsTimeoutRef.current);
+    setShowPlatforms(true);
+  }
+
+  function handlePlatformsMouseLeave() {
+    platformsTimeoutRef.current = setTimeout(() => setShowPlatforms(false), 1500);
+  }
+
+  function togglePlatformsMenu() {
+    setShowPlatforms(!showPlatforms);
+    if (!showPlatforms) {
+      if (platformsTimeoutRef.current) clearTimeout(platformsTimeoutRef.current);
+      platformsTimeoutRef.current = setTimeout(() => setShowPlatforms(false), 4000);
+    }
+  }
 
   useEffect(() => {
     loadProject();
@@ -416,55 +435,84 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
               </svg>
               Generate Ideas
             </button>
-            {/* Platform Icons with Edit */}
-            {isEditingPlatforms ? (
-              <div className="flex items-center gap-2 flex-wrap">
-                {Object.entries(PLATFORM_ICONS).map(([platform, pData]) => (
-                  <button
-                    key={platform}
-                    type="button"
-                    onClick={() => toggleEditPlatform(platform)}
-                    className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
-                      editedPlatforms.includes(platform)
-                        ? `${pData.bg} text-white shadow-md`
-                        : "bg-slate-100 text-slate-400 hover:bg-slate-200"
-                    }`}
-                    title={platform}
-                  >
-                    {pData.icon}
-                  </button>
-                ))}
-                <button onClick={saveProjectPlatforms} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-200">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 13l4 4L19 7"/></svg>
-                </button>
-                <button onClick={() => { setIsEditingPlatforms(false); setEditedPlatforms(project.platforms); }} className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200">
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 group">
-                {(project.platforms || []).map((platform) => {
-                  const pData = PLATFORM_ICONS[platform.toLowerCase()];
-                  if (!pData) return null;
-                  return (
-                    <span
-                      key={platform}
-                      className={`flex h-9 w-9 items-center justify-center rounded-xl ${pData.bg} text-white shadow-md`}
-                      title={platform}
-                    >
-                      {pData.icon}
-                    </span>
-                  );
-                })}
-                <button 
-                  onClick={() => setIsEditingPlatforms(true)} 
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-pink-600 hover:bg-pink-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="Edit platforms"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-              </div>
-            )}
+            {/* Platform Icons - Collapsible */}
+            <div 
+              className="relative"
+              onMouseEnter={handlePlatformsMouseEnter}
+              onMouseLeave={handlePlatformsMouseLeave}
+            >
+              <button
+                onClick={togglePlatformsMenu}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                title="Active Platforms"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
+              </button>
+              
+              {/* Dropdown Menu */}
+              {showPlatforms && (
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl border border-slate-200 bg-white p-3 shadow-xl min-w-[180px]">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Active Platforms</p>
+                  {isEditingPlatforms ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {Object.entries(PLATFORM_ICONS).map(([platform, pData]) => (
+                          <button
+                            key={platform}
+                            type="button"
+                            onClick={() => toggleEditPlatform(platform)}
+                            className={`flex h-6 w-6 items-center justify-center rounded-lg transition-all ${
+                              editedPlatforms.includes(platform)
+                                ? `${pData.bg} text-white shadow-sm`
+                                : "bg-slate-100 text-slate-400 hover:bg-slate-200"
+                            }`}
+                            title={platform}
+                          >
+                            <span className="scale-75">{pData.icon}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-1 pt-1 border-t border-slate-100">
+                        <button onClick={saveProjectPlatforms} className="flex-1 py-1 rounded-lg bg-green-100 text-green-600 hover:bg-green-200 text-xs font-medium">Save</button>
+                        <button onClick={() => { setIsEditingPlatforms(false); setEditedPlatforms(project.platforms); }} className="flex-1 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {(project.platforms || []).map((platform) => {
+                          const pData = PLATFORM_ICONS[platform.toLowerCase()];
+                          if (!pData) return null;
+                          return (
+                            <span
+                              key={platform}
+                              className={`flex h-6 w-6 items-center justify-center rounded-lg ${pData.bg} text-white shadow-sm`}
+                              title={platform}
+                            >
+                              <span className="scale-75">{pData.icon}</span>
+                            </span>
+                          );
+                        })}
+                        {(!project.platforms || project.platforms.length === 0) && (
+                          <span className="text-xs text-slate-400">No platforms</span>
+                        )}
+                      </div>
+                      <button 
+                        onClick={() => setIsEditingPlatforms(true)} 
+                        className="w-full py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium flex items-center justify-center gap-1"
+                      >
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

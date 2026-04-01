@@ -558,24 +558,24 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   {/* KPI Cards Grid - All Purple */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
-                      <p className="text-sm font-bold mb-2">Views/Impressions</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_impressions_kpi || "—" }} />
+                      <div className="text-lg font-bold mb-1" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_impressions_kpi || "—" }} />
+                      <p className="text-xs opacity-80">Views/Impressions</p>
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
-                      <p className="text-sm font-bold mb-2">Reach</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
+                      <div className="text-lg font-bold mb-1" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_reach_kpi || "—" }} />
+                      <p className="text-xs opacity-80">Reach</p>
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
-                      <p className="text-sm font-bold mb-2">Engagement</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_engagement_kpi || "—" }} />
+                      <div className="text-lg font-bold mb-1" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_engagement_kpi || "—" }} />
+                      <p className="text-xs opacity-80">Engagement</p>
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
-                      <p className="text-sm font-bold mb-2">Followers</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_followers_kpi || "—" }} />
+                      <div className="text-lg font-bold mb-1" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_followers_kpi || "—" }} />
+                      <p className="text-xs opacity-80">Followers</p>
                     </div>
                     <div className="rounded-xl bg-gradient-to-br from-violet-600 to-purple-600 p-4 text-white shadow-lg">
-                      <p className="text-sm font-bold mb-2">Clicks</p>
-                      <div className="text-xs leading-relaxed whitespace-pre-wrap break-words strategy-content" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_clicks_kpi || "—" }} />
+                      <div className="text-lg font-bold mb-1" style={{wordWrap: 'break-word', overflowWrap: 'break-word'}} dangerouslySetInnerHTML={{ __html: kpi.sm_clicks_kpi || "—" }} />
+                      <p className="text-xs opacity-80">Clicks</p>
                     </div>
                   </div>
                   

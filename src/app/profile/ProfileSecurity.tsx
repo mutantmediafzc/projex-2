@@ -10,6 +10,8 @@ interface ProfileState {
   avatarUrl: string | null;
 }
 
+type ThemeMode = "light" | "dark" | "system";
+
 export default function ProfileSecurity() {
   const [profile, setProfile] = useState<ProfileState | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -29,6 +31,38 @@ export default function ProfileSecurity() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+
+  // Load theme preference on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme") as ThemeMode | null;
+    if (savedTheme) {
+      setThemeMode(savedTheme);
+      applyTheme(savedTheme);
+    }
+  }, []);
+
+  function applyTheme(mode: ThemeMode) {
+    const root = document.documentElement;
+    if (mode === "dark") {
+      root.classList.add("dark");
+    } else if (mode === "light") {
+      root.classList.remove("dark");
+    } else {
+      // System preference
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    }
+  }
+
+  function handleThemeChange(mode: ThemeMode) {
+    setThemeMode(mode);
+    localStorage.setItem("theme", mode);
+    applyTheme(mode);
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -258,6 +292,77 @@ export default function ProfileSecurity() {
             <span className="text-xs font-medium text-slate-500">Email</span>
             <span className="text-sm font-medium text-slate-900">{profile.email}</span>
           </div>
+        </div>
+      </div>
+
+      {/* Appearance Settings */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-lg backdrop-blur">
+        <h3 className="text-sm font-semibold text-slate-900">Appearance</h3>
+        <p className="mt-1 text-xs text-slate-500">Customize the look and feel of the application.</p>
+        <div className="mt-4">
+          <label className="block text-xs font-medium text-slate-700 mb-3">Theme</label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleThemeChange("light")}
+              className={`flex flex-1 flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                themeMode === "light"
+                  ? "border-violet-500 bg-violet-50"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-500">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="5" />
+                  <line x1="12" y1="1" x2="12" y2="3" />
+                  <line x1="12" y1="21" x2="12" y2="23" />
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                  <line x1="1" y1="12" x2="3" y2="12" />
+                  <line x1="21" y1="12" x2="23" y2="12" />
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                </svg>
+              </div>
+              <span className={`text-sm font-medium ${themeMode === "light" ? "text-violet-700" : "text-slate-700"}`}>Light</span>
+            </button>
+            <button
+              onClick={() => handleThemeChange("dark")}
+              className={`flex flex-1 flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                themeMode === "dark"
+                  ? "border-violet-500 bg-violet-50"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-200">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              </div>
+              <span className={`text-sm font-medium ${themeMode === "dark" ? "text-violet-700" : "text-slate-700"}`}>Dark</span>
+            </button>
+            <button
+              onClick={() => handleThemeChange("system")}
+              className={`flex flex-1 flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all ${
+                themeMode === "system"
+                  ? "border-violet-500 bg-violet-50"
+                  : "border-slate-200 bg-white hover:border-slate-300"
+              }`}
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-slate-800 text-slate-600">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+                  <line x1="8" y1="21" x2="16" y2="21" />
+                  <line x1="12" y1="17" x2="12" y2="21" />
+                </svg>
+              </div>
+              <span className={`text-sm font-medium ${themeMode === "system" ? "text-violet-700" : "text-slate-700"}`}>System</span>
+            </button>
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            {themeMode === "light" && "Light mode is currently active."}
+            {themeMode === "dark" && "Dark mode is currently active."}
+            {themeMode === "system" && "Theme follows your system preference."}
+          </p>
         </div>
       </div>
 

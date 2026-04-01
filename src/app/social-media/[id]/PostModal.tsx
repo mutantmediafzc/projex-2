@@ -347,7 +347,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
     <div className="fixed inset-0 z-[99999] flex items-start justify-center bg-black/50 overflow-y-auto py-4 px-2 sm:px-4">
       <div className="flex flex-col sm:flex-row w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl my-auto">
         {/* Left: Image/Video Preview Area - Hidden on mobile, shown at top */}
-        <div className="hidden sm:flex w-48 bg-slate-100 flex-shrink-0 flex-col items-center p-4 border-r border-slate-200">
+        <div className="hidden sm:flex w-72 bg-slate-100 flex-shrink-0 flex-col items-center p-4 border-r border-slate-200">
           {/* Brand Header Link */}
           {projectInfo && (
             <Link
@@ -373,8 +373,8 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
           )}
           
           {imageAssetUrl ? (
-            <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-white shadow">
-              <img src={getImageUrl(imageAssetUrl)} alt="Post asset" className="w-full h-full object-cover" />
+            <div className="relative w-full aspect-[4/5] rounded-lg overflow-hidden bg-white shadow">
+              <img src={getImageUrl(imageAssetUrl)} alt="Post asset" className="w-full h-full object-contain bg-slate-50" />
               <div className="absolute top-2 right-2 flex gap-1">
                 <button onClick={() => imageInputRef.current?.click()} className="p-1.5 bg-white rounded-lg shadow hover:bg-slate-50" title="Replace">
                   <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
@@ -386,13 +386,14 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
             </div>
           ) : (
             <button onClick={() => imageInputRef.current?.click()} disabled={uploadingImage}
-              className="w-full aspect-square rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
+              className="w-full aspect-[4/5] rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 hover:border-purple-400 hover:bg-purple-50/50 transition-colors">
               {uploadingImage ? (
                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent" />
               ) : (
                 <>
-                  <svg className="w-10 h-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-                  <span className="text-xs text-slate-500">Upload Image</span>
+                  <svg className="w-12 h-12 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                  <span className="text-sm text-slate-500">Upload Image</span>
+                  <span className="text-[10px] text-slate-400">4:5 ratio recommended</span>
                 </>
               )}
             </button>

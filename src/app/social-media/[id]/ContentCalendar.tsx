@@ -336,15 +336,15 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
         </div>
 
         {/* Content Type Filter */}
-        <div className="flex flex-wrap gap-2">
-          <span className="text-xs font-medium text-slate-500 flex items-center mr-1">Format:</span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-slate-500 mr-1">Format:</span>
           <button
             onClick={() => setContentTypeFilter("all")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-              contentTypeFilter === "all" ? "bg-purple-600 text-white" : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              contentTypeFilter === "all" ? "bg-cyan-500 text-white" : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
             }`}
           >
-            All Formats
+            All
           </button>
           {CONTENT_TYPES.map((type) => {
             const count = contentTypeCounts[type] || 0;
@@ -352,14 +352,15 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
               <button
                 key={type}
                 onClick={() => setContentTypeFilter(type)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 ${
+                title={type}
+                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
                   contentTypeFilter === type 
-                    ? "bg-purple-600 text-white ring-2 ring-offset-1 ring-purple-400" 
-                    : "bg-purple-100 text-purple-700 hover:bg-purple-200"
+                    ? "bg-slate-700 text-white" 
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
                 }`}
               >
                 <span>{CONTENT_TYPE_ICONS[type]}</span>
-                {type} ({count})
+                <span className="text-[11px]">({count})</span>
               </button>
             );
           })}

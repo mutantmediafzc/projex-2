@@ -161,6 +161,87 @@ export default function SocialMediaPage() {
     ));
   }
 
+  async function downloadAllReports() {
+    try {
+      // Fetch all subscriptions
+      const { data: subscriptions } = await supabaseClient
+        .from("project_subscriptions")
+        .select(`
+          id, name, amount, subscription_month, subscription_year,
+          project:social_projects(id, name)
+        `)
+        .order("subscription_year", { ascending: false })
+        .order("subscription_month", { ascending: false });
+
+      // Fetch all boosted posts
+      const { data: boostedPosts } = await supabaseClient
+        .from("social_posts")
+        .select(`
+          id, subject, post_type, platform_budgets, scheduled_date,
+          project:social_projects(id, name)
+        `)
+        .eq("post_type", "boosted");
+
+      const months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+      // Create subscriptions CSV
+      const subHeaders = ["Project", "Subscription Name", "Amount", "Month", "Year"];
+      const subRows = (subscriptions || []).map((sub: any) => [
+        sub.project?.name || "Unknown",
+        sub.name,
+        sub.amount?.toFixed(2) || "0.00",
+        months[sub.subscription_month] || sub.subscription_month,
+        sub.subscription_year,
+      ]);
+      const subCsvContent = [
+        subHeaders.join(","),
+        ...subRows.map((row: any) => row.map((cell: any) => `"${cell}"`).join(",")),
+      ].join("\n");
+
+      // Create boost spent CSV
+      const boostHeaders = ["Project", "Post Subject", "Date", "Total Budget", "Platform Breakdown"];
+      const boostRows = (boostedPosts || []).map((post: any) => {
+        const budgets = post.platform_budgets || {};
+        const total = Object.values(budgets).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
+        const breakdown = Object.entries(budgets).map(([k, v]) => `${k}: $${v}`).join("; ");
+        return [
+          post.project?.name || "Unknown",
+          post.subject || "Untitled",
+          post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "No date",
+          `$${total.toFixed(2)}`,
+          breakdown || "No budget set",
+        ];
+      });
+      const boostCsvContent = [
+        boostHeaders.join(","),
+        ...boostRows.map((row: any) => row.map((cell: any) => `"${cell}"`).join(",")),
+      ].join("\n");
+
+      // Download both CSVs
+      const date = new Date().toISOString().split("T")[0];
+      
+      // Subscriptions CSV
+      const subBlob = new Blob([subCsvContent], { type: "text/csv;charset=utf-8;" });
+      const subLink = document.createElement("a");
+      subLink.href = URL.createObjectURL(subBlob);
+      subLink.download = `all_subscriptions_${date}.csv`;
+      subLink.click();
+
+      // Boost CSV
+      setTimeout(() => {
+        const boostBlob = new Blob([boostCsvContent], { type: "text/csv;charset=utf-8;" });
+        const boostLink = document.createElement("a");
+        boostLink.href = URL.createObjectURL(boostBlob);
+        boostLink.download = `all_boost_spent_${date}.csv`;
+        boostLink.click();
+      }, 500);
+
+    } catch (err) {
+      console.error("Error downloading reports:", err);
+      alert("Failed to download reports. Please try again.");
+    }
+  }
+
   const filteredProjects = projects
     .filter((project) => {
       // Hide completed and archived projects by default
@@ -204,6 +285,15 @@ export default function SocialMediaPage() {
           <p className="text-sm text-slate-500">Plan, execute, and track your marketing campaigns and content calendar in one place.</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={downloadAllReports}
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-medium text-violet-700 transition-all hover:bg-violet-100 hover:border-violet-300"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+            </svg>
+            Download All Subscription and Boost Report
+          </button>
           <Link
             href="/social-media/calendar"
             className="inline-flex items-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-4 py-2.5 text-sm font-medium text-pink-700 transition-all hover:bg-pink-100 hover:border-pink-300"

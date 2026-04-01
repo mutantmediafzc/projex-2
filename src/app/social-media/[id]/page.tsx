@@ -15,6 +15,7 @@ import StrategyLinkManager from "./StrategyLinkManager";
 import TeamAssignments from "./TeamAssignments";
 import EmailWhatsAppCampaigns from "./EmailWhatsAppCampaigns";
 import BlogsArticles from "./BlogsArticles";
+import SubscriptionsTab from "./SubscriptionsTab";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type SocialProject = {
@@ -43,6 +44,7 @@ const TABS = [
   { id: "email", label: "Email & WhatsApp", icon: EmailIcon },
   { id: "articles", label: "Blogs & Articles", icon: ArticleIcon },
   { id: "analytics", label: "Strategies & KPIs", icon: ChartIcon },
+  { id: "subscriptions", label: "Subscriptions", icon: SubscriptionIcon },
   { id: "quarterly", label: "Reports", icon: ReportIcon },
   { id: "client", label: "Share Access", icon: LinkIcon },
 ];
@@ -116,6 +118,15 @@ function TeamIcon() {
       <circle cx="9" cy="7" r="4" />
       <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
       <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  );
+}
+
+function SubscriptionIcon() {
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
   );
 }
@@ -571,19 +582,12 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
         )}
         {activeTab === "analytics" && (
           <div className="space-y-6">
-            <SubscriptionsPanel
-              projectId={project.id}
-              initialData={{
-                manychat_subscribers: project.manychat_subscribers || 0,
-                meta_verified: project.meta_verified || false,
-                whatsapp_subscribers: project.whatsapp_subscribers || 0,
-                newsletter_subscribers: project.newsletter_subscribers || 0,
-              }}
-              onUpdate={(data) => setProject({ ...project, ...data })}
-            />
             <AnalyticsKPIs projectId={project.id} platforms={project.platforms} />
             <StrategyLinkManager projectId={project.id} projectName={project.name} />
           </div>
+        )}
+        {activeTab === "subscriptions" && (
+          <SubscriptionsTab projectId={project.id} projectName={project.name} />
         )}
         {activeTab === "client" && (
           <ClientAccess projectId={project.id} projectName={project.name} />

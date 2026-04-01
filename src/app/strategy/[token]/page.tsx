@@ -16,7 +16,6 @@ type StrategyData = {
   kpi_description: string | null;
   platform_specific_strategy: string | null;
   kpi_targets: Record<string, { target: number; description: string }>;
-  deliverables: Deliverable[];
   subscriptions: {
     manychat_subscribers: number;
     meta_verified: boolean;
@@ -199,7 +198,6 @@ const REPORT_SECTIONS = [
   { id: 'content', label: 'Content Calendar', icon: '📅' },
   { id: 'campaigns', label: 'Campaigns', icon: '📧' },
   { id: 'articles', label: 'Articles', icon: '📝' },
-  { id: 'deliverables', label: 'Deliverables', icon: '✅' },
 ];
 
 export default function PublicStrategyPage({ params }: { params: Promise<{ token: string }> }) {
@@ -257,13 +255,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
       return;
     }
 
-    // Load deliverables for the quarter
-    const { data: deliverables } = await supabaseClient
-      .from("social_quarterly_deliverables")
-      .select("asset_type, planned_count, delivered_count")
-      .eq("project_id", linkData.project_id)
-      .eq("report_quarter", linkData.quarter);
-
+    
     // Load monthly KPI data
     const { data: reports } = await supabaseClient
       .from("social_reports")
@@ -346,7 +338,6 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
     setData({
       ...linkData,
-      deliverables: deliverables || [],
       monthly_kpis: monthlyKpis,
       subscriptions: {
         manychat_subscribers: linkData.project?.manychat_subscribers || 0,
@@ -383,10 +374,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     );
   }
 
-  const totalPlanned = data.deliverables.reduce((sum, d) => sum + d.planned_count, 0);
-  const totalDelivered = data.deliverables.reduce((sum, d) => sum + d.delivered_count, 0);
-  const overallProgress = totalPlanned > 0 ? Math.min((totalDelivered / totalPlanned) * 100, 100) : 0;
-
+  
   return (
     <div className="min-h-screen bg-slate-50 print:bg-white">
       {/* Header - Clean branded header with Mutant logo and Client logo */}
@@ -827,69 +815,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           )}
         </section>
 
-        {/* SECTION: Deliverables */}
-        <section id="section-deliverables" className="scroll-mt-32">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 text-white text-sm">✅</span>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Quarterly Deliverables</h2>
-          </div>
-          
-          {data.deliverables.length > 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
-              {/* Overall Progress */}
-              <div className="mb-5 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-slate-700">Overall Progress</span>
-                  <span className="text-sm font-bold text-slate-900">{totalDelivered} / {totalPlanned}</span>
-                </div>
-                <div className="h-3 overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      overallProgress >= 100 ? "bg-emerald-500" :
-                      overallProgress >= 75 ? "bg-blue-500" :
-                      overallProgress >= 50 ? "bg-amber-500" : "bg-slate-400"
-                    }`}
-                    style={{ width: `${overallProgress}%` }}
-                  />
-                </div>
-                <p className="mt-1 text-right text-xs text-slate-500">{overallProgress.toFixed(0)}% complete</p>
-              </div>
-
-              {/* Deliverables Grid */}
-              <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-                {data.deliverables.map((d) => {
-                  const typeConfig = ASSET_TYPE_LABELS[d.asset_type] || { label: d.asset_type, icon: "📄" };
-                  const progress = d.planned_count > 0 ? Math.min((d.delivered_count / d.planned_count) * 100, 100) : 0;
-                  return (
-                    <div key={d.asset_type} className="rounded-xl bg-slate-50 p-3 sm:p-4">
-                      <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                        <span className="text-base sm:text-lg">{typeConfig.icon}</span>
-                        <span className="text-[10px] sm:text-xs font-semibold text-slate-700">{typeConfig.label}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between mb-2">
-                        <span className="text-lg sm:text-xl font-bold text-slate-900">{d.delivered_count}</span>
-                        <span className="text-[10px] sm:text-xs text-slate-500">/ {d.planned_count}</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                        <div
-                          className={`h-full rounded-full ${
-                            progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-blue-500" : "bg-slate-400"
-                          }`}
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-              <p className="text-sm text-slate-500">No deliverables data available.</p>
-            </div>
-          )}
-        </section>
-
+        
         {/* KPI Performance Table */}
         {data.monthly_kpis.length > 0 && (
           <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">

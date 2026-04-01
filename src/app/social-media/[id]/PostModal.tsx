@@ -321,7 +321,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
           {/* Header with workflow tabs */}
           <div className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 z-10">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base sm:text-lg font-semibold text-slate-900">{post ? "Edit Post" : "Create Post"}</h2>
+              <h2 className="text-base sm:text-lg font-semibold text-black">{post ? "Edit Post" : "Create Post"}</h2>
               <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
@@ -408,12 +408,12 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">📅 Date <span className="text-red-500">*</span></label>
                   <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">🕐 Time</label>
                   <input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none" />
                 </div>
               </div>
 
@@ -421,7 +421,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">🎬 Content Type <span className="text-red-500">*</span></label>
                 <select value={contentType} onChange={(e) => setContentType(e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none">
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none">
                   <option value="">Select type...</option>
                   {CONTENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -431,7 +431,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">💰 Post Type</label>
                 <select value={postType} onChange={(e) => setPostType(e.target.value as PostType)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none">
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none">
                   <option value="organic">Organic</option>
                   <option value="boosted">Boosted</option>
                 </select>
@@ -487,7 +487,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <div className="relative">
                   <textarea ref={captionRef} value={caption} onChange={(e) => setCaption(e.target.value)} rows={4}
                     placeholder="Write your caption here..."
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
                   <button type="button" onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                     className="absolute bottom-2 right-2 p-1.5 rounded hover:bg-slate-100 text-lg">😀</button>
                   {showEmojiPicker && (
@@ -508,7 +508,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">💬 First Comment</label>
                 <input type="text" value={firstComment} onChange={(e) => setFirstComment(e.target.value)}
                   placeholder="First comment after posting..."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
               </div>
 
               {/* Video URL */}
@@ -517,7 +517,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <div className="flex gap-2">
                   <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://..."
-                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
+                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
                   {videoUrl && (
                     <button onClick={() => setShowVideoPreview(true)} className="px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-200">
                       Preview
@@ -540,7 +540,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                     }}
                     onFocus={() => setShowBoardDropdown(true)}
                     placeholder="Search boards..."
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none pr-8"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none pr-8"
                   />
                   {selectedBoardName && (
                       <button
@@ -612,7 +612,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📋 Status</label>
                 <select value={shootStatus} onChange={(e) => setShootStatus(e.target.value as ShootStatus)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none">
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none">
                   <option value="pending">Pending</option>
                   <option value="scheduled">Scheduled</option>
                   <option value="completed">Completed</option>
@@ -624,26 +624,26 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">📅 Shoot Date</label>
                   <input type="date" value={shootDate} onChange={(e) => setShootDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none" />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-slate-600">🕐 Shoot Time</label>
                   <input type="time" value={shootTime} onChange={(e) => setShootTime(e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none" />
                 </div>
               </div>
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📸 Shot Count</label>
                 <input type="number" value={shootCount} onChange={(e) => setShootCount(Number(e.target.value))}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-purple-300 focus:outline-none" />
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black focus:border-purple-300 focus:outline-none" />
               </div>
 
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📝 Shoot Notes</label>
                 <textarea value={shootNotes} onChange={(e) => setShootNotes(e.target.value)} rows={3}
                   placeholder="Notes about the shoot..."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
               </div>
             </div>
 
@@ -658,7 +658,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📝 Creative Notes</label>
                 <textarea value={creativeNotes} onChange={(e) => setCreativeNotes(e.target.value)} rows={3}
                   placeholder="Notes for the creative team..."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />
               </div>
             </div>
           </div>
@@ -703,7 +703,7 @@ export default function PostModal({ post, projectId, availablePlatforms, onClose
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70" onClick={() => setShowVideoPreview(false)}>
           <div className="bg-white rounded-xl p-4 max-w-2xl w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-slate-900">Video Preview</h3>
+              <h3 className="font-medium text-black">Video Preview</h3>
               <button onClick={() => setShowVideoPreview(false)} className="text-slate-400 hover:text-slate-600">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>

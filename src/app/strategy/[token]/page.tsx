@@ -609,8 +609,8 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                         <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">WhatsApp</p>
                       </div>
                       <div className="rounded-xl bg-white p-3 text-center border border-emerald-100 shadow-sm col-span-2 sm:col-span-1">
-                        <p className="text-lg font-bold text-emerald-600">{kpi.ewm_ctr_goal}%</p>
-                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">CTR Goal</p>
+                        <p className="text-xl sm:text-2xl font-bold text-emerald-600">{kpi.ewm_ctr_goal}%</p>
+                        <p className="text-[10px] sm:text-xs text-emerald-500 font-medium">{kpi.ewm_ctr_kpi || "CTR Goal"}</p>
                       </div>
                     </div>
                   </div>

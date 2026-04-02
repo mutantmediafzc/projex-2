@@ -80,6 +80,7 @@ export default function EditUserModal({ user, onClose }: Props) {
     try {
       const response = await fetch(`/api/users/${user.id}/reset-password`, {
         method: "POST",
+        credentials: "include",
       });
       const data = await response.json();
       

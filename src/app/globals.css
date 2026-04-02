@@ -628,9 +628,9 @@ textarea::placeholder {
    ============================================ */
 .strategy-content {
   word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: none;
   max-width: 100%;
   overflow: hidden;
 }
@@ -670,8 +670,8 @@ textarea::placeholder {
 .strategy-content span,
 .strategy-content div {
   word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .strategy-content ul,

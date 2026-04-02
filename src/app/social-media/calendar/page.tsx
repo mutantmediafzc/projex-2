@@ -856,7 +856,7 @@ export default function ContentCalendar2026() {
                     if (!a.scheduled_date && !b.scheduled_date) return 0;
                     if (!a.scheduled_date) return 1;
                     if (!b.scheduled_date) return -1;
-                    return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
+                    return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
                   })
                   .map((post) => {
                     const brandColor = post.project?.brand_color || "#ec4899";
@@ -879,9 +879,6 @@ export default function ContentCalendar2026() {
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium text-slate-900 truncate">{post.project?.name || "Unknown"}</p>
                           </div>
-                          {post.post_type === "boosted" && (
-                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded">Boosted</span>
-                          )}
                         </div>
                         
                         {/* Image - 4:5 aspect ratio */}

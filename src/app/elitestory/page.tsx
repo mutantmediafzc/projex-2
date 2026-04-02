@@ -46,7 +46,7 @@ export default function EliteStoryPage() {
       </div>
 
       {/* Progress Indicator */}
-      <div className="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-3">
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-3 pr-4">
         {['Hero', 'Challenge', 'Solution', 'Impact'].map((label, index) => (
           <button
             key={label}
@@ -110,11 +110,12 @@ export default function EliteStoryPage() {
             </div>
           </div>
           
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-            <div className="w-8 h-12 rounded-full border-2 border-white/30 flex items-start justify-center p-2">
-              <div className="w-1.5 h-3 bg-white/60 rounded-full animate-pulse" />
-            </div>
+        </div>
+        
+        {/* Scroll Indicator - positioned outside the content container */}
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce z-20">
+          <div className="w-8 h-12 rounded-full border-2 border-white/30 flex items-start justify-center p-2 backdrop-blur-sm bg-white/5">
+            <div className="w-1.5 h-3 bg-white/60 rounded-full animate-pulse" />
           </div>
         </div>
       </section>

@@ -548,7 +548,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Tabs */}
-        <div className="mt-6 flex gap-1 overflow-x-auto">
+        <div className="mt-6 flex gap-2 flex-wrap">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -556,10 +556,10 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 title={!isActive ? tab.label : undefined}
-                className={`relative group flex items-center gap-2 whitespace-nowrap rounded-t-xl text-sm font-medium transition-all ${
+                className={`relative group flex items-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/25 px-4 py-2.5"
-                    : "text-slate-600 hover:bg-slate-100 p-2.5"
+                    ? "bg-gradient-to-r from-pink-500 to-fuchsia-600 text-white shadow-lg shadow-pink-500/25 px-4 py-2"
+                    : "text-slate-600 hover:bg-slate-100 p-2 border border-slate-200"
                 }`}
               >
                 <tab.icon />

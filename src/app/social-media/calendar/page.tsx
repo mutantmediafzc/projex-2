@@ -119,7 +119,7 @@ export default function ContentCalendar2026() {
   // UI
   const [showFilters, setShowFilters] = useState(true);
   const [hoveredPost, setHoveredPost] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"calendar" | "list">("calendar");
+  const [viewMode, setViewMode] = useState<"calendar" | "list" | "grid">("calendar");
   const [sidebarView, setSidebarView] = useState<"calendars">("calendars");
   
   // Edit modal
@@ -501,7 +501,8 @@ export default function ContentCalendar2026() {
               <div className="flex rounded-lg border border-slate-200 overflow-hidden">
                 <button
                   onClick={() => setViewMode("calendar")}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  title="Calendar View"
+                  className={`relative group px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === "calendar"
                       ? "bg-pink-500 text-white"
                       : "bg-white text-slate-600 hover:bg-slate-50"
@@ -511,10 +512,12 @@ export default function ContentCalendar2026() {
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <path d="M16 2v4M8 2v4M3 10h18" />
                   </svg>
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Calendar</span>
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`px-3 py-1.5 text-sm font-medium transition-colors ${
+                  title="List View"
+                  className={`relative group px-3 py-1.5 text-sm font-medium transition-colors ${
                     viewMode === "list"
                       ? "bg-pink-500 text-white"
                       : "bg-white text-slate-600 hover:bg-slate-50"
@@ -528,6 +531,24 @@ export default function ContentCalendar2026() {
                     <line x1="3" y1="12" x2="3.01" y2="12" />
                     <line x1="3" y1="18" x2="3.01" y2="18" />
                   </svg>
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">List</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("grid")}
+                  title="Grid View"
+                  className={`relative group px-3 py-1.5 text-sm font-medium transition-colors ${
+                    viewMode === "grid"
+                      ? "bg-pink-500 text-white"
+                      : "bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                  <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Grid</span>
                 </button>
               </div>
             </div>
@@ -821,6 +842,113 @@ export default function ContentCalendar2026() {
                   )}
                 </tbody>
               </table>
+            </div>
+          ) : viewMode === "grid" ? (
+            /* Grid View */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              {filteredPosts.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-sm text-slate-500">
+                  No posts found matching your filters
+                </div>
+              ) : (
+                filteredPosts
+                  .sort((a, b) => {
+                    if (!a.scheduled_date && !b.scheduled_date) return 0;
+                    if (!a.scheduled_date) return 1;
+                    if (!b.scheduled_date) return -1;
+                    return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
+                  })
+                  .map((post) => {
+                    const brandColor = post.project?.brand_color || "#ec4899";
+                    const style = getWorkflowStyle(post.workflow_status);
+                    return (
+                      <div
+                        key={post.id}
+                        onClick={() => { setEditingPost(post); setShowPostModal(true); }}
+                        className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+                      >
+                        {/* Header with brand */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
+                          {post.project?.company?.logo_url ? (
+                            <img src={post.project.company.logo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: brandColor }}>
+                              {(post.project?.name || "?")[0]}
+                            </span>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-slate-900 truncate">{post.project?.name || "Unknown"}</p>
+                          </div>
+                          {post.post_type === "boosted" && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-purple-100 text-purple-700 rounded">Boosted</span>
+                          )}
+                        </div>
+                        
+                        {/* Image - 4:5 aspect ratio */}
+                        <div className="aspect-[4/5] bg-slate-100 relative overflow-hidden">
+                          {post.image_asset_url ? (
+                            <img src={post.image_asset_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <svg className="w-12 h-12 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <path d="M21 15l-5-5L5 21" />
+                              </svg>
+                            </div>
+                          )}
+                          {/* Boosted badge overlay */}
+                          {post.post_type === "boosted" && (
+                            <span className="absolute top-2 right-2 px-2 py-0.5 text-[10px] font-semibold bg-purple-600 text-white rounded-full shadow">Boosted</span>
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="p-3 space-y-2">
+                          {/* Date */}
+                          <p className="text-xs font-semibold text-slate-900">
+                            {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) : "No date"}
+                            {post.scheduled_time && <span className="font-normal text-slate-500 ml-1">{post.scheduled_time}</span>}
+                          </p>
+                          
+                          {/* Subject */}
+                          <p className="text-sm font-medium text-slate-900 line-clamp-2">{post.subject || "Untitled"}</p>
+                          
+                          {/* Caption preview */}
+                          {post.caption && (
+                            <p className="text-xs text-slate-600 line-clamp-3">{post.caption}</p>
+                          )}
+                          
+                          {/* Format */}
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
+                            <span className="font-medium">Format</span>
+                            <span>{post.content_type || "—"}</span>
+                          </div>
+                          
+                          {/* Platforms */}
+                          <div className="flex flex-wrap gap-1">
+                            {post.platforms.map((p) => (
+                              <span key={p} className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded-full capitalize">{p}</span>
+                            ))}
+                          </div>
+                          
+                          {/* View Asset link */}
+                          {post.image_asset_url && (
+                            <a 
+                              href={post.image_asset_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-purple-600 hover:underline"
+                            >
+                              View Asset
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
             </div>
           ) : (
             /* Calendar View */

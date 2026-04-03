@@ -53,11 +53,12 @@ type ContentPost = {
 };
 
 const WORKFLOW_LABELS: Record<string, string> = {
-  captions: "Captions",
-  creatives_approval: "Creative Approval",
+  creatives_approval: "Creative Development",
+  creative_approval: "Creative Approval",
+  captions: "Copywriting",
   final_approval: "Final Approval",
-  for_publishing: "For Publishing",
-  published: "Published",
+  for_publishing: "Scheduled",
+  published: "Live",
 };
 
 function getQuarterDateRange(quarter: string): { start: string; end: string } {

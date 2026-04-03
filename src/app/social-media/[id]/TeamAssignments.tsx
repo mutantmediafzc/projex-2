@@ -17,6 +17,7 @@ type TeamAssignment = {
   account_manager_id: string | null;
   creative_team_lead_id: string | null;
   creative_id: string | null;
+  videographer_id: string | null;
   social_media_specialist_id: string | null;
   performance_marketer_id: string | null;
   email_whatsapp_specialist_id: string | null;
@@ -53,6 +54,12 @@ const ROLE_CONFIG = [
     label: "Creative", 
     icon: "✏️",
     description: "Creates visual assets"
+  },
+  { 
+    key: "videographer_id" as const, 
+    label: "Videographer", 
+    icon: "🎥",
+    description: "Handles video production & shoots"
   },
   { 
     key: "social_media_specialist_id" as const, 
@@ -237,6 +244,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     account_manager_id: null,
     creative_team_lead_id: null,
     creative_id: null,
+    videographer_id: null,
     social_media_specialist_id: null,
     performance_marketer_id: null,
     email_whatsapp_specialist_id: null,
@@ -279,7 +287,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     // Load current assignments
     const { data: project } = await supabaseClient
       .from("social_projects")
-      .select("project_manager_id, account_manager_id, creative_team_lead_id, creative_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
+      .select("project_manager_id, account_manager_id, creative_team_lead_id, creative_id, videographer_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
       .eq("id", projectId)
       .single();
 
@@ -289,6 +297,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
         account_manager_id: project.account_manager_id || null,
         creative_team_lead_id: project.creative_team_lead_id || null,
         creative_id: project.creative_id || null,
+        videographer_id: project.videographer_id || null,
         social_media_specialist_id: project.social_media_specialist_id || null,
         performance_marketer_id: project.performance_marketer_id || null,
         email_whatsapp_specialist_id: project.email_whatsapp_specialist_id || null,

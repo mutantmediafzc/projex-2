@@ -6,7 +6,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
 
 type NotificationRule = {
   roles: string[];
@@ -35,9 +35,14 @@ const NOTIFICATION_RULES: Record<WorkflowStatus, NotificationRule[]> = {
   ],
   creatives_approval: [
     {
-      // Notify Creative Team Lead and Carlo
-      roles: ["creative_team_lead_id"],
-      specificUsers: [], // Carlo's ID would be added here if known
+      // Notify Creative Team Lead for creative development
+      roles: ["creative_team_lead_id", "creative_id"],
+    },
+  ],
+  creative_approval: [
+    {
+      // Notify Account Manager and Creative Team Lead for creative approval
+      roles: ["account_manager_id", "creative_team_lead_id"],
     },
   ],
   final_approval: [
@@ -87,6 +92,7 @@ export async function POST(request: NextRequest) {
         account_manager_id,
         creative_team_lead_id,
         creative_id,
+        videographer_id,
         social_media_specialist_id,
         performance_marketer_id
       `)
@@ -138,11 +144,12 @@ export async function POST(request: NextRequest) {
     // Create tasks/notifications for each user
     const notifications = [];
     const statusLabels: Record<string, string> = {
-      captions: "Captions",
-      creatives_approval: "Creative Approval",
+      creatives_approval: "Creative Development",
+      creative_approval: "Creative Approval",
+      captions: "Copywriting",
       final_approval: "Final Approval",
-      for_publishing: "For Publishing",
-      published: "Published",
+      for_publishing: "Scheduled",
+      published: "Live",
     };
 
     for (const userId of usersToNotify) {
@@ -193,8 +200,9 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     rules: {
+      creatives_approval: "Notify Creative Team Lead and Creative",
+      creative_approval: "Notify Account Manager and Creative Team Lead",
       captions: "Notify Social Media Specialist (no caption), Performance Marketer (long form video), Creative (no image)",
-      creatives_approval: "Notify Creative Team Lead",
       final_approval: "Notify designated approver",
       for_publishing: "Notify Social Media Specialist",
       published: "Notify Social Media Specialist",

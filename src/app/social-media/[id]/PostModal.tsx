@@ -82,11 +82,12 @@ type Props = {
 };
 
 const WORKFLOW_STEPS: { key: WorkflowStatus; label: string }[] = [
-  { key: "captions", label: "Captions" },
-  { key: "creatives_approval", label: "Creatives Approval" },
+  { key: "creatives_approval", label: "Creative Development" },
+  { key: "creative_approval", label: "Creative Approval" },
+  { key: "captions", label: "Copywriting" },
   { key: "final_approval", label: "Final Approval" },
-  { key: "for_publishing", label: "For Publishing" },
-  { key: "published", label: "Published" },
+  { key: "for_publishing", label: "Scheduled" },
+  { key: "published", label: "Live" },
 ];
 
 const CONTENT_TYPES = [

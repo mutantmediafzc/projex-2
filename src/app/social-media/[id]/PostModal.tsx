@@ -23,7 +23,7 @@ async function validateImageUrl(url: string): Promise<boolean> {
   }
 }
 
-type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
 type PostType = "organic" | "boosted";
 type ShootStatus = "pending" | "scheduled" | "completed" | "cancelled";
 

@@ -23,7 +23,7 @@ async function validateImageUrl(url: string): Promise<boolean> {
   }
 }
 
-type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "production" | "creatives_approval" | "creative_approval" | "captions" | "final_approval" | "for_publishing" | "published";
 type PostType = "organic" | "boosted";
 type ShootStatus = "pending" | "scheduled" | "completed" | "cancelled";
 
@@ -82,6 +82,7 @@ type Props = {
 };
 
 const WORKFLOW_STEPS: { key: WorkflowStatus; label: string }[] = [
+  { key: "production", label: "Production" },
   { key: "creatives_approval", label: "Creative Development" },
   { key: "creative_approval", label: "Creative Approval" },
   { key: "captions", label: "Copywriting" },
@@ -109,7 +110,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
   const [scheduledDate, setScheduledDate] = useState(post?.scheduled_date ? post.scheduled_date.slice(0, 10) : "");
   const [scheduledTime, setScheduledTime] = useState(post?.scheduled_time || "12:00");
   const [status, setStatus] = useState<Post["status"]>(post?.status || "draft");
-  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(post?.workflow_status || "captions");
+  const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus>(post?.workflow_status || "production");
   const [hashtags, setHashtags] = useState(post?.hashtags?.join(" ") || "");
   
   // New fields
@@ -428,8 +429,13 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
             {/* Workflow Status Tabs */}
             <div className="flex gap-1 overflow-x-auto pb-1">
               {WORKFLOW_STEPS.map((step) => {
-                // Rule: Items in Captions cannot move if caption is blank
-                const cannotLeaveCaptions = workflowStatus === "captions" && step.key !== "captions" && !caption.trim();
+                // Rule: Items in Captions or later stages cannot move forward without caption
+                // Stages after captions: final_approval, for_publishing, published
+                const stagesRequiringCaption = ["captions", "final_approval", "for_publishing", "published"];
+                const stagesAfterCaptions = ["final_approval", "for_publishing", "published"];
+                const isInCaptionsOrLater = stagesRequiringCaption.includes(workflowStatus);
+                const isMovingToLaterStage = stagesAfterCaptions.includes(step.key);
+                const cannotLeaveCaptions = isInCaptionsOrLater && workflowStatus === "captions" && isMovingToLaterStage && !caption.trim();
                 // Rule: Boosted items in Publishing cannot move to Published if total boost is 0
                 const totalBudget = Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0);
                 const cannotPublishBoosted = workflowStatus === "for_publishing" && step.key === "published" && postType === "boosted" && totalBudget === 0;

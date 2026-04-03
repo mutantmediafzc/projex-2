@@ -15,7 +15,7 @@ function getImageUrl(url: string | null): string {
   return url.split("/").map((segment, i) => i === 0 ? segment : encodeURIComponent(decodeURIComponent(segment))).join("/");
 }
 
-type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "production" | "creatives_approval" | "creative_approval" | "captions" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
   id: string;
@@ -53,6 +53,7 @@ type Props = {
 };
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
+  production: { bg: "bg-orange-100", text: "text-orange-700", border: "border-orange-300", dot: "bg-orange-500" },
   creatives_approval: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300", dot: "bg-blue-500" },
   creative_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
   captions: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
@@ -62,6 +63,7 @@ const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border
 };
 
 const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
+  production: "Production",
   creatives_approval: "Creative Development",
   creative_approval: "Creative Approval",
   captions: "Copywriting",
@@ -72,6 +74,7 @@ const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
 
 // Order of workflow statuses for display
 const WORKFLOW_ORDER: WorkflowStatus[] = [
+  "production",
   "creatives_approval",
   "creative_approval",
   "captions",
@@ -112,7 +115,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   const [draggedPost, setDraggedPost] = useState<Post | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all" | "production">("all");
+  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
   const [contentTypeFilter, setContentTypeFilter] = useState<string | "all">("all");
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -228,11 +231,6 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   // Posts filtered by status only (for content type counts)
   const statusFilteredPosts = statusFilter === "all" 
     ? posts 
-    : statusFilter === "production"
-    ? posts.filter(p => 
-        (p.content_type === "Reels (9:16)" || p.content_type === "Reel (9:16)" || p.content_type === "Long-Form Video (16:9)") &&
-        (p.shoot_status === "pending" || p.shoot_status === "scheduled")
-      )
     : posts.filter(p => p.workflow_status === statusFilter);
 
   // Filter posts by both status and content type
@@ -242,12 +240,9 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   });
 
   // Status counts (always based on all posts)
-  const statusCounts: Record<WorkflowStatus | "all" | "production", number> = {
+  const statusCounts: Record<WorkflowStatus | "all", number> = {
     all: posts.length,
-    production: posts.filter(p => 
-      (p.content_type === "Reels (9:16)" || p.content_type === "Reel (9:16)" || p.content_type === "Long-Form Video (16:9)") &&
-      (p.shoot_status === "pending" || p.shoot_status === "scheduled")
-    ).length,
+    production: posts.filter(p => p.workflow_status === "production").length,
     creatives_approval: posts.filter(p => p.workflow_status === "creatives_approval").length,
     creative_approval: posts.filter(p => p.workflow_status === "creative_approval").length,
     captions: posts.filter(p => p.workflow_status === "captions").length,
@@ -364,17 +359,6 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
             }`}
           >
             All ({statusCounts.all})
-          </button>
-          <button
-            onClick={() => setStatusFilter("production")}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
-              statusFilter === "production" 
-                ? "bg-orange-100 text-orange-700 ring-2 ring-offset-1 ring-current" 
-                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-orange-500" />
-            Production ({statusCounts.production})
           </button>
           {WORKFLOW_ORDER.map((status) => {
             const count = statusCounts[status];

@@ -6,7 +6,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "production" | "creatives_approval" | "creative_approval" | "captions" | "final_approval" | "for_publishing" | "published";
 
 type NotificationRule = {
   roles: string[];
@@ -16,6 +16,12 @@ type NotificationRule = {
 
 // Notification rules based on the requirements
 const NOTIFICATION_RULES: Record<WorkflowStatus, NotificationRule[]> = {
+  production: [
+    {
+      // Notify Videographer for production stage
+      roles: ["videographer_id", "creative_team_lead_id"],
+    },
+  ],
   captions: [
     {
       // Notify Social Media Specialist for new/existing assets without captions
@@ -144,6 +150,7 @@ export async function POST(request: NextRequest) {
     // Create tasks/notifications for each user
     const notifications = [];
     const statusLabels: Record<string, string> = {
+      production: "Production",
       creatives_approval: "Creative Development",
       creative_approval: "Creative Approval",
       captions: "Copywriting",
@@ -200,6 +207,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     rules: {
+      production: "Notify Videographer and Creative Team Lead",
       creatives_approval: "Notify Creative Team Lead and Creative",
       creative_approval: "Notify Account Manager and Creative Team Lead",
       captions: "Notify Social Media Specialist (no caption), Performance Marketer (long form video), Creative (no image)",

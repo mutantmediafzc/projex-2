@@ -15,7 +15,7 @@ function getImageUrl(url: string | null): string {
   return url.split("/").map((segment, i) => i === 0 ? segment : encodeURIComponent(decodeURIComponent(segment))).join("/");
 }
 
-type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
   id: string;
@@ -37,6 +37,7 @@ type Post = {
   shoot_date: string | null;
   shoot_time: string | null;
   shoot_count: number;
+  raw_assets_link: string | null;
   shoot_notes: string | null;
   creative_notes: string | null;
   danote_board_id: string | null;
@@ -52,20 +53,32 @@ type Props = {
 };
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
+  creatives_approval: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300", dot: "bg-blue-500" },
+  creative_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
   captions: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
-  creatives_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
   final_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
   for_publishing: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
   published: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-300", dot: "bg-emerald-500" },
 };
 
 const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
-  captions: "Captions",
-  creatives_approval: "Creatives",
-  final_approval: "Final",
-  for_publishing: "Publishing",
-  published: "Published",
+  creatives_approval: "Creative Development",
+  creative_approval: "Creative Approval",
+  captions: "Copywriting",
+  final_approval: "Final Approval",
+  for_publishing: "Scheduled",
+  published: "Live",
 };
+
+// Order of workflow statuses for display
+const WORKFLOW_ORDER: WorkflowStatus[] = [
+  "creatives_approval",
+  "creative_approval",
+  "captions",
+  "final_approval",
+  "for_publishing",
+  "published",
+];
 
 const CONTENT_TYPES = [
   "Reel (9:16)",
@@ -99,7 +112,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   const [draggedPost, setDraggedPost] = useState<Post | null>(null);
   const [dragOverDay, setDragOverDay] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all" | "production">("all");
   const [contentTypeFilter, setContentTypeFilter] = useState<string | "all">("all");
   const [selectedPosts, setSelectedPosts] = useState<Set<string>>(new Set());
   const [selectionMode, setSelectionMode] = useState(false);
@@ -215,6 +228,11 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   // Posts filtered by status only (for content type counts)
   const statusFilteredPosts = statusFilter === "all" 
     ? posts 
+    : statusFilter === "production"
+    ? posts.filter(p => 
+        (p.content_type === "Reels (9:16)" || p.content_type === "Reel (9:16)" || p.content_type === "Long-Form Video (16:9)") &&
+        (p.shoot_status === "pending" || p.shoot_status === "scheduled")
+      )
     : posts.filter(p => p.workflow_status === statusFilter);
 
   // Filter posts by both status and content type
@@ -224,10 +242,15 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
   });
 
   // Status counts (always based on all posts)
-  const statusCounts = {
+  const statusCounts: Record<WorkflowStatus | "all" | "production", number> = {
     all: posts.length,
-    captions: posts.filter(p => p.workflow_status === "captions").length,
+    production: posts.filter(p => 
+      (p.content_type === "Reels (9:16)" || p.content_type === "Reel (9:16)" || p.content_type === "Long-Form Video (16:9)") &&
+      (p.shoot_status === "pending" || p.shoot_status === "scheduled")
+    ).length,
     creatives_approval: posts.filter(p => p.workflow_status === "creatives_approval").length,
+    creative_approval: posts.filter(p => p.workflow_status === "creative_approval").length,
+    captions: posts.filter(p => p.workflow_status === "captions").length,
     final_approval: posts.filter(p => p.workflow_status === "final_approval").length,
     for_publishing: posts.filter(p => p.workflow_status === "for_publishing").length,
     published: posts.filter(p => p.workflow_status === "published").length,
@@ -342,7 +365,18 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
           >
             All ({statusCounts.all})
           </button>
-          {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
+          <button
+            onClick={() => setStatusFilter("production")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+              statusFilter === "production" 
+                ? "bg-orange-100 text-orange-700 ring-2 ring-offset-1 ring-current" 
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-orange-500" />
+            Production ({statusCounts.production})
+          </button>
+          {WORKFLOW_ORDER.map((status) => {
             const count = statusCounts[status];
             const colors = WORKFLOW_COLORS[status];
             return (

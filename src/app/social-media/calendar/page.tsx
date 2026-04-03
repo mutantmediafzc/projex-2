@@ -6,7 +6,7 @@ import { supabaseClient } from "@/lib/supabaseClient";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
 import PostModal from "../[id]/PostModal";
 
-type WorkflowStatus = "captions" | "creatives_approval" | "final_approval" | "for_publishing" | "published";
+type WorkflowStatus = "captions" | "creatives_approval" | "creative_approval" | "final_approval" | "for_publishing" | "published";
 
 type Post = {
   id: string;
@@ -71,20 +71,32 @@ const CONTENT_TYPES = [
 ];
 
 const WORKFLOW_COLORS: Record<WorkflowStatus, { bg: string; text: string; border: string; dot: string }> = {
+  creatives_approval: { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-300", dot: "bg-blue-500" },
+  creative_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
   captions: { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-300", dot: "bg-slate-500" },
-  creatives_approval: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300", dot: "bg-amber-500" },
   final_approval: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300", dot: "bg-purple-500" },
   for_publishing: { bg: "bg-green-100", text: "text-green-700", border: "border-green-300", dot: "bg-green-500" },
   published: { bg: "bg-emerald-100", text: "text-emerald-700", border: "border-emerald-300", dot: "bg-emerald-500" },
 };
 
 const WORKFLOW_LABELS: Record<WorkflowStatus, string> = {
-  captions: "Captions",
-  creatives_approval: "Creatives",
-  final_approval: "Final",
-  for_publishing: "Publishing",
-  published: "Published",
+  creatives_approval: "Creative Development",
+  creative_approval: "Creative Approval",
+  captions: "Copywriting",
+  final_approval: "Final Approval",
+  for_publishing: "Scheduled",
+  published: "Live",
 };
+
+// Order of workflow statuses for display
+const WORKFLOW_ORDER: WorkflowStatus[] = [
+  "creatives_approval",
+  "creative_approval", 
+  "captions",
+  "final_approval",
+  "for_publishing",
+  "published",
+];
 
 const PLATFORM_ICONS: Record<string, string> = {
   instagram: "📸",
@@ -107,7 +119,7 @@ export default function ContentCalendar2026() {
   // Filters
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all" | "production">("all");
   const [shootFilter, setShootFilter] = useState<"all" | "pending" | "scheduled" | "completed">("all");
   const [projectStatusFilter, setProjectStatusFilter] = useState<"all" | "active" | "paused">("all");
   
@@ -286,7 +298,12 @@ export default function ContentCalendar2026() {
       return false;
     }
     // Workflow status filter
-    if (statusFilter !== "all" && post.workflow_status !== statusFilter) {
+    if (statusFilter === "production") {
+      // Production filter: Reels/Long-form with shoot_status pending or scheduled
+      const isProductionPost = (post.content_type === "Reels (9:16)" || post.content_type === "Long-Form Video (16:9)") &&
+        (post.shoot_status === "pending" || post.shoot_status === "scheduled");
+      if (!isProductionPost) return false;
+    } else if (statusFilter !== "all" && post.workflow_status !== statusFilter) {
       return false;
     }
     // Shoot filter
@@ -409,10 +426,16 @@ export default function ContentCalendar2026() {
   const postsWithShootPending = filteredPosts.filter(p => p.shoot_status === "pending").length;
   
   // Status counts for period (not filtered by status)
-  const periodStatusCounts = (Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).reduce((acc, status) => {
+  const periodStatusCounts = WORKFLOW_ORDER.reduce((acc, status) => {
     acc[status] = periodPosts.filter(p => p.workflow_status === status).length;
     return acc;
   }, {} as Record<WorkflowStatus, number>);
+  
+  // Production count - Reels and Long-form Video posts with shoot_status pending or scheduled (across ALL posts, not just period)
+  const productionCount = posts.filter(p => 
+    (p.content_type === "Reels (9:16)" || p.content_type === "Long-Form Video (16:9)") &&
+    (p.shoot_status === "pending" || p.shoot_status === "scheduled")
+  ).length;
   
   // Content type counts for period
   const contentTypeCounts = CONTENT_TYPES.reduce((acc, type) => {
@@ -486,7 +509,8 @@ export default function ContentCalendar2026() {
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`ml-2 flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                title="Filter"
+                className={`relative group ml-2 flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                   showFilters
                     ? "border-pink-300 bg-pink-50 text-pink-700"
                     : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -495,7 +519,7 @@ export default function ContentCalendar2026() {
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
                 </svg>
-                Brands
+                <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-2 py-1 text-[10px] text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">Filter</span>
               </button>
               {/* View Mode Toggle */}
               <div className="flex rounded-lg border border-slate-200 overflow-hidden">
@@ -572,7 +596,19 @@ export default function ContentCalendar2026() {
                 >
                   All
                 </button>
-                {(Object.keys(WORKFLOW_COLORS) as WorkflowStatus[]).map((status) => {
+                <button
+                  onClick={() => setStatusFilter("production" as any)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1.5 ${
+                    statusFilter === ("production" as any)
+                      ? "bg-orange-100 text-orange-700"
+                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                  Production
+                  <span className={statusFilter === ("production" as any) ? "opacity-75" : "text-slate-400"}>({productionCount})</span>
+                </button>
+                {WORKFLOW_ORDER.map((status) => {
                   const colors = WORKFLOW_COLORS[status];
                   const count = periodStatusCounts[status] || 0;
                   return (

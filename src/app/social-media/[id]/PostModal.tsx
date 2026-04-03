@@ -47,6 +47,7 @@ type Post = {
   shoot_date: string | null;
   shoot_time: string | null;
   shoot_count: number;
+  raw_assets_link: string | null;
   shoot_notes: string | null;
   creative_notes: string | null;
   danote_board_id: string | null;
@@ -123,6 +124,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
   const [shootDate, setShootDate] = useState(post?.shoot_date || "");
   const [shootTime, setShootTime] = useState(post?.shoot_time || "");
   const [shootCount, setShootCount] = useState(post?.shoot_count || 0);
+  const [rawAssetsLink, setRawAssetsLink] = useState(post?.raw_assets_link || "");
   const [shootNotes, setShootNotes] = useState(post?.shoot_notes || "");
   
   // Creatives
@@ -165,6 +167,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
       setShootDate(post.shoot_date || "");
       setShootTime(post.shoot_time || "");
       setShootCount(post.shoot_count || 0);
+      setRawAssetsLink(post.raw_assets_link || "");
       setShootNotes(post.shoot_notes || "");
       setCreativeNotes(post.creative_notes || "");
       setDanoteBoardId(post.danote_board_id || "");
@@ -264,6 +267,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
       shoot_date: shootDate || null,
       shoot_time: shootTime || null,
       shoot_count: shootCount,
+      raw_assets_link: rawAssetsLink || null,
       shoot_notes: shootNotes || null,
       creative_notes: creativeNotes || null,
       danote_board_id: danoteBoardId || null,
@@ -733,7 +737,14 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
               </div>
 
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">📝 Shoot Notes</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">� Raw Assets Link</label>
+                <input type="url" value={rawAssetsLink} onChange={(e) => setRawAssetsLink(e.target.value)}
+                  placeholder="Link to raw assets folder..."
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">�📝 Shoot Notes</label>
                 <textarea value={shootNotes} onChange={(e) => setShootNotes(e.target.value)} rows={3}
                   placeholder="Notes about the shoot..."
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none resize-none" />

@@ -47,7 +47,7 @@ export default function EliteStoryPage() {
 
       {/* Progress Indicator */}
       <div className="fixed right-8 top-1/2 -translate-y-1/2 z-50 hidden lg:flex flex-col gap-3 pr-4">
-        {['Hero', 'Challenge', 'Solution', 'Impact'].map((label, index) => (
+        {['Hero', 'Challenge', 'Solution', 'Impact', 'Growth'].map((label, index) => (
           <button
             key={label}
             onClick={() => {
@@ -373,6 +373,219 @@ export default function EliteStoryPage() {
                   Elite Properties successfully transitioned its brand image from a traditional brokerage to an innovative, tech-forward industry leader.
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Growth Metrics Section */}
+      <section data-section className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg shadow-pink-500/30">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold">
+              <span className="bg-gradient-to-r from-pink-400 to-rose-400 bg-clip-text text-transparent">Social Media Growth</span>
+            </h2>
+          </div>
+          
+          <p className="text-xl text-white/70 mb-8 max-w-3xl">
+            Year-over-Year Performance (2024 → 2025) — Comprehensive growth across all major social platforms.
+          </p>
+
+          {/* Overall Growth Stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+            {[
+              { label: "Impressions", growth: "+70%", color: "from-blue-500 to-cyan-500" },
+              { label: "Reach", growth: "+80%", color: "from-purple-500 to-pink-500" },
+              { label: "Engagement", growth: "+80%", color: "from-emerald-500 to-teal-500" },
+              { label: "Link Clicks", growth: "+50%", color: "from-amber-500 to-orange-500" },
+            ].map((stat, index) => (
+              <div key={index} className="group relative">
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur-xl opacity-30 group-hover:opacity-50 transition-all`} />
+                <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 text-center hover:bg-white/10 transition-all">
+                  <div className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
+                    {stat.growth}
+                  </div>
+                  <p className="text-white/60 text-sm mt-1">{stat.label} YoY</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Platform Growth Comparison */}
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 mb-8">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">📊</span> Platform Growth Comparison
+            </h3>
+            
+            {/* Interactive Growth Bars */}
+            <div className="space-y-6">
+              {[
+                { platform: "Instagram", icon: "📸", impressions: 70, reach: 81, engagement: 80, clicks: 50, followers: 21, color: "from-pink-500 to-rose-500" },
+                { platform: "Facebook", icon: "👤", impressions: 71, reach: 80, engagement: 80, clicks: 51, followers: 21, color: "from-blue-500 to-indigo-500" },
+                { platform: "TikTok", icon: "🎵", impressions: 70, reach: 80, engagement: 81, clicks: 50, followers: 112, color: "from-slate-700 to-slate-900" },
+                { platform: "LinkedIn", icon: "💼", impressions: 70, reach: 81, engagement: 81, clicks: 51, followers: 25, color: "from-blue-600 to-blue-800" },
+              ].map((platform, index) => (
+                <div key={index} className="group">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="text-2xl">{platform.icon}</span>
+                    <span className="text-lg font-semibold text-white">{platform.platform}</span>
+                    <span className={`ml-auto text-sm font-bold bg-gradient-to-r ${platform.color} bg-clip-text text-transparent`}>
+                      +{platform.followers}% Followers
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                      { label: "Impressions", value: platform.impressions },
+                      { label: "Reach", value: platform.reach },
+                      { label: "Engagement", value: platform.engagement },
+                      { label: "Link Clicks", value: platform.clicks },
+                    ].map((metric, mIndex) => (
+                      <div key={mIndex} className="relative">
+                        <div className="flex justify-between text-xs text-white/60 mb-1">
+                          <span>{metric.label}</span>
+                          <span className="text-emerald-400 font-medium">+{metric.value}%</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full bg-gradient-to-r ${platform.color} rounded-full transition-all duration-1000 ease-out`}
+                            style={{ width: `${Math.min(metric.value, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Followers Growth Chart */}
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8 mb-8">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">👥</span> Followers Growth
+            </h3>
+            
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { platform: "Instagram", icon: "📸", growth: 21, color: "from-pink-500 to-rose-500", bgColor: "bg-pink-500" },
+                { platform: "TikTok", icon: "🎵", growth: 112, color: "from-slate-600 to-slate-800", bgColor: "bg-slate-600" },
+                { platform: "LinkedIn", icon: "💼", growth: 25, color: "from-blue-500 to-blue-700", bgColor: "bg-blue-500" },
+                { platform: "Facebook", icon: "👤", growth: 21, color: "from-blue-400 to-indigo-500", bgColor: "bg-blue-400" },
+              ].map((item, index) => (
+                <div key={index} className="group relative">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${item.color} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-all`} />
+                  <div className="relative backdrop-blur-sm bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-all">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">{item.icon}</span>
+                      <span className="text-white/80 font-medium">{item.platform}</span>
+                    </div>
+                    
+                    {/* Circular Progress */}
+                    <div className="relative w-24 h-24 mx-auto mb-3">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="none" className="text-white/10" />
+                        <circle 
+                          cx="48" cy="48" r="40" 
+                          stroke="url(#gradient)" 
+                          strokeWidth="8" 
+                          fill="none" 
+                          strokeLinecap="round"
+                          strokeDasharray={`${Math.min(item.growth, 100) * 2.51} 251`}
+                          className="transition-all duration-1000"
+                        />
+                        <defs>
+                          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#ec4899" />
+                            <stop offset="100%" stopColor="#8b5cf6" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className={`text-xl font-bold bg-gradient-to-r ${item.color} bg-clip-text text-transparent`}>
+                          +{item.growth}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Website Traffic Metrics */}
+          <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-6 sm:p-8">
+            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+              <span className="text-2xl">🌐</span> Website Performance
+            </h3>
+            
+            <div className="grid sm:grid-cols-3 gap-6">
+              {[
+                { 
+                  name: "Elite Property Main", 
+                  icon: "🏠",
+                  metrics: [
+                    { label: "Organic Traffic", value: "+337.1%", color: "text-emerald-400" },
+                    { label: "Impressions", value: "+31%", color: "text-blue-400" },
+                  ],
+                  gradient: "from-emerald-500 to-teal-500"
+                },
+                { 
+                  name: "Commercial Property", 
+                  icon: "🏢",
+                  metrics: [
+                    { label: "Organic Traffic", value: "+122.5%", color: "text-emerald-400" },
+                    { label: "Impressions", value: "+23.7%", color: "text-blue-400" },
+                  ],
+                  gradient: "from-blue-500 to-indigo-500"
+                },
+                { 
+                  name: "Crypto Homes", 
+                  icon: "₿",
+                  metrics: [
+                    { label: "Organic Traffic", value: "+78.71%", color: "text-emerald-400" },
+                    { label: "Impressions", value: "+303%", color: "text-blue-400" },
+                  ],
+                  gradient: "from-amber-500 to-orange-500"
+                },
+              ].map((site, index) => (
+                <div key={index} className="group relative">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${site.gradient} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-all`} />
+                  <div className="relative backdrop-blur-sm bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/10 transition-all h-full">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${site.gradient} flex items-center justify-center text-xl`}>
+                        {site.icon}
+                      </div>
+                      <span className="text-white font-semibold">{site.name}</span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {site.metrics.map((metric, mIndex) => (
+                        <div key={mIndex} className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">{metric.label}</span>
+                          <span className={`font-bold ${metric.color}`}>{metric.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Mini chart visualization */}
+                    <div className="mt-4 flex items-end justify-center gap-1 h-12">
+                      {[30, 45, 35, 60, 50, 75, 65, 90, 80, 100].map((height, i) => (
+                        <div 
+                          key={i} 
+                          className={`w-2 bg-gradient-to-t ${site.gradient} rounded-t opacity-60 group-hover:opacity-100 transition-all`}
+                          style={{ height: `${height}%`, transitionDelay: `${i * 50}ms` }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

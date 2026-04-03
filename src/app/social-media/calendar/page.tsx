@@ -29,6 +29,7 @@ type Post = {
   shoot_date: string | null;
   shoot_time: string | null;
   shoot_count: number;
+  raw_assets_link: string | null;
   shoot_notes: string | null;
   creative_notes: string | null;
   danote_board_id: string | null;
@@ -192,7 +193,7 @@ export default function ContentCalendar2026() {
       .select(`
         id, project_id, platforms, subject, caption, media_urls, scheduled_date, scheduled_time,
         status, workflow_status, hashtags, post_type, content_type, image_asset_url, video_url,
-        first_comment, shoot_status, shoot_date, shoot_time, shoot_count, shoot_notes,
+        first_comment, shoot_status, shoot_date, shoot_time, shoot_count, raw_assets_link, shoot_notes,
         creative_notes, danote_board_id, platform_budgets, published_urls, created_at,
         project:social_projects!inner(id, name, brand_color, status, company:companies(id, name, logo_url))
       `)

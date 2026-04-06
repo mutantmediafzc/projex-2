@@ -489,7 +489,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8 overflow-hidden">
         {/* SECTION: Strategy Overview - Box-style groupings */}
         <section id="section-strategy" className="scroll-mt-32">
           <div className="flex items-center gap-2 mb-4">
@@ -499,7 +499,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
           
           <div className="grid gap-4 sm:gap-5">
             {data.objectives && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-xs">🎯</span>
                   Objectives
@@ -509,7 +509,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             )}
             
             {data.core_goals && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 text-xs">🚀</span>
                   Core Goals
@@ -519,7 +519,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             )}
             
             {data.content_pillars && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600 text-xs">📚</span>
                   Content Pillars
@@ -529,7 +529,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             )}
             
             {data.target_audience && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600 text-xs">👥</span>
                   Target Audience
@@ -539,7 +539,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             )}
             
             {data.kpi_description && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600 text-xs">📊</span>
                   KPIs
@@ -549,7 +549,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             )}
             
             {data.platform_specific_strategy && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
                 <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 text-xs">📱</span>
                   Platform Specific Strategy

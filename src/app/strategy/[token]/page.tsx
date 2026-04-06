@@ -404,7 +404,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
 
   
   return (
-    <div className="min-h-screen bg-slate-50 print:bg-white">
+    <div className="min-h-screen bg-slate-50 print:bg-white overflow-x-hidden">
       {/* Header - Clean branded header with Mutant logo and Client logo */}
       <div className="bg-white border-b border-slate-200 print:border-0">
         {/* Top bar with logos */}
@@ -504,7 +504,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-100 text-blue-600 text-xs">🎯</span>
                   Objectives
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.objectives }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.objectives }} />
               </div>
             )}
             
@@ -514,7 +514,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 text-xs">🚀</span>
                   Core Goals
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.core_goals }} />
               </div>
             )}
             
@@ -524,7 +524,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-100 text-violet-600 text-xs">📚</span>
                   Content Pillars
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.content_pillars }} />
               </div>
             )}
             
@@ -534,7 +534,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-100 text-amber-600 text-xs">👥</span>
                   Target Audience
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.target_audience }} />
               </div>
             )}
             
@@ -544,7 +544,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600 text-xs">📊</span>
                   KPIs
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
               </div>
             )}
             
@@ -554,7 +554,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                   <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 text-xs">📱</span>
                   Platform Specific Strategy
                 </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
+                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
               </div>
             )}
           </div>

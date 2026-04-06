@@ -157,7 +157,7 @@ export default function ContentCalendar2026() {
       .select(`
         id, name, brand_color, status,
         company:companies(id, name, logo_url),
-        project_manager_id, account_manager_id, creative_team_lead_id, creative_id,
+        project_manager_id, account_manager_id, creative_team_lead_id, creative_id, videographer_id,
         social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id,
         website_blogs_specialist_id, content_creator_id
       `)
@@ -175,6 +175,7 @@ export default function ContentCalendar2026() {
           p.account_manager_id === userId ||
           p.creative_team_lead_id === userId ||
           p.creative_id === userId ||
+          p.videographer_id === userId ||
           p.social_media_specialist_id === userId ||
           p.performance_marketer_id === userId ||
           p.email_whatsapp_specialist_id === userId ||
@@ -215,6 +216,7 @@ export default function ContentCalendar2026() {
               p.account_manager_id === userId ||
               p.creative_team_lead_id === userId ||
               p.creative_id === userId ||
+              p.videographer_id === userId ||
               p.social_media_specialist_id === userId ||
               p.performance_marketer_id === userId ||
               p.email_whatsapp_specialist_id === userId ||

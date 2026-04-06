@@ -427,7 +427,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
             </div>
             
             {/* Workflow Status Tabs */}
-            <div className="flex gap-1 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-1.5 pb-1">
               {WORKFLOW_STEPS.map((step) => {
                 // Rule: Items in Captions or later stages cannot move forward without caption
                 // Stages after captions: final_approval, for_publishing, published

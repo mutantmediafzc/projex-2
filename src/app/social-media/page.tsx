@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type SocialProject = {
   id: string;
@@ -88,6 +89,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function SocialMediaPage() {
+  const { role, userId, loading: roleLoading } = useUserRole();
+  const isAdmin = role === "admin" || role === "hr";
+  
   const [projects, setProjects] = useState<SocialProject[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,9 +104,11 @@ export default function SocialMediaPage() {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 
   useEffect(() => {
-    loadProjects();
-    loadCompanies();
-  }, []);
+    if (!roleLoading) {
+      loadProjects();
+      loadCompanies();
+    }
+  }, [roleLoading, userId, isAdmin]);
 
   async function loadProjects() {
     try {
@@ -113,7 +119,10 @@ export default function SocialMediaPage() {
         .from("social_projects")
         .select(`
           id, name, description, brand_color, logo_url, status, platforms, created_at,
-          company:companies(id, name, logo_url)
+          company:companies(id, name, logo_url),
+          project_manager_id, account_manager_id, creative_team_lead_id, creative_id, videographer_id,
+          social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id,
+          website_blogs_specialist_id, content_creator_id
         `)
         .order("created_at", { ascending: false });
 
@@ -121,7 +130,25 @@ export default function SocialMediaPage() {
         setError(fetchError.message);
         setProjects([]);
       } else {
-        const transformed = (data || []).map((row: any) => ({
+        // Filter projects based on user access (admins see all, users see only assigned)
+        const filteredData = (data || []).filter((p: any) => {
+          if (isAdmin) return true;
+          if (!userId) return false;
+          return (
+            p.project_manager_id === userId ||
+            p.account_manager_id === userId ||
+            p.creative_team_lead_id === userId ||
+            p.creative_id === userId ||
+            p.videographer_id === userId ||
+            p.social_media_specialist_id === userId ||
+            p.performance_marketer_id === userId ||
+            p.email_whatsapp_specialist_id === userId ||
+            p.website_blogs_specialist_id === userId ||
+            p.content_creator_id === userId
+          );
+        });
+        
+        const transformed = filteredData.map((row: any) => ({
           ...row,
           platforms: row.platforms || [],
           company: Array.isArray(row.company) ? row.company[0] || null : row.company,

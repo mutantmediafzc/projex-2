@@ -10,68 +10,107 @@ type WorkflowStatus = "production" | "creatives_approval" | "creative_approval" 
 
 type NotificationRule = {
   roles: string[];
-  specificUsers?: string[]; // User IDs for specific people like "Jeano", "Carlo"
+  specificUserNames?: string[]; // Names of specific users to notify (looked up dynamically)
   condition?: (post: any) => boolean;
 };
 
-// Notification rules based on the requirements (using array column names)
+// Content types that require Production (shoots): Reels and Long-form
+const PRODUCTION_CONTENT_TYPES = ["Reel (9:16)", "Long-Form Video (16:9)"];
+
+// Content types handled by Performance Marketer instead of Integrated Marketing
+const PERFORMANCE_MARKETER_CONTENT_TYPES = ["Long-Form Video (16:9)", "Ad Creatives (Check dimensions on notes)"];
+
+// Notification rules based on workflow requirements
 const NOTIFICATION_RULES: Record<WorkflowStatus, NotificationRule[]> = {
   production: [
     {
-      // Notify Videographer for production stage
-      roles: ["videographer_ids", "creative_team_lead_ids"],
-    },
-  ],
-  captions: [
-    {
-      // Notify Social Media Specialist for new/existing assets without captions
-      roles: ["social_media_specialist_ids"],
-      condition: (post) => !post.caption || post.caption.trim() === "",
-    },
-    {
-      // If long form video, notify Performance Marketer
-      roles: ["performance_marketer_ids"],
-      condition: (post) => post.content_type === "Long-Form Video (16:9)",
-    },
-    {
-      // Notify Creative for assets without creatives
-      roles: ["creative_ids"],
-      condition: (post) => !post.image_asset_url,
+      // Only for Reels and Long-form: Notify Content Creator and Videographer
+      roles: ["content_creator_ids", "videographer_ids"],
+      condition: (post) => PRODUCTION_CONTENT_TYPES.includes(post.content_type),
     },
   ],
   creatives_approval: [
     {
-      // Notify Creative Team Lead for creative development
-      roles: ["creative_team_lead_ids", "creative_ids"],
+      // Creative Development: Notify Creative users
+      roles: ["creative_ids"],
     },
   ],
   creative_approval: [
     {
-      // Notify Account Manager and Creative Team Lead for creative approval
-      roles: ["account_manager_ids", "creative_team_lead_ids"],
+      // Creative Approval: Notify Creative Team Lead and Carlo Nickson
+      roles: ["creative_team_lead_ids"],
+      specificUserNames: ["Carlo Nickson"],
+    },
+  ],
+  captions: [
+    {
+      // Copywriting: Notify Integrated Marketing (except Long-form and Ad Creatives)
+      roles: ["social_media_specialist_ids"],
+      condition: (post) => !PERFORMANCE_MARKETER_CONTENT_TYPES.includes(post.content_type),
+    },
+    {
+      // Copywriting: Notify Performance Marketer for Long-form and Ad Creatives
+      roles: ["performance_marketer_ids"],
+      condition: (post) => PERFORMANCE_MARKETER_CONTENT_TYPES.includes(post.content_type),
     },
   ],
   final_approval: [
     {
-      // Notify Jeano
+      // Final Approval: Notify Jeano Pangan
       roles: [],
-      specificUsers: [], // Jeano's ID would be added here if known
+      specificUserNames: ["Jeano Pangan"],
     },
   ],
   for_publishing: [
     {
-      // Notify Social Media Specialist
+      // Scheduled: Notify Integrated Marketing (except Long-form and Ad Creatives)
       roles: ["social_media_specialist_ids"],
+      condition: (post) => !PERFORMANCE_MARKETER_CONTENT_TYPES.includes(post.content_type),
+    },
+    {
+      // Scheduled: Notify Performance Marketer for Long-form and Ad Creatives
+      roles: ["performance_marketer_ids"],
+      condition: (post) => PERFORMANCE_MARKETER_CONTENT_TYPES.includes(post.content_type),
     },
   ],
   published: [
     {
-      // Notify Social Media Specialist and Jeano
-      roles: ["social_media_specialist_ids"],
-      specificUsers: [], // Jeano's ID would be added here
+      // Live: Notify Jeano Pangan and Carlo Nickson
+      roles: [],
+      specificUserNames: ["Jeano Pangan", "Carlo Nickson"],
     },
   ],
 };
+
+// Helper function to find user IDs by name
+async function findUsersByName(names: string[]): Promise<string[]> {
+  if (!names || names.length === 0) return [];
+  
+  const userIds: string[] = [];
+  
+  for (const name of names) {
+    const nameParts = name.toLowerCase().split(" ");
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(" ");
+    
+    // Query users table for matching names
+    const { data: users } = await supabaseAdmin
+      .from("users")
+      .select("id, first_name, last_name")
+      .or(`first_name.ilike.%${firstName}%,last_name.ilike.%${lastName}%`);
+    
+    if (users) {
+      for (const user of users) {
+        const userFullName = `${user.first_name || ""} ${user.last_name || ""}`.toLowerCase().trim();
+        if (userFullName.includes(firstName) && (lastName === "" || userFullName.includes(lastName))) {
+          userIds.push(user.id);
+        }
+      }
+    }
+  }
+  
+  return userIds;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,7 +139,8 @@ export async function POST(request: NextRequest) {
         creative_ids,
         videographer_ids,
         social_media_specialist_ids,
-        performance_marketer_ids
+        performance_marketer_ids,
+        content_creator_ids
       `)
       .eq("id", projectId)
       .single();
@@ -135,12 +175,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Add specific users
-      if (rule.specificUsers) {
-        for (const userId of rule.specificUsers) {
-          if (userId) {
-            usersToNotify.add(userId);
-          }
+      // Add specific users by name lookup
+      if (rule.specificUserNames && rule.specificUserNames.length > 0) {
+        const specificUserIds = await findUsersByName(rule.specificUserNames);
+        for (const userId of specificUserIds) {
+          usersToNotify.add(userId);
         }
       }
     }
@@ -154,26 +193,41 @@ export async function POST(request: NextRequest) {
     // Create tasks/notifications for each user
     const notifications = [];
     const statusLabels: Record<string, string> = {
-      production: "Production",
-      creatives_approval: "Creative Development",
-      creative_approval: "Creative Approval",
-      captions: "Copywriting",
-      final_approval: "Final Approval",
-      for_publishing: "Scheduled",
+      production: "Production Tab",
+      creatives_approval: "Creative Development Tab",
+      creative_approval: "Creative Approval Tab",
+      captions: "Copywriting Tab",
+      final_approval: "Final Approval Tab",
+      for_publishing: "Scheduled Tab",
       published: "Live",
+    };
+
+    // Generate notification message based on status
+    const generateNotificationMessage = (status: string) => {
+      const postTitle = postData?.subject || "Untitled";
+      const calendarName = project.name;
+      
+      if (status === "published") {
+        // Live notification has different format
+        return `${calendarName} Calendar - "${postTitle}" is live.`;
+      }
+      
+      return `A new post has been added to ${statusLabels[status] || status} in the "${calendarName}" Calendar - "${postTitle}".`;
     };
 
     for (const userId of usersToNotify) {
       const taskData = {
         assigned_user_id: userId,
-        name: `Social Post: ${statusLabels[newStatus] || newStatus}`,
-        content: `Post "${postData?.subject || "Untitled"}" in calendar "${project.name}" has moved to ${statusLabels[newStatus] || newStatus}.`,
+        name: `Social Post: ${statusLabels[newStatus]?.replace(" Tab", "") || newStatus}`,
+        content: generateNotificationMessage(newStatus),
         status: "pending",
         priority: "medium",
         type: "social_media",
         source: "social_workflow",
         created_by_name: currentUserName,
-        project_id: null, // Social posts don't link to regular projects
+        project_id: null,
+        // Include image URL for Live notifications
+        ...(newStatus === "published" && postData?.image_asset_url ? { image_url: postData.image_asset_url } : {}),
       };
 
       const { data: task, error: taskError } = await supabaseAdmin
@@ -211,13 +265,15 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     rules: {
-      production: "Notify Videographer and Creative Team Lead",
-      creatives_approval: "Notify Creative Team Lead and Creative",
-      creative_approval: "Notify Account Manager and Creative Team Lead",
-      captions: "Notify Social Media Specialist (no caption), Performance Marketer (long form video), Creative (no image)",
-      final_approval: "Notify designated approver",
-      for_publishing: "Notify Social Media Specialist",
-      published: "Notify Social Media Specialist",
+      production: "Notify Content Creator and Videographer (Reels and Long-form only)",
+      creatives_approval: "Notify Creative users",
+      creative_approval: "Notify Creative Team Lead and Carlo Nickson",
+      captions: "Notify Integrated Marketing (except Long-form/Ad Creatives) or Performance Marketer (Long-form/Ad Creatives)",
+      final_approval: "Notify Jeano Pangan",
+      for_publishing: "Notify Integrated Marketing (except Long-form/Ad Creatives) or Performance Marketer (Long-form/Ad Creatives)",
+      published: "Notify Jeano Pangan and Carlo Nickson (with image)",
     },
+    contentTypesRequiringProduction: PRODUCTION_CONTENT_TYPES,
+    contentTypesForPerformanceMarketer: PERFORMANCE_MARKETER_CONTENT_TYPES,
   });
 }

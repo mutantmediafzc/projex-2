@@ -873,11 +873,13 @@ function BulkEditModal({
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20"
             >
               <option value="">Keep current status</option>
-              <option value="captions">Captions</option>
-              <option value="creatives_approval">Creatives Approval</option>
+              <option value="production">Production</option>
+              <option value="creatives_approval">Creative Development</option>
+              <option value="creative_approval">Creative Approval</option>
+              <option value="captions">Copywriting</option>
               <option value="final_approval">Final Approval</option>
-              <option value="for_publishing">For Publishing</option>
-              <option value="published">Published</option>
+              <option value="for_publishing">Scheduled</option>
+              <option value="published">Live</option>
             </select>
           </div>
         </div>

@@ -429,24 +429,42 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
             {/* Workflow Status Tabs */}
             <div className="flex flex-wrap gap-1.5 pb-1">
               {WORKFLOW_STEPS.map((step) => {
+                // Content types that require production (shoots)
+                const PRODUCTION_CONTENT_TYPES = ["Reel (9:16)", "Long-Form Video (16:9)"];
+                const requiresProduction = PRODUCTION_CONTENT_TYPES.includes(contentType);
+                
+                // Rule: Production tab - can only move forward if shoot is completed with raw assets link
+                const stagesAfterProduction = ["creatives_approval", "creative_approval", "captions", "final_approval", "for_publishing", "published"];
+                const cannotLeaveProduction = workflowStatus === "production" && stagesAfterProduction.includes(step.key) && 
+                  requiresProduction && (shootStatus !== "completed" || !rawAssetsLink);
+                
+                // Rule: Creative Development - can only move forward if image/cover is added
+                const stagesAfterCreatives = ["creative_approval", "captions", "final_approval", "for_publishing", "published"];
+                const cannotLeaveCreatives = workflowStatus === "creatives_approval" && stagesAfterCreatives.includes(step.key) && !imageAssetUrl;
+                
                 // Rule: Items in Captions or later stages cannot move forward without caption
-                // Stages after captions: final_approval, for_publishing, published
-                const stagesRequiringCaption = ["captions", "final_approval", "for_publishing", "published"];
                 const stagesAfterCaptions = ["final_approval", "for_publishing", "published"];
-                const isInCaptionsOrLater = stagesRequiringCaption.includes(workflowStatus);
-                const isMovingToLaterStage = stagesAfterCaptions.includes(step.key);
-                const cannotLeaveCaptions = isInCaptionsOrLater && workflowStatus === "captions" && isMovingToLaterStage && !caption.trim();
+                const cannotLeaveCaptions = workflowStatus === "captions" && stagesAfterCaptions.includes(step.key) && !caption.trim();
+                
                 // Rule: Boosted items in Publishing cannot move to Published if total boost is 0
                 const totalBudget = Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0);
                 const cannotPublishBoosted = workflowStatus === "for_publishing" && step.key === "published" && postType === "boosted" && totalBudget === 0;
-                const isDisabled = cannotLeaveCaptions || cannotPublishBoosted;
+                
+                const isDisabled = cannotLeaveProduction || cannotLeaveCreatives || cannotLeaveCaptions || cannotPublishBoosted;
+                
+                // Build tooltip message
+                let tooltipMessage = "";
+                if (cannotLeaveProduction) tooltipMessage = "Complete shoot and add raw assets link first";
+                else if (cannotLeaveCreatives) tooltipMessage = "Add image/cover first";
+                else if (cannotLeaveCaptions) tooltipMessage = "Add caption first";
+                else if (cannotPublishBoosted) tooltipMessage = "Set boost budget first";
                 
                 return (
                   <button 
                     key={step.key} 
                     onClick={() => !isDisabled && setWorkflowStatus(step.key)}
                     disabled={isDisabled}
-                    title={cannotLeaveCaptions ? "Add caption first" : cannotPublishBoosted ? "Set boost budget first" : ""}
+                    title={tooltipMessage}
                     className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-all ${
                       workflowStatus === step.key 
                         ? "bg-purple-600 text-white" 
@@ -460,14 +478,26 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
               })}
             </div>
             {/* Validation warnings */}
-            {workflowStatus === "captions" && !caption.trim() && (
-              <p className="text-xs text-amber-600 flex items-center gap-1">
+            {workflowStatus === "production" && ["Reel (9:16)", "Long-Form Video (16:9)"].includes(contentType) && (shootStatus !== "completed" || !rawAssetsLink) && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                Add caption to move to other steps
+                {shootStatus !== "completed" ? "Mark shoot as completed" : "Add raw assets link"} to move forward
+              </p>
+            )}
+            {workflowStatus === "creatives_approval" && !imageAssetUrl && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Add image/cover to move forward
+              </p>
+            )}
+            {workflowStatus === "captions" && !caption.trim() && (
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                Add caption to move forward
               </p>
             )}
             {workflowStatus === "for_publishing" && postType === "boosted" && Object.values(platformBudgets).reduce((sum, b) => sum + (b || 0), 0) === 0 && (
-              <p className="text-xs text-amber-600 flex items-center gap-1">
+              <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
                 Set boost budget to publish boosted post
               </p>

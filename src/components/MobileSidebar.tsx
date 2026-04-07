@@ -85,6 +85,21 @@ const navItems = [
     activeGradient: "from-pink-500 to-fuchsia-500",
   },
   {
+    href: "/seo",
+    label: "SEO",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+        <path d="M11 8v6M8 11h6" />
+      </svg>
+    ),
+    gradient: "from-emerald-100 to-teal-100",
+    iconColor: "text-emerald-600",
+    hoverGradient: "hover:from-emerald-50 hover:to-teal-50",
+    activeGradient: "from-emerald-500 to-teal-500",
+  },
+  {
     href: "/appointments",
     label: "Calendar",
     icon: (

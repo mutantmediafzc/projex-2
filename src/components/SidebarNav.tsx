@@ -89,6 +89,18 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/seo",
+    label: "SEO",
+    gradient: { from: "from-emerald-100 to-teal-100", to: "from-emerald-500 to-teal-500", hover: "from-emerald-50 to-teal-50", shadow: "shadow-emerald-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.3-4.3" />
+        <path d="M11 8v6M8 11h6" />
+      </svg>
+    ),
+  },
+  {
     href: "/appointments",
     label: "Calendar",
     gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },

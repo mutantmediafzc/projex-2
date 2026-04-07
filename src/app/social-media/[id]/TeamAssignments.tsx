@@ -13,16 +13,16 @@ type User = {
 };
 
 type TeamAssignment = {
-  project_manager_id: string | null;
-  account_manager_id: string | null;
-  creative_team_lead_id: string | null;
-  creative_id: string | null;
-  videographer_id: string | null;
-  social_media_specialist_id: string | null;
-  performance_marketer_id: string | null;
-  email_whatsapp_specialist_id: string | null;
-  website_blogs_specialist_id: string | null;
-  content_creator_id: string | null;
+  project_manager_ids: string[];
+  account_manager_ids: string[];
+  creative_team_lead_ids: string[];
+  creative_ids: string[];
+  videographer_ids: string[];
+  social_media_specialist_ids: string[];
+  performance_marketer_ids: string[];
+  email_whatsapp_specialist_ids: string[];
+  website_blogs_specialist_ids: string[];
+  content_creator_ids: string[];
 };
 
 type Props = {
@@ -32,76 +32,76 @@ type Props = {
 
 const ROLE_CONFIG = [
   { 
-    key: "project_manager_id" as const, 
+    key: "project_manager_ids" as const, 
     label: "Project Manager", 
     icon: "📋",
     description: "Oversees project execution"
   },
   { 
-    key: "account_manager_id" as const, 
+    key: "account_manager_ids" as const, 
     label: "Account Manager", 
     icon: "👔",
     description: "Manages client relationship"
   },
   { 
-    key: "creative_team_lead_id" as const, 
+    key: "creative_team_lead_ids" as const, 
     label: "Creative Team Lead", 
     icon: "🎨",
     description: "Leads creative direction"
   },
   { 
-    key: "creative_id" as const, 
+    key: "creative_ids" as const, 
     label: "Creative", 
     icon: "✏️",
     description: "Creates visual assets"
   },
   { 
-    key: "videographer_id" as const, 
+    key: "videographer_ids" as const, 
     label: "Videographer", 
     icon: "🎥",
     description: "Handles video production & shoots"
   },
   { 
-    key: "social_media_specialist_id" as const, 
+    key: "social_media_specialist_ids" as const, 
     label: "Integrated Marketing", 
     icon: "📱",
     description: "Handles captions & publishing"
   },
   { 
-    key: "performance_marketer_id" as const, 
+    key: "performance_marketer_ids" as const, 
     label: "Performance Marketer", 
     icon: "📊",
     description: "Manages boosted content"
   },
   { 
-    key: "email_whatsapp_specialist_id" as const, 
+    key: "email_whatsapp_specialist_ids" as const, 
     label: "Email & WhatsApp", 
     icon: "📧",
     description: "Handles email & WhatsApp campaigns"
   },
   { 
-    key: "website_blogs_specialist_id" as const, 
+    key: "website_blogs_specialist_ids" as const, 
     label: "SEO Specialist", 
     icon: "🔍",
     description: "Manages SEO & blog content"
   },
   { 
-    key: "content_creator_id" as const, 
+    key: "content_creator_ids" as const, 
     label: "Content Creator", 
     icon: "🎬",
     description: "Creates content for all platforms"
   },
 ];
 
-function SearchableUserDropdown({ 
+function MultiSelectUserDropdown({ 
   users, 
-  value, 
+  selectedIds, 
   onChange, 
   disabled 
 }: { 
   users: User[]; 
-  value: string | null; 
-  onChange: (userId: string | null) => void;
+  selectedIds: string[];
+  onChange: (userIds: string[]) => void;
   disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -109,10 +109,7 @@ function SearchableUserDropdown({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const selectedUser = users.find(u => u.id === value);
-  const displayName = selectedUser 
-    ? [selectedUser.firstName, selectedUser.lastName].filter(Boolean).join(" ") || selectedUser.email || "Unknown"
-    : "";
+  const selectedUsers = users.filter(u => selectedIds.includes(u.id));
 
   const filteredUsers = users.filter(user => {
     const name = [user.firstName, user.lastName].filter(Boolean).join(" ").toLowerCase();
@@ -133,10 +130,23 @@ function SearchableUserDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function toggleUser(userId: string) {
+    if (selectedIds.includes(userId)) {
+      onChange(selectedIds.filter(id => id !== userId));
+    } else {
+      onChange([...selectedIds, userId]);
+    }
+  }
+
+  function removeUser(userId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    onChange(selectedIds.filter(id => id !== userId));
+  }
+
   return (
     <div ref={dropdownRef} className="relative">
       <div
-        className={`flex items-center gap-2 w-full rounded-lg border bg-white px-3 py-2 text-sm cursor-pointer transition-all ${
+        className={`flex flex-wrap items-center gap-1.5 w-full rounded-lg border bg-white px-2 py-1.5 min-h-[38px] cursor-pointer transition-all ${
           isOpen ? "border-pink-400 ring-2 ring-pink-500/20" : "border-slate-200 hover:border-slate-300"
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
         onClick={() => {
@@ -146,69 +156,88 @@ function SearchableUserDropdown({
           }
         }}
       >
+        {selectedUsers.map(user => {
+          const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown";
+          const initials = `${(user.firstName || "U")[0]}${(user.lastName || "")[0]}`.toUpperCase();
+          return (
+            <div
+              key={user.id}
+              className="flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-full pl-0.5 pr-1.5 py-0.5"
+            >
+              <div className="h-5 w-5 rounded-full bg-gradient-to-br from-pink-400 to-fuchsia-500 flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0">
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
+              <span className="text-xs font-medium text-pink-800 max-w-[80px] truncate">{name.split(" ")[0]}</span>
+              <button
+                onClick={(e) => removeUser(user.id, e)}
+                className="text-pink-400 hover:text-pink-600 ml-0.5"
+              >
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          );
+        })}
         {isOpen ? (
           <input
             ref={inputRef}
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search users..."
-            className="flex-1 outline-none text-sm text-black bg-transparent placeholder:text-slate-400"
+            placeholder={selectedIds.length === 0 ? "Search users..." : "Add more..."}
+            className="flex-1 min-w-[80px] outline-none text-sm text-black bg-transparent placeholder:text-slate-400 py-0.5"
             onClick={(e) => e.stopPropagation()}
           />
-        ) : (
-          <span className={`flex-1 truncate ${value ? "text-slate-900" : "text-slate-400"}`}>
-            {value ? displayName : "Not assigned"}
-          </span>
-        )}
-        {value && !isOpen && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onChange(null);
-            }}
-            className="text-slate-400 hover:text-slate-600"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-        <svg className={`h-4 w-4 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        ) : selectedIds.length === 0 ? (
+          <span className="text-slate-400 text-sm py-0.5">Not assigned</span>
+        ) : null}
+        <svg className={`h-4 w-4 text-slate-400 transition-transform ml-auto flex-shrink-0 ${isOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M6 9l6 6 6-6" />
         </svg>
       </div>
 
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-          <div
-            className="px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
-            onClick={() => {
-              onChange(null);
-              setIsOpen(false);
-              setSearch("");
-            }}
-          >
-            Not assigned
-          </div>
+          {selectedIds.length > 0 && (
+            <div
+              className="px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 cursor-pointer border-b border-slate-100"
+              onClick={() => {
+                onChange([]);
+                setSearch("");
+              }}
+            >
+              Clear all
+            </div>
+          )}
           {filteredUsers.length === 0 ? (
             <div className="px-3 py-4 text-sm text-slate-400 text-center">No users found</div>
           ) : (
             filteredUsers.map((user) => {
               const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown";
               const initials = `${(user.firstName || "U")[0]}${(user.lastName || "")[0]}`.toUpperCase();
+              const isSelected = selectedIds.includes(user.id);
               return (
                 <div
                   key={user.id}
                   className={`flex items-center gap-3 px-3 py-2 cursor-pointer transition-colors ${
-                    user.id === value ? "bg-pink-50" : "hover:bg-slate-50"
+                    isSelected ? "bg-pink-50" : "hover:bg-slate-50"
                   }`}
-                  onClick={() => {
-                    onChange(user.id);
-                    setIsOpen(false);
-                    setSearch("");
-                  }}
+                  onClick={() => toggleUser(user.id)}
                 >
+                  <div className={`h-4 w-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                    isSelected ? "bg-pink-500 border-pink-500" : "border-slate-300"
+                  }`}>
+                    {isSelected && (
+                      <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <path d="M20 6L9 17l-5-5" />
+                      </svg>
+                    )}
+                  </div>
                   <div className="h-7 w-7 rounded-full bg-gradient-to-br from-pink-400 to-fuchsia-500 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
                     {user.avatar_url ? (
                       <img src={user.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
@@ -222,11 +251,6 @@ function SearchableUserDropdown({
                       <p className="text-xs text-slate-500 truncate">{user.designation}</p>
                     )}
                   </div>
-                  {user.id === value && (
-                    <svg className="h-4 w-4 text-pink-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  )}
                 </div>
               );
             })
@@ -240,16 +264,16 @@ function SearchableUserDropdown({
 export default function TeamAssignments({ projectId, onUpdate }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [assignments, setAssignments] = useState<TeamAssignment>({
-    project_manager_id: null,
-    account_manager_id: null,
-    creative_team_lead_id: null,
-    creative_id: null,
-    videographer_id: null,
-    social_media_specialist_id: null,
-    performance_marketer_id: null,
-    email_whatsapp_specialist_id: null,
-    website_blogs_specialist_id: null,
-    content_creator_id: null,
+    project_manager_ids: [],
+    account_manager_ids: [],
+    creative_team_lead_ids: [],
+    creative_ids: [],
+    videographer_ids: [],
+    social_media_specialist_ids: [],
+    performance_marketer_ids: [],
+    email_whatsapp_specialist_ids: [],
+    website_blogs_specialist_ids: [],
+    content_creator_ids: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -284,35 +308,35 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
       setUsers(mappedUsers);
     }
 
-    // Load current assignments
+    // Load current assignments (now arrays)
     const { data: project } = await supabaseClient
       .from("social_projects")
-      .select("project_manager_id, account_manager_id, creative_team_lead_id, creative_id, videographer_id, social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id, website_blogs_specialist_id, content_creator_id")
+      .select("project_manager_ids, account_manager_ids, creative_team_lead_ids, creative_ids, videographer_ids, social_media_specialist_ids, performance_marketer_ids, email_whatsapp_specialist_ids, website_blogs_specialist_ids, content_creator_ids")
       .eq("id", projectId)
       .single();
 
     if (project) {
       setAssignments({
-        project_manager_id: project.project_manager_id || null,
-        account_manager_id: project.account_manager_id || null,
-        creative_team_lead_id: project.creative_team_lead_id || null,
-        creative_id: project.creative_id || null,
-        videographer_id: project.videographer_id || null,
-        social_media_specialist_id: project.social_media_specialist_id || null,
-        performance_marketer_id: project.performance_marketer_id || null,
-        email_whatsapp_specialist_id: project.email_whatsapp_specialist_id || null,
-        website_blogs_specialist_id: project.website_blogs_specialist_id || null,
-        content_creator_id: project.content_creator_id || null,
+        project_manager_ids: project.project_manager_ids || [],
+        account_manager_ids: project.account_manager_ids || [],
+        creative_team_lead_ids: project.creative_team_lead_ids || [],
+        creative_ids: project.creative_ids || [],
+        videographer_ids: project.videographer_ids || [],
+        social_media_specialist_ids: project.social_media_specialist_ids || [],
+        performance_marketer_ids: project.performance_marketer_ids || [],
+        email_whatsapp_specialist_ids: project.email_whatsapp_specialist_ids || [],
+        website_blogs_specialist_ids: project.website_blogs_specialist_ids || [],
+        content_creator_ids: project.content_creator_ids || [],
       });
     }
 
     setLoading(false);
   }
 
-  async function handleAssignmentChange(roleKey: keyof TeamAssignment, userId: string | null) {
+  async function handleAssignmentChange(roleKey: keyof TeamAssignment, userIds: string[]) {
     setSaving(true);
     
-    const updateData = { [roleKey]: userId || null };
+    const updateData = { [roleKey]: userIds.length > 0 ? userIds : null };
     
     const { error } = await supabaseClient
       .from("social_projects")
@@ -320,15 +344,14 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
       .eq("id", projectId);
 
     if (!error) {
-      setAssignments(prev => ({ ...prev, [roleKey]: userId }));
+      setAssignments(prev => ({ ...prev, [roleKey]: userIds }));
       onUpdate?.();
     }
     
     setSaving(false);
   }
 
-  function getUserDisplay(userId: string | null) {
-    if (!userId) return null;
+  function getUserDisplay(userId: string) {
     const user = users.find(u => u.id === userId);
     if (!user) return null;
     return {
@@ -337,6 +360,17 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
       designation: user.designation,
       avatar_url: user.avatar_url,
     };
+  }
+  
+  // Get all unique assigned user IDs for the header avatars
+  function getAllAssignedUserIds(): string[] {
+    const allIds = new Set<string>();
+    Object.values(assignments).forEach(ids => {
+      if (Array.isArray(ids)) {
+        ids.forEach(id => allIds.add(id));
+      }
+    });
+    return Array.from(allIds);
   }
 
   if (loading) {
@@ -350,7 +384,8 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     );
   }
 
-  const assignedCount = Object.values(assignments).filter(Boolean).length;
+  const assignedRolesCount = Object.values(assignments).filter(ids => ids && ids.length > 0).length;
+  const allAssignedUserIds = getAllAssignedUserIds();
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -371,14 +406,14 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
           <div className="text-left">
             <h3 className="text-sm font-semibold text-slate-900">Team Assignments</h3>
             <p className="text-xs text-slate-500">
-              {assignedCount} of {ROLE_CONFIG.length} roles assigned
+              {assignedRolesCount} of {ROLE_CONFIG.length} roles assigned ({allAssignedUserIds.length} members)
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Quick avatars */}
+          {/* Quick avatars - show unique users */}
           <div className="flex -space-x-2">
-            {Object.values(assignments).filter(Boolean).slice(0, 4).map((userId, idx) => {
+            {allAssignedUserIds.slice(0, 5).map((userId, idx) => {
               const user = getUserDisplay(userId);
               if (!user) return null;
               return (
@@ -395,6 +430,11 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
                 </div>
               );
             })}
+            {allAssignedUserIds.length > 5 && (
+              <div className="h-7 w-7 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-600 border-2 border-white">
+                +{allAssignedUserIds.length - 5}
+              </div>
+            )}
           </div>
           <svg
             className={`h-5 w-5 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
@@ -412,8 +452,6 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
       {expanded && (
         <div className="border-t border-slate-100 p-4 space-y-3">
           {ROLE_CONFIG.map((role) => {
-            const currentUser = getUserDisplay(assignments[role.key]);
-            
             return (
               <div key={role.key} className="flex items-center gap-3">
                 <span className="text-lg w-8 text-center">{role.icon}</span>
@@ -421,10 +459,10 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
                   <label className="block text-xs font-medium text-slate-600 mb-1">
                     {role.label}
                   </label>
-                  <SearchableUserDropdown
+                  <MultiSelectUserDropdown
                     users={users}
-                    value={assignments[role.key]}
-                    onChange={(userId) => handleAssignmentChange(role.key, userId)}
+                    selectedIds={assignments[role.key]}
+                    onChange={(userIds) => handleAssignmentChange(role.key, userIds)}
                     disabled={saving}
                   />
                 </div>

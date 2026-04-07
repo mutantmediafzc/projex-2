@@ -406,11 +406,11 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
           )}
           <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
           
-          {/* Video URL */}
+          {/* Asset URL Preview */}
           {videoUrl && (
             <button onClick={() => setShowVideoPreview(true)} className="mt-3 w-full py-2 px-3 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium hover:bg-purple-200 flex items-center justify-center gap-1">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-              Preview Video
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Open Asset
             </button>
           )}
         </div>
@@ -615,9 +615,9 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none" />
               </div>
 
-              {/* Video URL */}
+              {/* Asset URL */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-slate-600">🎥 Video URL</label>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">📦 Asset URL</label>
                 <div className="flex gap-2">
                   <input type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="https://..."

@@ -120,9 +120,9 @@ export default function SocialMediaPage() {
         .select(`
           id, name, description, brand_color, logo_url, status, platforms, created_at,
           company:companies(id, name, logo_url),
-          project_manager_id, account_manager_id, creative_team_lead_id, creative_id, videographer_id,
-          social_media_specialist_id, performance_marketer_id, email_whatsapp_specialist_id,
-          website_blogs_specialist_id, content_creator_id
+          project_manager_ids, account_manager_ids, creative_team_lead_ids, creative_ids, videographer_ids,
+          social_media_specialist_ids, performance_marketer_ids, email_whatsapp_specialist_ids,
+          website_blogs_specialist_ids, content_creator_ids
         `)
         .order("created_at", { ascending: false });
 
@@ -135,16 +135,16 @@ export default function SocialMediaPage() {
           if (isAdmin) return true;
           if (!userId) return false;
           return (
-            p.project_manager_id === userId ||
-            p.account_manager_id === userId ||
-            p.creative_team_lead_id === userId ||
-            p.creative_id === userId ||
-            p.videographer_id === userId ||
-            p.social_media_specialist_id === userId ||
-            p.performance_marketer_id === userId ||
-            p.email_whatsapp_specialist_id === userId ||
-            p.website_blogs_specialist_id === userId ||
-            p.content_creator_id === userId
+            (p.project_manager_ids || []).includes(userId) ||
+            (p.account_manager_ids || []).includes(userId) ||
+            (p.creative_team_lead_ids || []).includes(userId) ||
+            (p.creative_ids || []).includes(userId) ||
+            (p.videographer_ids || []).includes(userId) ||
+            (p.social_media_specialist_ids || []).includes(userId) ||
+            (p.performance_marketer_ids || []).includes(userId) ||
+            (p.email_whatsapp_specialist_ids || []).includes(userId) ||
+            (p.website_blogs_specialist_ids || []).includes(userId) ||
+            (p.content_creator_ids || []).includes(userId)
           );
         });
         

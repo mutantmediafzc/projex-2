@@ -14,41 +14,41 @@ type NotificationRule = {
   condition?: (post: any) => boolean;
 };
 
-// Notification rules based on the requirements
+// Notification rules based on the requirements (using array column names)
 const NOTIFICATION_RULES: Record<WorkflowStatus, NotificationRule[]> = {
   production: [
     {
       // Notify Videographer for production stage
-      roles: ["videographer_id", "creative_team_lead_id"],
+      roles: ["videographer_ids", "creative_team_lead_ids"],
     },
   ],
   captions: [
     {
       // Notify Social Media Specialist for new/existing assets without captions
-      roles: ["social_media_specialist_id"],
+      roles: ["social_media_specialist_ids"],
       condition: (post) => !post.caption || post.caption.trim() === "",
     },
     {
       // If long form video, notify Performance Marketer
-      roles: ["performance_marketer_id"],
+      roles: ["performance_marketer_ids"],
       condition: (post) => post.content_type === "Long-Form Video (16:9)",
     },
     {
       // Notify Creative for assets without creatives
-      roles: ["creative_id"],
+      roles: ["creative_ids"],
       condition: (post) => !post.image_asset_url,
     },
   ],
   creatives_approval: [
     {
       // Notify Creative Team Lead for creative development
-      roles: ["creative_team_lead_id", "creative_id"],
+      roles: ["creative_team_lead_ids", "creative_ids"],
     },
   ],
   creative_approval: [
     {
       // Notify Account Manager and Creative Team Lead for creative approval
-      roles: ["account_manager_id", "creative_team_lead_id"],
+      roles: ["account_manager_ids", "creative_team_lead_ids"],
     },
   ],
   final_approval: [
@@ -61,13 +61,13 @@ const NOTIFICATION_RULES: Record<WorkflowStatus, NotificationRule[]> = {
   for_publishing: [
     {
       // Notify Social Media Specialist
-      roles: ["social_media_specialist_id"],
+      roles: ["social_media_specialist_ids"],
     },
   ],
   published: [
     {
       // Notify Social Media Specialist and Jeano
-      roles: ["social_media_specialist_id"],
+      roles: ["social_media_specialist_ids"],
       specificUsers: [], // Jeano's ID would be added here
     },
   ],
@@ -90,17 +90,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Status unchanged, no notifications sent" });
     }
 
-    // Get project team assignments
+    // Get project team assignments (now arrays)
     const { data: project, error: projectError } = await supabaseAdmin
       .from("social_projects")
       .select(`
         id, name,
-        account_manager_id,
-        creative_team_lead_id,
-        creative_id,
-        videographer_id,
-        social_media_specialist_id,
-        performance_marketer_id
+        account_manager_ids,
+        creative_team_lead_ids,
+        creative_ids,
+        videographer_ids,
+        social_media_specialist_ids,
+        performance_marketer_ids
       `)
       .eq("id", projectId)
       .single();
@@ -123,11 +123,15 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Add users from roles
+      // Add users from roles (now arrays)
       for (const roleKey of rule.roles) {
-        const userId = project[roleKey as keyof typeof project];
-        if (userId && typeof userId === "string") {
-          usersToNotify.add(userId);
+        const userIds = project[roleKey as keyof typeof project];
+        if (Array.isArray(userIds)) {
+          for (const userId of userIds) {
+            if (userId && typeof userId === "string") {
+              usersToNotify.add(userId);
+            }
+          }
         }
       }
 

@@ -143,6 +143,11 @@ function MultiSelectUserDropdown({
     onChange(selectedIds.filter(id => id !== userId));
   }
 
+  // Show compact view when closed with multiple users, expanded when open
+  const showCompact = !isOpen && selectedUsers.length > 2;
+  const displayUsers = showCompact ? selectedUsers.slice(0, 2) : selectedUsers;
+  const hiddenCount = showCompact ? selectedUsers.length - 2 : 0;
+
   return (
     <div ref={dropdownRef} className="relative">
       <div
@@ -156,13 +161,13 @@ function MultiSelectUserDropdown({
           }
         }}
       >
-        {selectedUsers.map(user => {
+        {displayUsers.map(user => {
           const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.email || "Unknown";
           const initials = `${(user.firstName || "U")[0]}${(user.lastName || "")[0]}`.toUpperCase();
           return (
             <div
               key={user.id}
-              className="flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-full pl-0.5 pr-1.5 py-0.5"
+              className="flex items-center gap-1 bg-pink-50 border border-pink-200 rounded-full pl-0.5 pr-1.5 py-0.5 flex-shrink-0"
             >
               <div className="h-5 w-5 rounded-full bg-gradient-to-br from-pink-400 to-fuchsia-500 flex items-center justify-center text-[8px] font-bold text-white flex-shrink-0">
                 {user.avatar_url ? (
@@ -171,18 +176,25 @@ function MultiSelectUserDropdown({
                   initials
                 )}
               </div>
-              <span className="text-xs font-medium text-pink-800 max-w-[80px] truncate">{name.split(" ")[0]}</span>
-              <button
-                onClick={(e) => removeUser(user.id, e)}
-                className="text-pink-400 hover:text-pink-600 ml-0.5"
-              >
-                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
+              <span className="text-xs font-medium text-pink-800 max-w-[60px] truncate">{name.split(" ")[0]}</span>
+              {isOpen && (
+                <button
+                  onClick={(e) => removeUser(user.id, e)}
+                  className="text-pink-400 hover:text-pink-600 ml-0.5"
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           );
         })}
+        {hiddenCount > 0 && (
+          <div className="flex items-center justify-center h-6 px-2 bg-pink-100 border border-pink-200 rounded-full flex-shrink-0">
+            <span className="text-xs font-medium text-pink-700">+{hiddenCount}</span>
+          </div>
+        )}
         {isOpen ? (
           <input
             ref={inputRef}
@@ -190,7 +202,7 @@ function MultiSelectUserDropdown({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={selectedIds.length === 0 ? "Search users..." : "Add more..."}
-            className="flex-1 min-w-[80px] outline-none text-sm text-black bg-transparent placeholder:text-slate-400 py-0.5"
+            className="flex-1 min-w-[60px] outline-none text-sm text-black bg-transparent placeholder:text-slate-400 py-0.5"
             onClick={(e) => e.stopPropagation()}
           />
         ) : selectedIds.length === 0 ? (

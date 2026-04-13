@@ -53,12 +53,20 @@ export function MessagesUnreadProvider({ children }: { children: ReactNode }) {
         .eq("mentioned_user_id", user.id)
         .is("read_at", null);
 
-      if (noteError && taskError && workflowError) {
+      // Count unread social workflow tasks (pending status = unread)
+      const { count: socialWorkflowCount, error: socialWorkflowError } = await supabaseClient
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("assigned_user_id", user.id)
+        .eq("source", "social_workflow")
+        .neq("status", "completed");
+
+      if (noteError && taskError && workflowError && socialWorkflowError) {
         setUnreadCount(0);
         return;
       }
 
-      setUnreadCount((noteCount ?? 0) + (taskCount ?? 0) + (workflowCount ?? 0));
+      setUnreadCount((noteCount ?? 0) + (taskCount ?? 0) + (workflowCount ?? 0) + (socialWorkflowCount ?? 0));
     } catch {
       setUnreadCount(0);
     }

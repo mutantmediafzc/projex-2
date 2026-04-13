@@ -8,6 +8,8 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    const userId = request.nextUrl.searchParams.get("userId");
+
     // Test 1: Check if "Jeano Pangan" exists in users table
     const { data: jeanoUsers, error: jeanoError } = await supabaseAdmin
       .from("users")
@@ -20,19 +22,54 @@ export async function GET(request: NextRequest) {
       .select("id, full_name, email")
       .ilike("full_name", "%carlo%");
 
-    // Test 3: Get all users to see what names exist
-    const { data: allUsers, error: allError } = await supabaseAdmin
+    // Test 2b: Check if "Wilson" exists
+    const { data: wilsonUsers, error: wilsonError } = await supabaseAdmin
       .from("users")
       .select("id, full_name, email")
-      .order("full_name")
-      .limit(50);
+      .ilike("full_name", "%wilson%");
 
-    // Test 4: Check if tasks table has the source column
-    const { data: taskColumns, error: taskColError } = await supabaseAdmin
+    // Test 3: Check social workflow tasks
+    const { data: socialTasks, error: socialError } = await supabaseAdmin
       .from("tasks")
       .select("*")
       .eq("source", "social_workflow")
-      .limit(5);
+      .limit(10);
+
+    // Test 4: Check unread counts for a specific user (if provided)
+    let unreadCounts = null;
+    if (userId) {
+      const [noteRes, taskRes, workflowRes, socialRes] = await Promise.all([
+        supabaseAdmin
+          .from("project_note_mentions")
+          .select("id, created_at, read_at", { count: "exact" })
+          .eq("mentioned_user_id", userId)
+          .is("read_at", null),
+        supabaseAdmin
+          .from("task_comment_mentions")
+          .select("id, created_at, read_at", { count: "exact" })
+          .eq("mentioned_user_id", userId)
+          .is("read_at", null),
+        supabaseAdmin
+          .from("workflow_step_mentions")
+          .select("id, created_at, read_at, project_id, project:projects(id, name)", { count: "exact" })
+          .eq("mentioned_user_id", userId)
+          .is("read_at", null),
+        supabaseAdmin
+          .from("tasks")
+          .select("id, created_at, status, name", { count: "exact" })
+          .eq("assigned_user_id", userId)
+          .eq("source", "social_workflow")
+          .neq("status", "completed"),
+      ]);
+
+      unreadCounts = {
+        notesMentions: { count: noteRes.count, data: noteRes.data, error: noteRes.error?.message },
+        taskMentions: { count: taskRes.count, data: taskRes.data, error: taskRes.error?.message },
+        workflowMentions: { count: workflowRes.count, data: workflowRes.data, error: workflowRes.error?.message },
+        socialWorkflowTasks: { count: socialRes.count, data: socialRes.data, error: socialRes.error?.message },
+        total: (noteRes.count || 0) + (taskRes.count || 0) + (workflowRes.count || 0) + (socialRes.count || 0),
+      };
+    }
 
     return NextResponse.json({
       jeano: {
@@ -45,16 +82,17 @@ export async function GET(request: NextRequest) {
         users: carloUsers,
         error: carloError?.message,
       },
-      allUsers: {
-        count: allUsers?.length || 0,
-        users: allUsers?.map(u => ({ id: u.id, name: u.full_name })),
-        error: allError?.message,
+      wilson: {
+        found: wilsonUsers?.length || 0,
+        users: wilsonUsers,
+        error: wilsonError?.message,
       },
-      existingSocialTasks: {
-        count: taskColumns?.length || 0,
-        tasks: taskColumns,
-        error: taskColError?.message,
+      socialWorkflowTasks: {
+        count: socialTasks?.length || 0,
+        tasks: socialTasks,
+        error: socialError?.message,
       },
+      unreadCounts,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

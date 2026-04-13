@@ -92,12 +92,27 @@ export default function MessagesPage() {
           .eq("mentioned_user_id", user.id)
           .order("created_at", { ascending: false });
 
-        // Fetch workflow step mentions
+        // Fetch workflow step mentions (without project join to avoid schema cache issues)
         const { data: workflowMentions } = await supabaseClient
           .from("workflow_step_mentions")
-          .select("id, created_at, read_at, project_id, step_id, comment_body, author_name, project:projects(id, name)")
+          .select("id, created_at, read_at, project_id, step_id, comment_body, author_name")
           .eq("mentioned_user_id", user.id)
           .order("created_at", { ascending: false });
+        
+        // Fetch project names separately if we have workflow mentions
+        let projectMap: Record<string, string> = {};
+        if (workflowMentions && workflowMentions.length > 0) {
+          const projectIds = [...new Set(workflowMentions.map(m => m.project_id).filter(Boolean))];
+          if (projectIds.length > 0) {
+            const { data: projects } = await supabaseClient
+              .from("projects")
+              .select("id, name")
+              .in("id", projectIds);
+            if (projects) {
+              projectMap = Object.fromEntries(projects.map(p => [p.id, p.name]));
+            }
+          }
+        }
 
         // Fetch social workflow notifications (tasks with source = 'social_workflow')
         const { data: socialWorkflowTasks } = await supabaseClient
@@ -158,7 +173,7 @@ export default function MessagesPage() {
               source: "admin",
               body: m.comment_body || "mentioned you in a workflow step comment",
               author_name: m.author_name || null,
-              project_name: m.project?.name || null,
+              project_name: projectMap[m.project_id] || null,
               step_title: m.step_id?.replace(/_/g, " ") || null,
             });
           }

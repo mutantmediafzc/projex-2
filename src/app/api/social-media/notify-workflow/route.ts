@@ -235,9 +235,9 @@ export async function POST(request: NextRequest) {
         assigned_user_id: userId,
         name: `Social Post: ${statusLabels[newStatus]?.replace(" Tab", "") || newStatus}`,
         content: generateNotificationMessage(newStatus),
-        status: "pending",
+        status: "not_started",  // Valid enum: not_started, in_progress, completed
         priority: "medium",
-        type: "social_media",
+        type: "todo",  // Valid enum: todo, call, email
         source: "social_workflow",
         created_by_name: currentUserName,
         project_id: null,

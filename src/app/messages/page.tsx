@@ -8,22 +8,23 @@ import { NoteBodyWithMentions } from "@/components/MentionTextarea";
 
 type MentionItem = {
   id: string;
-  type: "note" | "task_comment" | "workflow";
+  type: "note" | "task_comment" | "workflow" | "social_workflow";
   created_at: string;
   read_at: string | null;
   project_id: string | null;
   task_id?: string | null;
   step_id?: string | null;
-  source: "operations" | "admin" | null;
+  source: "operations" | "admin" | "social_workflow" | null;
   body: string | null;
   author_name: string | null;
   project_name: string | null;
   task_name?: string | null;
   step_title?: string | null;
+  image_url?: string | null;
 };
 
 type FilterStatus = "all" | "unread" | "read";
-type FilterType = "all" | "note" | "task_comment" | "workflow";
+type FilterType = "all" | "note" | "task_comment" | "workflow" | "social_workflow";
 
 function formatRelativeTime(dateStr: string): string {
   const date = new Date(dateStr);
@@ -98,6 +99,14 @@ export default function MessagesPage() {
           .eq("mentioned_user_id", user.id)
           .order("created_at", { ascending: false });
 
+        // Fetch social workflow notifications (tasks with source = 'social_workflow')
+        const { data: socialWorkflowTasks } = await supabaseClient
+          .from("tasks")
+          .select("id, created_at, name, content, created_by_name, status, image_url")
+          .eq("assigned_user_id", user.id)
+          .eq("source", "social_workflow")
+          .order("created_at", { ascending: false });
+
         if (!isMounted) return;
 
         // Combine and normalize
@@ -155,6 +164,25 @@ export default function MessagesPage() {
           }
         }
 
+        // Add social workflow notifications
+        if (socialWorkflowTasks) {
+          for (const t of socialWorkflowTasks as any[]) {
+            combined.push({
+              id: t.id,
+              type: "social_workflow",
+              created_at: t.created_at,
+              read_at: t.status === "completed" ? t.created_at : null, // Mark as read if task is completed
+              project_id: null,
+              source: "social_workflow",
+              body: t.content || t.name,
+              author_name: t.created_by_name || "System",
+              project_name: null,
+              task_name: t.name,
+              image_url: t.image_url || null,
+            });
+          }
+        }
+
         // Sort by date descending
         combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -197,8 +225,9 @@ export default function MessagesPage() {
     const unreadNotes = mentions.filter((m) => !m.read_at && m.type === "note").map((m) => m.id);
     const unreadTasks = mentions.filter((m) => !m.read_at && m.type === "task_comment").map((m) => m.id);
     const unreadWorkflows = mentions.filter((m) => !m.read_at && m.type === "workflow").map((m) => m.id);
+    const unreadSocialWorkflows = mentions.filter((m) => !m.read_at && m.type === "social_workflow").map((m) => m.id);
 
-    if (unreadNotes.length === 0 && unreadTasks.length === 0 && unreadWorkflows.length === 0) return;
+    if (unreadNotes.length === 0 && unreadTasks.length === 0 && unreadWorkflows.length === 0 && unreadSocialWorkflows.length === 0) return;
 
     try {
       setMarkingRead(true);
@@ -225,6 +254,14 @@ export default function MessagesPage() {
           .in("id", unreadWorkflows);
       }
 
+      // Mark social workflow tasks as completed
+      if (unreadSocialWorkflows.length > 0) {
+        await supabaseClient
+          .from("tasks")
+          .update({ status: "completed" })
+          .in("id", unreadSocialWorkflows);
+      }
+
       setMentions((prev) =>
         prev.map((m) => (m.read_at ? m : { ...m, read_at: nowIso }))
       );
@@ -247,11 +284,19 @@ export default function MessagesPage() {
     setUnreadCountOptimistic((prev) => Math.max(0, prev - 1));
 
     try {
-      const table = mention.type === "note" ? "project_note_mentions" : mention.type === "task_comment" ? "task_comment_mentions" : "workflow_step_mentions";
-      await supabaseClient
-        .from(table)
-        .update({ read_at: nowIso })
-        .eq("id", mention.id);
+      if (mention.type === "social_workflow") {
+        // Mark social workflow task as completed
+        await supabaseClient
+          .from("tasks")
+          .update({ status: "completed" })
+          .eq("id", mention.id);
+      } else {
+        const table = mention.type === "note" ? "project_note_mentions" : mention.type === "task_comment" ? "task_comment_mentions" : "workflow_step_mentions";
+        await supabaseClient
+          .from(table)
+          .update({ read_at: nowIso })
+          .eq("id", mention.id);
+      }
     } catch {
       // Ignore
     }
@@ -372,7 +417,7 @@ export default function MessagesPage() {
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Type</span>
           <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-            {([{ id: "all", label: "All" }, { id: "note", label: "Notes" }, { id: "task_comment", label: "Tasks" }, { id: "workflow", label: "Workflows" }] as { id: FilterType; label: string }[]).map((t) => (
+            {([{ id: "all", label: "All" }, { id: "note", label: "Notes" }, { id: "task_comment", label: "Tasks" }, { id: "workflow", label: "Workflows" }, { id: "social_workflow", label: "Social" }] as { id: FilterType; label: string }[]).map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -463,25 +508,37 @@ export default function MessagesPage() {
               const isUnread = !mention.read_at;
               const isTask = mention.type === "task_comment";
               const isWorkflow = mention.type === "workflow";
+              const isSocialWorkflow = mention.type === "social_workflow";
+
+              // Social workflow notifications link to social media calendar
+              const href = isSocialWorkflow ? "/social-media" : getMentionHref(mention);
 
               return (
                 <Link
                   key={`${mention.type}-${mention.id}`}
-                  href={getMentionHref(mention)}
+                  href={href}
                   onClick={() => handleMarkAsRead(mention)}
                   className={`group flex items-start gap-4 p-5 transition-all hover:bg-slate-50 ${isUnread ? "bg-violet-50/60" : ""}`}
                 >
                   {/* Avatar */}
                   <div className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-lg ${
                     isUnread 
-                      ? isWorkflow
-                        ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
-                        : isTask 
-                          ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white" 
-                          : "bg-gradient-to-br from-violet-500 to-purple-600 text-white"
+                      ? isSocialWorkflow
+                        ? "bg-gradient-to-br from-pink-500 to-fuchsia-600 text-white"
+                        : isWorkflow
+                          ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+                          : isTask 
+                            ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white" 
+                            : "bg-gradient-to-br from-violet-500 to-purple-600 text-white"
                       : "bg-slate-100 text-slate-500"
                   }`}>
-                    {isWorkflow ? (
+                    {isSocialWorkflow ? (
+                      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="2" width="20" height="20" rx="5" />
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                        <path d="M17.5 6.5h.01" />
+                      </svg>
+                    ) : isWorkflow ? (
                       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                         <polyline points="22 4 12 14.01 9 11.01" />
@@ -509,13 +566,15 @@ export default function MessagesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                        isWorkflow
-                          ? "bg-blue-100 text-blue-700"
-                          : isTask 
-                            ? "bg-emerald-100 text-emerald-700" 
-                            : "bg-violet-100 text-violet-700"
+                        isSocialWorkflow
+                          ? "bg-pink-100 text-pink-700"
+                          : isWorkflow
+                            ? "bg-blue-100 text-blue-700"
+                            : isTask 
+                              ? "bg-emerald-100 text-emerald-700" 
+                              : "bg-violet-100 text-violet-700"
                       }`}>
-                        {isWorkflow ? "Workflow" : isTask ? "Task Comment" : "Note"}
+                        {isSocialWorkflow ? "Social Media" : isWorkflow ? "Workflow" : isTask ? "Task Comment" : "Note"}
                       </span>
                       <span className="text-[11px] text-slate-400">
                         {formatRelativeTime(mention.created_at)}
@@ -523,12 +582,16 @@ export default function MessagesPage() {
                     </div>
                     
                     <p className={`text-[13px] font-semibold ${isUnread ? "text-slate-900" : "text-slate-700"}`}>
-                      {mention.author_name || "Someone"} mentioned you
+                      {isSocialWorkflow ? mention.task_name || "Social Post Update" : `${mention.author_name || "Someone"} mentioned you`}
                     </p>
                     
                     <div className="mt-1 text-[12px] text-slate-600 line-clamp-2">
                       {mention.body ? (
-                        <NoteBodyWithMentions body={mention.body} />
+                        isSocialWorkflow ? (
+                          <span>{mention.body}</span>
+                        ) : (
+                          <NoteBodyWithMentions body={mention.body} />
+                        )
                       ) : (
                         <span className="italic text-slate-400">(Content unavailable)</span>
                       )}

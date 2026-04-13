@@ -89,26 +89,31 @@ async function findUsersByName(names: string[]): Promise<string[]> {
   const userIds: string[] = [];
   
   for (const name of names) {
-    const nameParts = name.toLowerCase().split(" ");
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(" ");
+    const searchName = name.toLowerCase().trim();
     
-    // Query users table for matching names
-    const { data: users } = await supabaseAdmin
+    // Query users table for matching full_name
+    const { data: users, error } = await supabaseAdmin
       .from("users")
-      .select("id, first_name, last_name")
-      .or(`first_name.ilike.%${firstName}%,last_name.ilike.%${lastName}%`);
+      .select("id, full_name")
+      .ilike("full_name", `%${searchName}%`);
+    
+    if (error) {
+      console.error("Error finding user by name:", error);
+      continue;
+    }
     
     if (users) {
       for (const user of users) {
-        const userFullName = `${user.first_name || ""} ${user.last_name || ""}`.toLowerCase().trim();
-        if (userFullName.includes(firstName) && (lastName === "" || userFullName.includes(lastName))) {
+        const userFullName = (user.full_name || "").toLowerCase().trim();
+        // Check if the full name matches (case-insensitive)
+        if (userFullName.includes(searchName) || searchName.includes(userFullName)) {
           userIds.push(user.id);
         }
       }
     }
   }
   
+  console.log(`findUsersByName: Looking for ${names.join(", ")} - Found ${userIds.length} users`);
   return userIds;
 }
 
@@ -156,16 +161,20 @@ export async function POST(request: NextRequest) {
     const rules = NOTIFICATION_RULES[newStatus as WorkflowStatus] || [];
     const usersToNotify = new Set<string>();
 
+    console.log(`[Notify-Workflow] Processing status: ${newStatus}, rules count: ${rules.length}`);
+
     // Apply each rule
     for (const rule of rules) {
       // Check condition if exists
       if (rule.condition && !rule.condition(postData || {})) {
+        console.log(`[Notify-Workflow] Rule condition not met, skipping`);
         continue;
       }
 
       // Add users from roles (now arrays)
       for (const roleKey of rule.roles) {
         const userIds = project[roleKey as keyof typeof project];
+        console.log(`[Notify-Workflow] Role ${roleKey}: ${JSON.stringify(userIds)}`);
         if (Array.isArray(userIds)) {
           for (const userId of userIds) {
             if (userId && typeof userId === "string") {
@@ -177,12 +186,18 @@ export async function POST(request: NextRequest) {
 
       // Add specific users by name lookup
       if (rule.specificUserNames && rule.specificUserNames.length > 0) {
+        console.log(`[Notify-Workflow] Looking up specific users: ${rule.specificUserNames.join(", ")}`);
         const specificUserIds = await findUsersByName(rule.specificUserNames);
+        console.log(`[Notify-Workflow] Found user IDs: ${specificUserIds.join(", ") || "none"}`);
         for (const userId of specificUserIds) {
           usersToNotify.add(userId);
         }
       }
     }
+
+    console.log(`[Notify-Workflow] Total users to notify: ${usersToNotify.size}`);
+    console.log(`[Notify-Workflow] User IDs: ${Array.from(usersToNotify).join(", ") || "none"}`);
+    
 
     // Get current user for "created_by_name"
     const { data: authData } = await supabaseAdmin.auth.getUser();
@@ -236,7 +251,10 @@ export async function POST(request: NextRequest) {
         .select("id")
         .single();
 
-      if (!taskError && task) {
+      if (taskError) {
+        console.error(`[Notify-Workflow] Failed to create task for user ${userId}:`, taskError);
+      } else if (task) {
+        console.log(`[Notify-Workflow] Created task ${task.id} for user ${userId}`);
         notifications.push({ userId, taskId: task.id });
       }
     }

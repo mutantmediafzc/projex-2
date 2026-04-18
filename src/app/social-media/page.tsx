@@ -200,14 +200,15 @@ export default function SocialMediaPage() {
         .order("start_year", { ascending: false })
         .order("start_month", { ascending: false });
 
-      // Fetch all boosted posts
+      // Fetch all boosted posts only (never organic)
       const { data: boostedPosts } = await supabaseClient
         .from("social_posts")
         .select(`
-          id, subject, post_type, platform_budgets, scheduled_date,
+          id, subject, caption, platforms, post_type, platform_budgets, scheduled_date,
           project:social_projects(id, name)
         `)
-        .eq("post_type", "boosted");
+        .eq("post_type", "boosted")
+        .order("scheduled_date", { ascending: true });
 
       const months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -227,24 +228,43 @@ export default function SocialMediaPage() {
         ...subRows.map((row: any) => row.map((cell: any) => `"${cell}"`).join(",")),
       ].join("\n");
 
-      // Create boost spent CSV
-      const boostHeaders = ["Project", "Post Subject", "Date", "Total Budget", "Platform Breakdown"];
-      const boostRows = (boostedPosts || []).map((post: any) => {
+      // Create boost report CSV — columns: Account, Subject, Date, Platform, Amount (AED)
+      // One row per platform per post (e.g. boosted on IG + TikTok = 2 rows)
+      const boostHeaders = ["Account", "Subject", "Date", "Platform", "Amount (AED)"];
+      const boostRows: string[] = [];
+
+      for (const post of (boostedPosts || []) as any[]) {
         const budgets = post.platform_budgets || {};
-        const total = Object.values(budgets).reduce((sum: number, val: any) => sum + (Number(val) || 0), 0);
-        const breakdown = Object.entries(budgets).map(([k, v]) => `${k}: $${v}`).join("; ");
-        return [
-          post.project?.name || "Unknown",
-          post.subject || "Untitled",
-          post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "No date",
-          `$${total.toFixed(2)}`,
-          breakdown || "No budget set",
-        ];
-      });
-      const boostCsvContent = [
-        boostHeaders.join(","),
-        ...boostRows.map((row: any) => row.map((cell: any) => `"${cell}"`).join(",")),
-      ].join("\n");
+        const accountName = (post.project?.name || "Unknown").replace(/"/g, '""');
+        const subject = (post.subject || post.caption?.slice(0, 50) || "Untitled").replace(/"/g, '""');
+        const dateStr = post.scheduled_date
+          ? new Date(post.scheduled_date).toLocaleDateString("en-GB")
+          : "";
+        const platforms: string[] = post.platforms || [];
+
+        if (platforms.length === 0) {
+          boostRows.push([`"${accountName}"`, `"${subject}"`, `"${dateStr}"`, "", "0.00"].join(","));
+        } else {
+          for (const platform of platforms) {
+            const amount = Number(budgets[platform] || 0);
+            boostRows.push([
+              `"${accountName}"`,
+              `"${subject}"`,
+              `"${dateStr}"`,
+              `"${platform.charAt(0).toUpperCase() + platform.slice(1)}"`,
+              amount.toFixed(2),
+            ].join(","));
+          }
+        }
+      }
+
+      const grandTotal = (boostedPosts || []).reduce((sum: number, post: any) => {
+        return sum + Object.values(post.platform_budgets || {}).reduce((s: number, v: any) => s + (Number(v) || 0), 0);
+      }, 0);
+      boostRows.push("");
+      boostRows.push([`"TOTAL"`, `"${(boostedPosts || []).length} boosted posts"`, "", "", grandTotal.toFixed(2)].join(","));
+
+      const boostCsvContent = [boostHeaders.join(","), ...boostRows].join("\n");
 
       // Download both CSVs
       const date = new Date().toISOString().split("T")[0];

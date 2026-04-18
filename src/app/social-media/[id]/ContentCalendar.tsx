@@ -48,6 +48,7 @@ type Post = {
 
 type Props = {
   projectId: string;
+  projectName?: string;
   platforms: string[];
   brandColor: string | null;
 };
@@ -105,7 +106,7 @@ const CONTENT_TYPE_ICONS: Record<string, string> = {
   "Ad Creatives (Check dimensions on notes)": "📢",
 };
 
-export default function ContentCalendar({ projectId, platforms, brandColor }: Props) {
+export default function ContentCalendar({ projectId, projectName, platforms, brandColor }: Props) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"calendar" | "list" | "grid">("calendar");
@@ -288,7 +289,7 @@ export default function ContentCalendar({ projectId, platforms, brandColor }: Pr
           <button onClick={() => setCurrentDate(new Date())} className="ml-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50">Today</button>
         </div>
         <div className="flex items-center gap-3">
-          <BoostedDownload projectId={projectId} />
+          <BoostedDownload projectId={projectId} projectName={projectName} />
           <div className="flex rounded-lg border border-slate-200 bg-white overflow-hidden">
             <button onClick={() => setViewMode("calendar")} title="Calendar View" className={`relative group px-3 py-1.5 text-sm font-medium transition-all ${viewMode === "calendar" ? "bg-pink-500 text-white" : "text-slate-600 hover:bg-slate-50"}`}>
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>

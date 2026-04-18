@@ -581,7 +581,7 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
           <TeamAssignments projectId={project.id} />
         )}
         {activeTab === "calendar" && (
-          <ContentCalendar projectId={project.id} platforms={project.platforms} brandColor={project.brand_color} />
+          <ContentCalendar projectId={project.id} projectName={project.name} platforms={project.platforms} brandColor={project.brand_color} />
         )}
         {activeTab === "email" && (
           <EmailWhatsAppCampaigns projectId={project.id} />

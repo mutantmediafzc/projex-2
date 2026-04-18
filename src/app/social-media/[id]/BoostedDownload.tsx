@@ -12,13 +12,15 @@ type Post = {
   post_type: "organic" | "boosted";
   platform_budgets: Record<string, number>;
   workflow_status: string;
+  project: { name: string } | null;
 };
 
 type Props = {
   projectId: string;
+  projectName?: string;
 };
 
-export default function BoostedDownload({ projectId }: Props) {
+export default function BoostedDownload({ projectId, projectName }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
@@ -32,7 +34,8 @@ export default function BoostedDownload({ projectId }: Props) {
     setDownloading(true);
 
     try {
-      const { data: posts } = await supabaseClient
+      // Only boosted posts — filtered strictly by post_type = 'boosted'
+      const { data: posts, error } = await supabaseClient
         .from("social_posts")
         .select("id, subject, caption, platforms, scheduled_date, post_type, platform_budgets, workflow_status")
         .eq("project_id", projectId)
@@ -41,70 +44,62 @@ export default function BoostedDownload({ projectId }: Props) {
         .lte("scheduled_date", endDate + "T23:59:59")
         .order("scheduled_date", { ascending: true });
 
+      if (error) throw error;
+
       if (!posts || posts.length === 0) {
         alert("No boosted posts found in the selected date range.");
         setDownloading(false);
         return;
       }
 
-      // Generate CSV content
-      const headers = ["Date", "Subject", "Platforms", "Status", "Instagram Budget", "Facebook Budget", "LinkedIn Budget", "TikTok Budget", "X Budget", "YouTube Budget", "Total Budget"];
-      const rows = (posts as Post[]).map((post) => {
+      const accountName = projectName || "Unknown Account";
+
+      // Columns per requirements: Account, Subject, Date, Platform, Amount in AED
+      // One row per platform per post (if boosted on IG and TikTok → 2 rows)
+      const headers = ["Account", "Subject", "Date", "Platform", "Amount (AED)"];
+      const rows: string[] = [];
+
+      for (const post of posts as Post[]) {
         const budgets = post.platform_budgets || {};
-        const totalBudget = Object.values(budgets).reduce((sum, val) => sum + (val || 0), 0);
-        return [
-          post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString() : "",
-          `"${(post.subject || post.caption?.slice(0, 50) || "No subject").replace(/"/g, '""')}"`,
-          `"${(post.platforms || []).join(", ")}"`,
-          post.workflow_status || "draft",
-          budgets.instagram || 0,
-          budgets.facebook || 0,
-          budgets.linkedin || 0,
-          budgets.tiktok || 0,
-          budgets.x || 0,
-          budgets.youtube || 0,
-          totalBudget,
-        ].join(",");
-      });
+        const dateStr = post.scheduled_date
+          ? new Date(post.scheduled_date).toLocaleDateString("en-GB") // DD/MM/YYYY
+          : "";
+        const subject = (post.subject || post.caption?.slice(0, 50) || "No subject").replace(/"/g, '""');
+        const platforms = post.platforms || [];
 
-      // Calculate totals
-      const totals = (posts as Post[]).reduce(
-        (acc, post) => {
-          const budgets = post.platform_budgets || {};
-          acc.instagram += budgets.instagram || 0;
-          acc.facebook += budgets.facebook || 0;
-          acc.linkedin += budgets.linkedin || 0;
-          acc.tiktok += budgets.tiktok || 0;
-          acc.x += budgets.x || 0;
-          acc.youtube += budgets.youtube || 0;
-          acc.total += Object.values(budgets).reduce((sum, val) => sum + (val || 0), 0);
-          return acc;
-        },
-        { instagram: 0, facebook: 0, linkedin: 0, tiktok: 0, x: 0, youtube: 0, total: 0 }
-      );
+        if (platforms.length === 0) {
+          // No platforms — still include with 0 amount
+          rows.push([`"${accountName}"`, `"${subject}"`, `"${dateStr}"`, "", "0"].join(","));
+        } else {
+          for (const platform of platforms) {
+            const amount = budgets[platform] || 0;
+            rows.push([
+              `"${accountName}"`,
+              `"${subject}"`,
+              `"${dateStr}"`,
+              `"${platform.charAt(0).toUpperCase() + platform.slice(1)}"`,
+              amount.toFixed(2),
+            ].join(","));
+          }
+        }
+      }
 
-      const totalRow = [
-        "TOTAL",
-        `"${posts.length} posts"`,
-        "",
-        "",
-        totals.instagram,
-        totals.facebook,
-        totals.linkedin,
-        totals.tiktok,
-        totals.x,
-        totals.youtube,
-        totals.total,
-      ].join(",");
+      // Total row
+      const grandTotal = (posts as Post[]).reduce((sum, post) => {
+        const budgets = post.platform_budgets || {};
+        return sum + Object.values(budgets).reduce((s, v) => s + (v || 0), 0);
+      }, 0);
+      rows.push("");
+      rows.push([`"TOTAL"`, `"${posts.length} boosted posts"`, "", "", grandTotal.toFixed(2)].join(","));
 
-      const csvContent = [headers.join(","), ...rows, "", totalRow].join("\n");
+      const csvContent = [headers.join(","), ...rows].join("\n");
 
       // Download file
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `boosted-posts-${startDate}-to-${endDate}.csv`;
+      link.download = `boosted-report-${accountName.replace(/\s+/g, "-")}-${startDate}-to-${endDate}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

@@ -761,10 +761,11 @@ export default function ContentCalendar2026() {
           ) : viewMode === "list" ? (
             /* List View */
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-              <table className="w-full min-w-[900px]">
+              <table className="w-full min-w-[1000px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-20">Time</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-44">Calendar</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-16">Asset</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-32">Subject</th>
@@ -776,7 +777,7 @@ export default function ContentCalendar2026() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredPosts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-slate-500">
+                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
                         No posts found matching your filters
                       </td>
                     </tr>
@@ -786,7 +787,9 @@ export default function ContentCalendar2026() {
                         if (!a.scheduled_date && !b.scheduled_date) return 0;
                         if (!a.scheduled_date) return 1;
                         if (!b.scheduled_date) return -1;
-                        return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+                        const dateA = a.scheduled_date.slice(0, 10) + (a.scheduled_time ? "T" + a.scheduled_time : "T00:00");
+                        const dateB = b.scheduled_date.slice(0, 10) + (b.scheduled_time ? "T" + b.scheduled_time : "T00:00");
+                        return dateA.localeCompare(dateB);
                       })
                       .map((post) => {
                         const style = getWorkflowStyle(post.workflow_status);
@@ -800,6 +803,11 @@ export default function ContentCalendar2026() {
                             <td className="px-4 py-3 w-28">
                               <span className="text-sm text-slate-900 whitespace-nowrap">
                                 {post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "No date"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 w-20">
+                              <span className="text-sm text-slate-600 whitespace-nowrap">
+                                {post.scheduled_time || "—"}
                               </span>
                             </td>
                             <td className="px-4 py-3 w-44">

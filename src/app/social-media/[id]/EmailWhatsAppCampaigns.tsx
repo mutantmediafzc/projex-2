@@ -11,6 +11,7 @@ type Campaign = {
   campaign_type: "email" | "whatsapp";
   status: "not_due" | "in_progress" | "scheduled" | "published";
   scheduled_date: string | null;
+  scheduled_time: string | null;
   title: string;
   image_url: string | null;
   content: string | null;
@@ -41,6 +42,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
   const [campaignType, setCampaignType] = useState<"email" | "whatsapp">("email");
   const [status, setStatus] = useState<"not_due" | "in_progress" | "scheduled" | "published">("not_due");
   const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [title, setTitle] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
@@ -70,6 +72,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     setCampaignType("email");
     setStatus("not_due");
     setScheduledDate("");
+    setScheduledTime("");
     setTitle("");
     setImageUrl("");
     setContent("");
@@ -81,6 +84,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     setCampaignType(campaign.campaign_type);
     setStatus(campaign.status);
     setScheduledDate(campaign.scheduled_date || "");
+    setScheduledTime(campaign.scheduled_time || "");
     setTitle(campaign.title);
     setImageUrl(campaign.image_url || "");
     setContent(campaign.content || "");
@@ -152,6 +156,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
       campaign_type: campaignType,
       status,
       scheduled_date: scheduledDate || null,
+      scheduled_time: scheduledTime || null,
       title: title.trim(),
       image_url: imageUrl || null,
       content: content || null,
@@ -296,10 +301,10 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
       ) : (
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
           {/* List Header - Hidden on mobile */}
-          <div className="hidden md:grid grid-cols-[80px_1fr_150px_120px_100px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
+          <div className="hidden md:grid grid-cols-[80px_1fr_160px_120px_100px] gap-4 border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wide">
             <span>Image</span>
             <span>Title & Content</span>
-            <span>Date</span>
+            <span>Date & Time</span>
             <span>Status</span>
             <span></span>
           </div>
@@ -307,7 +312,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
           {filteredCampaigns.map((campaign) => (
             <div
               key={campaign.id}
-              className="flex flex-col md:grid md:grid-cols-[80px_1fr_150px_120px_100px] gap-3 md:gap-4 md:items-center px-4 py-3 border-b border-slate-50 hover:bg-emerald-50/50 transition-colors"
+              className="flex flex-col md:grid md:grid-cols-[80px_1fr_160px_120px_100px] gap-3 md:gap-4 md:items-center px-4 py-3 border-b border-slate-50 hover:bg-emerald-50/50 transition-colors"
             >
               {/* Mobile: Top row with image and content */}
               <div className="flex gap-3 md:contents">
@@ -346,12 +351,17 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
               </div>
               {/* Mobile: Bottom row with date, status, actions */}
               <div className="flex items-center justify-between md:contents pl-[76px] md:pl-0">
-                {/* Date */}
-                <span className="text-sm text-slate-600">
-                  {campaign.scheduled_date 
-                    ? new Date(campaign.scheduled_date).toLocaleDateString()
-                    : "—"}
-                </span>
+                {/* Date & Time */}
+                <div className="flex flex-col">
+                  <span className="text-sm text-slate-600">
+                    {campaign.scheduled_date 
+                      ? new Date(campaign.scheduled_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"}
+                  </span>
+                  {campaign.scheduled_time && (
+                    <span className="text-xs text-slate-400">{campaign.scheduled_time}</span>
+                  )}
+                </div>
                 {/* Status */}
                 <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getStatusStyle(campaign.status)}`}>
                   {getStatusLabel(campaign.status)}
@@ -437,15 +447,26 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
                   </select>
                 </div>
 
-                {/* Date */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">Date</label>
-                  <input
-                    type="date"
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                  />
+                {/* Date & Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">Date</label>
+                    <input
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-slate-700">Time</label>
+                    <input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  </div>
                 </div>
 
                 {/* Image Upload */}

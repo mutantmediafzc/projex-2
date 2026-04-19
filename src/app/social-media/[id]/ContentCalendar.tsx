@@ -546,7 +546,14 @@ export default function ContentCalendar({ projectId, projectName, platforms, bra
         <div className="space-y-3">
           {filteredPosts.length === 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center"><p className="text-slate-500">No posts found. {statusFilter !== "all" && "Try changing the filter or create a new post!"}</p></div>
-          ) : filteredPosts.map((post) => {
+          ) : [...filteredPosts].sort((a, b) => {
+            if (!a.scheduled_date && !b.scheduled_date) return 0;
+            if (!a.scheduled_date) return 1;
+            if (!b.scheduled_date) return -1;
+            const dateA = a.scheduled_date + (a.scheduled_time ? "T" + a.scheduled_time : "T00:00");
+            const dateB = b.scheduled_date + (b.scheduled_time ? "T" + b.scheduled_time : "T00:00");
+            return dateA.localeCompare(dateB);
+          }).map((post) => {
             const style = getWorkflowStyle(post.workflow_status);
             const isSelected = selectedPosts.has(post.id);
             return (
@@ -633,6 +640,7 @@ export default function ContentCalendar({ projectId, projectName, platforms, bra
                     <p className="mb-1 line-clamp-2 text-xs text-slate-600">{post.caption || "No caption"}</p>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
                       <span>{post.scheduled_date ? new Date(post.scheduled_date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) : "Not scheduled"}</span>
+                      {post.scheduled_time && <span className="font-medium text-slate-600">{post.scheduled_time}</span>}
                       {post.content_type && <span className="text-slate-400">• {post.content_type}</span>}
                     </div>
                   </div>

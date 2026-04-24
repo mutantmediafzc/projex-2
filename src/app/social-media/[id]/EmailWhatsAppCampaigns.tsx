@@ -37,6 +37,7 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
   const [showModal, setShowModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<"all" | "published">("all");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // Form state
   const [campaignType, setCampaignType] = useState<"email" | "whatsapp">("email");
@@ -190,11 +191,17 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
     loadCampaigns();
   }
 
-  // Filter campaigns based on active sub-tab
-  const filteredCampaigns = campaigns.filter((c) => {
-    if (activeSubTab === "published") return c.status === "published";
-    return c.status !== "published"; // "all" shows non-published
-  });
+  // Filter and sort campaigns based on active sub-tab and sort order
+  const filteredCampaigns = campaigns
+    .filter((c) => {
+      if (activeSubTab === "published") return c.status === "published";
+      return c.status !== "published";
+    })
+    .sort((a, b) => {
+      const aKey = (a.scheduled_date || "9999-12-31") + "T" + (a.scheduled_time || "00:00");
+      const bKey = (b.scheduled_date || "9999-12-31") + "T" + (b.scheduled_time || "00:00");
+      return sortOrder === "asc" ? aKey.localeCompare(bKey) : bKey.localeCompare(aKey);
+    });
 
   const truncateContent = (html: string | null, maxLength: number = 150) => {
     if (!html) return "";
@@ -245,8 +252,9 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
         </button>
       </div>
 
-      {/* Sub-tabs */}
-      <div className="flex gap-2 border-b border-slate-200">
+      {/* Sub-tabs + Sort Toggle */}
+      <div className="flex items-center justify-between border-b border-slate-200">
+        <div className="flex gap-2">
         <button
           onClick={() => setActiveSubTab("all")}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
@@ -266,6 +274,27 @@ export default function EmailWhatsAppCampaigns({ projectId }: { projectId: strin
           }`}
         >
           Published
+        </button>
+        </div>
+        <button
+          onClick={() => setSortOrder((prev) => prev === "asc" ? "desc" : "asc")}
+          className="mb-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          title={sortOrder === "asc" ? "Sort: Oldest first" : "Sort: Newest first"}
+        >
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {sortOrder === "asc" ? (
+              <>
+                <path d="M3 6h18M3 12h12M3 18h6" />
+                <path d="M19 12v6m0 0l-2-2m2 2l2-2" />
+              </>
+            ) : (
+              <>
+                <path d="M3 6h18M3 12h12M3 18h6" />
+                <path d="M19 18v-6m0 0l-2 2m2-2l2 2" />
+              </>
+            )}
+          </svg>
+          {sortOrder === "asc" ? "Oldest First" : "Newest First"}
         </button>
       </div>
 

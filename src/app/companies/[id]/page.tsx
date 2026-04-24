@@ -120,6 +120,26 @@ export default function CompanyDetailPage() {
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [savingContact, setSavingContact] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState("");
+  const [editLegalNameValue, setEditLegalNameValue] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
+  async function handleSaveName() {
+    if (!company || !editNameValue.trim()) return;
+    setSavingName(true);
+    const { data, error } = await supabaseClient
+      .from("companies")
+      .update({ name: editNameValue.trim(), legal_name: editLegalNameValue.trim() || null })
+      .eq("id", company.id)
+      .select(COMPANY_SELECT)
+      .single();
+    if (!error && data) {
+      setCompany(data as Company);
+      setEditingName(false);
+    }
+    setSavingName(false);
+  }
 
   async function handleSaveContact() {
     if (!editingContact) return;
@@ -435,9 +455,60 @@ export default function CompanyDetailPage() {
               
               <div className="space-y-2">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">{company.name}</h1>
-                  {company.legal_name && (
-                    <p className="text-sm text-slate-500">{company.legal_name}</p>
+                  {editingName ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={editNameValue}
+                        onChange={(e) => setEditNameValue(e.target.value)}
+                        className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-lg font-bold text-black focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 w-72"
+                        placeholder="Company name"
+                        autoFocus
+                      />
+                      <input
+                        type="text"
+                        value={editLegalNameValue}
+                        onChange={(e) => setEditLegalNameValue(e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-black focus:border-violet-400 focus:outline-none w-72"
+                        placeholder="Legal name (optional)"
+                      />
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSaveName}
+                          disabled={savingName || !editNameValue.trim()}
+                          className="rounded-full bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-1.5 text-[11px] font-semibold text-white shadow-lg shadow-violet-500/25 disabled:opacity-50"
+                        >
+                          {savingName ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingName(false)}
+                          disabled={savingName}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 hover:bg-slate-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <div>
+                        <h1 className="text-2xl font-bold text-slate-900">{company.name}</h1>
+                        {company.legal_name && (
+                          <p className="text-sm text-slate-500">{company.legal_name}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setEditNameValue(company.name); setEditLegalNameValue(company.legal_name || ""); setEditingName(true); }}
+                        className="mt-1 inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-600 hover:bg-violet-100 transition-colors"
+                        title="Edit company name"
+                      >
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit Name
+                      </button>
+                    </div>
                   )}
                 </div>
                 

@@ -38,6 +38,9 @@ interface AdminTeamTask {
   activity_date: string | null;
   assigneeName: string;
   assigneeId: string;
+  projectId: string | null;
+  projectName: string | null;
+  source: string | null;
   isOverdue: boolean;
 }
 
@@ -85,6 +88,13 @@ export default function Home() {
   const [weeklyChart, setWeeklyChart] = useState<DayCompletion[]>([]);
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminTaskFilter, setAdminTaskFilter] = useState<"today" | "overdue">("today");
+  // Admin filter/search/pagination
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminUserFilter, setAdminUserFilter] = useState("all");
+  const [adminStatusFilter, setAdminStatusFilter] = useState("all");
+  const [adminSourceFilter, setAdminSourceFilter] = useState("all");
+  const [adminPage, setAdminPage] = useState(1);
+  const ADMIN_PAGE_SIZE = 12;
 
   // Load tasks function - extracted for reuse
   const loadTasks = useCallback(async (userId: string) => {
@@ -304,7 +314,7 @@ export default function Home() {
         // Today's team tasks
         const { data: todayTasks } = await supabaseClient
           .from("tasks")
-          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name")
+          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name, project_id, source")
           .eq("activity_date", todayStr)
           .neq("status", "completed")
           .order("priority", { ascending: true })
@@ -313,12 +323,17 @@ export default function Home() {
         // Overdue tasks (activity_date < today, not completed)
         const { data: overdueTasks } = await supabaseClient
           .from("tasks")
-          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name")
+          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name, project_id, source")
           .lt("activity_date", todayStr)
           .neq("status", "completed")
           .not("activity_date", "is", null)
           .order("activity_date", { ascending: true })
           .limit(50);
+
+        // Fetch project names
+        const { data: projectsData } = await supabaseClient.from("projects").select("id, name");
+        const projectsMap = new Map<string, string>();
+        (projectsData || []).forEach((p: any) => { if (p.id) projectsMap.set(p.id, p.name || "Unnamed"); });
 
         const mapTask = (t: any, overdue: boolean): AdminTeamTask => ({
           id: t.id,
@@ -328,6 +343,9 @@ export default function Home() {
           activity_date: t.activity_date || null,
           assigneeId: t.assigned_user_id || "",
           assigneeName: usersMap.get(t.assigned_user_id) || t.assigned_user_name || "Unassigned",
+          projectId: t.project_id || null,
+          projectName: t.project_id ? (projectsMap.get(t.project_id) || null) : null,
+          source: t.source || null,
           isOverdue: overdue,
         });
 
@@ -715,230 +733,304 @@ export default function Home() {
       </section>
 
       {/* Admin Dashboard Section */}
-      {isAdmin && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Team Productivity Dashboard</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">Admin view — team tasks, overdue items &amp; weekly performance</p>
-            </div>
-            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
-              <button onClick={() => setAdminTaskFilter("today")}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                  adminTaskFilter === "today" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"
-                }`}>Today</button>
-              <button onClick={() => setAdminTaskFilter("overdue")}
-                className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                  adminTaskFilter === "overdue" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"
-                }`}>
-                Overdue
-                {adminOverdueTasks.length > 0 && (
-                  <span className="ml-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">{adminOverdueTasks.length}</span>
-                )}
-              </button>
-            </div>
-          </div>
+      {isAdmin && (() => {
+        const PRIORITY_COLORS: Record<string, string> = {
+          high: "bg-rose-100 text-rose-700",
+          medium: "bg-amber-100 text-amber-700",
+          low: "bg-slate-100 text-slate-600",
+        };
+        const STATUS_COLORS: Record<string, string> = {
+          not_started: "bg-slate-100 text-slate-600",
+          in_progress: "bg-sky-100 text-sky-700",
+          completed: "bg-emerald-100 text-emerald-700",
+        };
+        const STATUS_LABELS: Record<string, string> = {
+          not_started: "Not Started",
+          in_progress: "In Progress",
+          completed: "Done",
+        };
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            {/* Task List Panel */}
-            <div className="lg:col-span-2 rounded-2xl border border-slate-200/60 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.06)] overflow-hidden">
-              <div className="border-b border-slate-100 px-5 py-3 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-800">
-                  {adminTaskFilter === "today" ? (
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
-                      Team Tasks Today
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-rose-500" />
-                      Overdue Tasks
-                    </span>
+        const rawTasks = adminTaskFilter === "today" ? adminTeamTasks : adminOverdueTasks;
+
+        // Unique filter options
+        const uniqueUsers = Array.from(new Set(rawTasks.map(t => t.assigneeName))).sort();
+        const uniqueProjects = Array.from(new Set(rawTasks.map(t => t.projectName).filter(Boolean))).sort() as string[];
+        const uniqueSources = Array.from(new Set(rawTasks.map(t => t.source).filter(Boolean))).sort() as string[];
+
+        // Apply filters
+        const filteredTasks = rawTasks.filter(t => {
+          if (adminSearch && !t.name.toLowerCase().includes(adminSearch.toLowerCase()) && !t.assigneeName.toLowerCase().includes(adminSearch.toLowerCase()) && !(t.projectName || "").toLowerCase().includes(adminSearch.toLowerCase())) return false;
+          if (adminUserFilter !== "all" && t.assigneeName !== adminUserFilter) return false;
+          if (adminStatusFilter !== "all" && t.status !== adminStatusFilter) return false;
+          if (adminSourceFilter !== "all" && t.source !== adminSourceFilter) return false;
+          return true;
+        });
+
+        const totalPages = Math.max(1, Math.ceil(filteredTasks.length / ADMIN_PAGE_SIZE));
+        const safeAdminPage = Math.min(adminPage, totalPages);
+        const pagedTasks = filteredTasks.slice((safeAdminPage - 1) * ADMIN_PAGE_SIZE, safeAdminPage * ADMIN_PAGE_SIZE);
+
+        const resetFilters = () => {
+          setAdminSearch(""); setAdminUserFilter("all"); setAdminStatusFilter("all"); setAdminSourceFilter("all"); setAdminPage(1);
+        };
+        const hasActiveFilters = adminSearch || adminUserFilter !== "all" || adminStatusFilter !== "all" || adminSourceFilter !== "all";
+
+        return (
+          <section className="space-y-5 pb-20">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Team Productivity Dashboard</h2>
+                <p className="text-[11px] text-slate-500 mt-0.5">Admin view — team tasks, overdue items &amp; weekly performance</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 self-start">
+                <button onClick={() => { setAdminTaskFilter("today"); setAdminPage(1); }}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${adminTaskFilter === "today" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
+                  Today
+                </button>
+                <button onClick={() => { setAdminTaskFilter("overdue"); setAdminPage(1); }}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${adminTaskFilter === "overdue" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
+                  Overdue
+                  {adminOverdueTasks.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">{adminOverdueTasks.length}</span>
                   )}
-                </h3>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {adminTaskFilter === "today" ? adminTeamTasks.length : adminOverdueTasks.length} tasks
-                </span>
+                </button>
               </div>
-              {adminLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
-                </div>
-              ) : (() => {
-                const displayTasks = adminTaskFilter === "today" ? adminTeamTasks : adminOverdueTasks;
-                if (displayTasks.length === 0) return (
-                  <div className="flex flex-col items-center justify-center py-10 text-center px-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
-                      <svg className="h-6 w-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                    </div>
-                    <p className="text-sm font-medium text-slate-600">{adminTaskFilter === "today" ? "No tasks scheduled for today" : "No overdue tasks!"}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">{adminTaskFilter === "overdue" ? "Great job keeping up!" : "Team is all caught up"}</p>
-                  </div>
-                );
-                return (
-                  <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto table-scroll">
-                    {displayTasks.map((task) => {
-                      const priorityColors: Record<string, string> = {
-                        high: "bg-rose-100 text-rose-700",
-                        medium: "bg-amber-100 text-amber-700",
-                        low: "bg-slate-100 text-slate-600",
-                      };
-                      const statusColors: Record<string, string> = {
-                        not_started: "bg-slate-100 text-slate-500",
-                        in_progress: "bg-sky-100 text-sky-700",
-                        completed: "bg-emerald-100 text-emerald-700",
-                      };
-                      const statusLabels: Record<string, string> = {
-                        not_started: "Not Started",
-                        in_progress: "In Progress",
-                        completed: "Done",
-                      };
-                      return (
-                        <button key={task.id} type="button"
-                          onClick={() => setSelectedTaskId(task.id)}
-                          className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 transition-colors group">
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
-                            task.isOverdue ? "bg-rose-500" : "bg-sky-500"
-                          }`}>
-                            {task.assigneeName.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-slate-800 truncate group-hover:text-slate-900">{task.name}</p>
-                            <p className="text-[11px] text-slate-500 truncate">{task.assigneeName}{task.activity_date ? ` · ${task.activity_date}` : ""}</p>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {task.priority && (
-                              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${priorityColors[task.priority] || "bg-slate-100 text-slate-500"}`}>
-                                {task.priority}
-                              </span>
-                            )}
-                            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${statusColors[task.status] || "bg-slate-100 text-slate-500"}`}>
-                              {statusLabels[task.status] || task.status}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
             </div>
 
-            {/* Right column: Summary stats + Weekly chart */}
-            <div className="space-y-4">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-sky-50 to-blue-50/40 p-4 shadow-sm">
-                  <p className="text-[10px] font-semibold text-sky-600 uppercase tracking-wide mb-1">Today</p>
-                  <p className="text-2xl font-bold text-slate-900">{adminTeamTasks.length}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">tasks scheduled</p>
-                </div>
-                <div className="rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50 to-pink-50/40 p-4 shadow-sm">
-                  <p className="text-[10px] font-semibold text-rose-600 uppercase tracking-wide mb-1">Overdue</p>
-                  <p className="text-2xl font-bold text-rose-600">{adminOverdueTasks.length}</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">need attention</p>
-                </div>
+            {/* Top Row: Stats + Chart */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Today card */}
+              <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-sky-50 to-blue-50/40 p-5 shadow-sm">
+                <p className="text-[10px] font-semibold text-sky-600 uppercase tracking-wide mb-1">Today</p>
+                <p className="text-3xl font-bold text-slate-900">{adminTeamTasks.length}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">tasks scheduled</p>
               </div>
-
-              {/* Weekly Productivity Bar Chart */}
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
+              {/* Overdue card — links to dedicated page */}
+              <Link href="/admin/overdue" className="rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50 to-pink-50/40 p-5 shadow-sm hover:shadow-md transition-shadow group block">
+                <p className="text-[10px] font-semibold text-rose-600 uppercase tracking-wide mb-1">Overdue</p>
+                <p className="text-3xl font-bold text-rose-600">{adminOverdueTasks.length}</p>
+                <p className="text-[10px] text-slate-500 mt-0.5 group-hover:text-rose-500 transition-colors">need attention → view all</p>
+              </Link>
+              {/* 7-Day Chart */}
+              <div className="sm:col-span-2 rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800">7-Day Completion</h4>
                     <p className="text-[10px] text-slate-500">Tasks completed vs total</p>
                   </div>
                   {!adminLoading && weeklyChart.length > 0 && (() => {
-                    const totCompleted = weeklyChart.reduce((s, d) => s + d.completed, 0);
-                    const totTotal = weeklyChart.reduce((s, d) => s + d.total, 0);
-                    const pct = totTotal > 0 ? Math.round((totCompleted / totTotal) * 100) : 0;
-                    return (
-                      <div className="text-right">
-                        <span className="text-lg font-bold text-slate-900">{pct}%</span>
-                        <p className="text-[10px] text-slate-500">{totCompleted}/{totTotal} done</p>
-                      </div>
-                    );
+                    const tc = weeklyChart.reduce((s, d) => s + d.completed, 0);
+                    const tt = weeklyChart.reduce((s, d) => s + d.total, 0);
+                    return <div className="text-right"><span className="text-lg font-bold text-slate-900">{tt > 0 ? Math.round((tc/tt)*100) : 0}%</span><p className="text-[10px] text-slate-500">{tc}/{tt} done</p></div>;
                   })()}
                 </div>
                 {adminLoading ? (
-                  <div className="h-28 flex items-center justify-center">
-                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
-                  </div>
+                  <div className="h-20 flex items-center justify-center"><div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" /></div>
                 ) : (
-                  <div className="flex items-end gap-1.5 h-28">
+                  <div className="flex items-end gap-1 h-20">
                     {weeklyChart.map((day, idx) => {
                       const maxVal = Math.max(...weeklyChart.map(d => d.total), 1);
-                      const totalH = day.total > 0 ? Math.round((day.total / maxVal) * 96) : 4;
-                      const completedH = day.total > 0 ? Math.round((day.completed / maxVal) * 96) : 0;
+                      const totalH = day.total > 0 ? Math.round((day.total / maxVal) * 72) : 3;
+                      const completedH = day.total > 0 ? Math.round((day.completed / maxVal) * 72) : 0;
                       const isToday = idx === weeklyChart.length - 1;
                       return (
-                        <div key={day.label} className="flex-1 flex flex-col items-center gap-1">
-                          <div className="relative w-full flex flex-col justify-end rounded-t-sm" style={{ height: 96 }}>
-                            {/* Total bar (background) */}
-                            <div
-                              className={`absolute bottom-0 left-0 right-0 rounded-t-md transition-all duration-500 ${
-                                isToday ? "bg-sky-100" : "bg-slate-100"
-                              }`}
-                              style={{ height: totalH }}
-                            />
-                            {/* Completed bar (foreground) */}
-                            <div
-                              className={`absolute bottom-0 left-0 right-0 rounded-t-md transition-all duration-700 ${
-                                isToday ? "bg-sky-500" : "bg-emerald-400"
-                              }`}
-                              style={{ height: completedH }}
-                            />
+                        <div key={day.label} className="flex-1 flex flex-col items-center gap-0.5">
+                          <div className="relative w-full" style={{ height: 72 }}>
+                            <div className={`absolute bottom-0 left-0 right-0 rounded-t-sm ${isToday ? "bg-sky-100" : "bg-slate-100"}`} style={{ height: totalH }} />
+                            <div className={`absolute bottom-0 left-0 right-0 rounded-t-sm ${isToday ? "bg-sky-500" : "bg-violet-400"}`} style={{ height: completedH }} />
                           </div>
-                          <span className={`text-[9px] font-semibold ${isToday ? "text-sky-600" : "text-slate-400"}`}>{day.label}</span>
-                          {day.total > 0 && (
-                            <span className="text-[8px] text-slate-400">{day.completed}/{day.total}</span>
-                          )}
+                          <span className={`text-[8px] font-semibold ${isToday ? "text-sky-600" : "text-slate-400"}`}>{day.label}</span>
+                          {day.total > 0 && <span className="text-[7px] text-slate-400">{day.completed}/{day.total}</span>}
                         </div>
                       );
                     })}
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Completion Rate by Priority */}
-              {!adminLoading && userTaskStats.length > 0 && (
-                <div className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
-                  <h4 className="text-xs font-bold text-slate-800 mb-3">Team Completion Rate</h4>
-                  <div className="space-y-2.5">
-                    {[...userTaskStats]
-                      .filter(u => u.assignedCount > 0)
-                      .sort((a, b) => {
-                        const rateA = a.assignedCount > 0 ? a.completedCount / a.assignedCount : 0;
-                        const rateB = b.assignedCount > 0 ? b.completedCount / b.assignedCount : 0;
-                        return rateB - rateA;
-                      })
-                      .slice(0, 6)
-                      .map(u => {
-                        const rate = u.assignedCount > 0 ? Math.round((u.completedCount / u.assignedCount) * 100) : 0;
-                        const shortName = u.userName.split(" ").map((n: string, i: number) => i === 0 ? n : n.charAt(0) + ".").join(" ");
-                        return (
-                          <div key={u.userId}>
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-[11px] text-slate-700 font-medium truncate flex-1">{shortName}</span>
-                              <span className="text-[10px] font-bold text-slate-500 ml-2">{rate}%</span>
-                            </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${
-                                  rate >= 75 ? "bg-emerald-400" : rate >= 50 ? "bg-amber-400" : "bg-rose-400"
-                                }`}
-                                style={{ width: `${rate}%` }}
-                              />
-                            </div>
+            {/* Team Completion Rate row */}
+            {!adminLoading && userTaskStats.length > 0 && (
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
+                <h4 className="text-xs font-bold text-slate-800 mb-4">Team Completion Rate</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
+                  {[...userTaskStats]
+                    .filter(u => u.assignedCount > 0)
+                    .sort((a, b) => (b.completedCount / (b.assignedCount||1)) - (a.completedCount / (a.assignedCount||1)))
+                    .map(u => {
+                      const rate = u.assignedCount > 0 ? Math.round((u.completedCount / u.assignedCount) * 100) : 0;
+                      const short = u.userName.split(" ").map((n: string, i: number) => i === 0 ? n : n.charAt(0) + ".").join(" ");
+                      return (
+                        <div key={u.userId}>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[11px] text-slate-700 font-medium truncate flex-1">{short}</span>
+                            <span className="text-[10px] font-bold text-slate-500 ml-2">{rate}% <span className="text-slate-300 font-normal">({u.completedCount}/{u.assignedCount})</span></span>
                           </div>
-                        );
-                      })}
+                          <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-500 ${rate >= 75 ? "bg-emerald-400" : rate >= 50 ? "bg-amber-400" : "bg-rose-400"}`} style={{ width: `${rate}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Full-width Task List with search + filters */}
+            <div className="rounded-2xl border border-slate-200/60 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.06)] overflow-hidden">
+              {/* Panel header */}
+              <div className="border-b border-slate-100 px-5 py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${adminTaskFilter === "today" ? "bg-sky-500 animate-pulse" : "bg-rose-500"}`} />
+                    {adminTaskFilter === "today" ? "Team Tasks Today" : "Overdue Tasks"}
+                    <span className="text-[11px] font-normal text-slate-400">({filteredTasks.length} of {rawTasks.length})</span>
+                  </h3>
+                  {hasActiveFilters && (
+                    <button onClick={resetFilters} className="text-[11px] text-rose-500 hover:text-rose-700 font-medium flex items-center gap-1">
+                      <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+                {/* Search + filters row */}
+                <div className="flex flex-wrap gap-2">
+                  <div className="relative flex-1 min-w-[160px]">
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input
+                      type="text"
+                      placeholder="Search tasks, people, projects…"
+                      value={adminSearch}
+                      onChange={e => { setAdminSearch(e.target.value); setAdminPage(1); }}
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-8 pr-3 text-[12px] text-black placeholder:text-slate-400 focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-200"
+                    />
+                  </div>
+                  <select
+                    value={adminUserFilter}
+                    onChange={e => { setAdminUserFilter(e.target.value); setAdminPage(1); }}
+                    className="rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-2.5 text-[12px] text-black focus:border-sky-400 focus:outline-none"
+                  >
+                    <option value="all">All Members</option>
+                    {uniqueUsers.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <select
+                    value={adminStatusFilter}
+                    onChange={e => { setAdminStatusFilter(e.target.value); setAdminPage(1); }}
+                    className="rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-2.5 text-[12px] text-black focus:border-sky-400 focus:outline-none"
+                  >
+                    <option value="all">All Statuses</option>
+                    <option value="not_started">Not Started</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Done</option>
+                  </select>
+                  {uniqueProjects.length > 0 && (
+                    <select
+                      value={adminSourceFilter !== "all" && !["operations","social_workflow"].includes(adminSourceFilter) ? adminSourceFilter : "all"}
+                      onChange={e => { setAdminSourceFilter(e.target.value); setAdminPage(1); }}
+                      className="rounded-lg border border-slate-200 bg-slate-50 py-1.5 px-2.5 text-[12px] text-black focus:border-sky-400 focus:outline-none"
+                    >
+                      <option value="all">All Sources</option>
+                      <option value="operations">Operations</option>
+                      <option value="social_workflow">Social Media</option>
+                      {uniqueSources.filter(s => s !== "operations" && s !== "social_workflow").map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {/* Task rows */}
+              {adminLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+                </div>
+              ) : pagedTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
+                    <svg className="h-6 w-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                  </div>
+                  <p className="text-sm font-medium text-slate-600">{hasActiveFilters ? "No tasks match your filters" : adminTaskFilter === "today" ? "No tasks scheduled for today" : "No overdue tasks!"}</p>
+                  {hasActiveFilters && <button onClick={resetFilters} className="mt-2 text-[11px] text-sky-600 hover:underline">Clear filters</button>}
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-50">
+                  {pagedTasks.map((task) => {
+                    const dateLabel = task.activity_date ? new Date(task.activity_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "";
+                    const avatarColors = ["bg-sky-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-emerald-500","bg-pink-500","bg-indigo-500","bg-orange-500"];
+                    const avatarColor = avatarColors[task.assigneeName.charCodeAt(0) % avatarColors.length];
+                    return (
+                      <button key={task.id} type="button"
+                        onClick={() => setSelectedTaskId(task.id)}
+                        className="flex w-full items-center gap-3 px-5 py-3.5 text-left hover:bg-slate-50/80 transition-colors group">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${avatarColor}`}>
+                          {task.assigneeName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-slate-800 truncate group-hover:text-slate-900">{task.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[11px] text-slate-500 font-medium">{task.assigneeName}</span>
+                            {task.projectName && (
+                              <><span className="text-slate-300">·</span><span className="text-[11px] text-indigo-500 font-medium truncate max-w-[120px]">{task.projectName}</span></>
+                            )}
+                            {dateLabel && (
+                              <><span className="text-slate-300">·</span><span className={`text-[11px] font-medium ${task.isOverdue ? "text-rose-500" : "text-slate-400"}`}>{dateLabel}</span></>
+                            )}
+                            {task.source && (
+                              <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] text-slate-500 font-medium">{task.source === "social_workflow" ? "Social" : task.source}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {task.priority && (
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${PRIORITY_COLORS[task.priority] || "bg-slate-100 text-slate-500"}`}>
+                              {task.priority}
+                            </span>
+                          )}
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[task.status] || "bg-slate-100 text-slate-500"}`}>
+                            {STATUS_LABELS[task.status] || task.status}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
+                  <span className="text-[11px] text-slate-500">
+                    Page {safeAdminPage} of {totalPages} &nbsp;·&nbsp; {filteredTasks.length} tasks
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setAdminPage(p => Math.max(1, p - 1))}
+                      disabled={safeAdminPage === 1}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >← Prev</button>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const start = Math.max(1, Math.min(safeAdminPage - 2, totalPages - 4));
+                      const page = start + i;
+                      if (page > totalPages) return null;
+                      return (
+                        <button key={page} onClick={() => setAdminPage(page)}
+                          className={`rounded-lg w-7 h-7 text-[11px] font-semibold transition-colors ${page === safeAdminPage ? "bg-slate-900 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                          {page}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setAdminPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safeAdminPage === totalPages}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >Next →</button>
                   </div>
                 </div>
               )}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       {selectedTaskId && (
         <TaskDetailModal

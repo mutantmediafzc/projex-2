@@ -64,16 +64,44 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
   }
 
+  const now = new Date();
   const { error } = await supabaseAdmin
     .from("users")
     .update({ 
       work_status,
-      status_updated_at: new Date().toISOString()
+      status_updated_at: now.toISOString()
     })
     .eq("id", user.id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Log attendance: record first time user sets status to "available" each day
+  if (work_status === "available") {
+    const todayStr = now.toISOString().slice(0, 10);
+    // is_late = set available after 09:10 (10-min grace past 09:00)
+    const hours = now.getUTCHours();
+    const minutes = now.getUTCMinutes();
+    // Convert to UTC+4 (Gulf Standard Time) for the office
+    const gstHour = (hours + 4) % 24;
+    const isLate = gstHour > 9 || (gstHour === 9 && minutes >= 10);
+
+    // Upsert: only set first_available_at if not already logged today
+    await supabaseAdmin
+      .from("attendance_logs")
+      .upsert(
+        {
+          user_id: user.id,
+          log_date: todayStr,
+          first_available_at: now.toISOString(),
+          is_late: isLate,
+        },
+        {
+          onConflict: "user_id,log_date",
+          ignoreDuplicates: true, // only insert if no row yet for today
+        }
+      );
   }
 
   return NextResponse.json({ success: true, work_status });

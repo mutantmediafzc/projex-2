@@ -162,6 +162,18 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/admin/scorecards",
+    label: "Scorecards",
+    adminOnly: true,
+    gradient: { from: "from-violet-100 to-purple-100", to: "from-violet-500 to-purple-500", hover: "from-violet-50 to-purple-50", shadow: "shadow-violet-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4"/>
+        <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+      </svg>
+    ),
+  },
+  {
     href: "/chat",
     label: "Chat with Colton",
     gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },

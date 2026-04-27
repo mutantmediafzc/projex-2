@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type UserRow = { id: string; full_name: string | null; email: string | null; designation: string | null };
+type UserRow = { id: string; full_name: string | null; email: string | null; designation: string | null; avatar_url: string | null };
 type Scorecard = {
   id?: string;
   user_id: string;

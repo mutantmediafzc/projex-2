@@ -119,17 +119,19 @@ export default function Home() {
       if (u.id && u.full_name) usersNameMap.set(u.id, u.full_name);
     });
 
-    // Get all tasks with user info
+    // Get all tasks with user info — include updated_at to accurately detect when task was completed
     const { data: allTasks } = await supabaseClient
       .from("tasks")
-      .select("id, status, assigned_user_id, assigned_user_name, created_at, activity_date");
+      .select("id, status, assigned_user_id, assigned_user_name, created_at, updated_at, activity_date");
     
     if (!allTasks) return;
     
-    // Calculate week boundaries
+    // Calculate week boundaries — Monday start
     const now = new Date();
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    const dayOfWeek = now.getDay(); // 0=Sun,1=Mon,...6=Sat
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    weekStart.setDate(now.getDate() - diffToMonday);
     weekStart.setHours(0, 0, 0, 0);
     
     // Group by user
@@ -137,7 +139,7 @@ export default function Home() {
     allTasks.forEach(task => {
       if (!task.assigned_user_id) return;
       const userId = task.assigned_user_id;
-      // Resolve name: users table > assigned_user_name field > "Unknown"
+      // Resolve name: users table > assigned_user_name field > skip
       const resolvedName = usersNameMap.get(userId) || task.assigned_user_name || null;
       if (!resolvedName) return; // skip users with no resolvable name
       if (!userMap.has(userId)) {
@@ -153,9 +155,11 @@ export default function Home() {
       stats.assignedCount++;
       if (task.status === "completed") {
         stats.completedCount++;
-        // Check if completed this week
-        const taskDate = task.activity_date ? new Date(task.activity_date) : new Date(task.created_at);
-        if (taskDate >= weekStart) {
+        // Use updated_at as the "completed at" timestamp (most accurate),
+        // fall back to activity_date then created_at
+        const completedAtStr = task.updated_at || task.activity_date || task.created_at;
+        const completedAt = completedAtStr ? new Date(completedAtStr) : null;
+        if (completedAt && completedAt >= weekStart) {
           stats.completedThisWeek++;
         }
       }
@@ -320,15 +324,14 @@ export default function Home() {
           .order("priority", { ascending: true })
           .limit(50);
 
-        // Overdue tasks (activity_date < today, not completed)
+        // Overdue tasks (activity_date < today, not completed) — no limit so counter is accurate
         const { data: overdueTasks } = await supabaseClient
           .from("tasks")
           .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name, project_id, source")
           .lt("activity_date", todayStr)
           .neq("status", "completed")
           .not("activity_date", "is", null)
-          .order("activity_date", { ascending: true })
-          .limit(50);
+          .order("activity_date", { ascending: true });
 
         // Fetch project names
         const { data: projectsData } = await supabaseClient.from("projects").select("id, name");
@@ -967,7 +970,14 @@ export default function Home() {
               ) : (
                 <div className="divide-y divide-slate-50">
                   {pagedTasks.map((task) => {
-                    const dateLabel = task.activity_date ? new Date(task.activity_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }) : "";
+                    const dateLabel = (() => {
+                      if (!task.activity_date) return "";
+                      const raw = task.activity_date;
+                      const d = raw.includes("T") || raw.includes("Z") || raw.includes("+")
+                        ? new Date(raw)
+                        : new Date(raw + "T00:00:00");
+                      return isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+                    })();
                     const avatarColors = ["bg-sky-500","bg-violet-500","bg-amber-500","bg-rose-500","bg-emerald-500","bg-pink-500","bg-indigo-500","bg-orange-500"];
                     const avatarColor = avatarColors[task.assigneeName.charCodeAt(0) % avatarColors.length];
                     return (

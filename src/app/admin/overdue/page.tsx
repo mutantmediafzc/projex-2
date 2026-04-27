@@ -50,18 +50,34 @@ function avatarColor(name: string) {
   return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 
+function safeParseDateStr(dateStr: string | null): Date | null {
+  if (!dateStr) return null;
+  // If already a full ISO timestamp (contains T or Z or +), parse directly
+  if (dateStr.includes("T") || dateStr.includes("Z") || dateStr.includes("+")) {
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Plain YYYY-MM-DD — append noon UTC to avoid timezone-shift to previous day
+  const d = new Date(dateStr + "T00:00:00");
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "";
-  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+  const d = safeParseDateStr(dateStr);
+  if (!d) return "Invalid Date";
+  return d.toLocaleDateString("en-US", {
     weekday: "short", month: "short", day: "numeric", year: "numeric",
   });
 }
 
 function daysOverdue(dateStr: string | null): number {
   if (!dateStr) return 0;
+  const d = safeParseDateStr(dateStr);
+  if (!d) return 0;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const d = new Date(dateStr + "T00:00:00");
+  d.setHours(0, 0, 0, 0);
   return Math.max(0, Math.floor((today.getTime() - d.getTime()) / 86400000));
 }
 

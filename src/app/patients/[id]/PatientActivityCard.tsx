@@ -2095,17 +2095,9 @@ export default function PatientActivityCard({
 
                       const preview = email.body
                         ? email.body
-                            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-                            .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, "")
-                            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
                             .replace(/<br\s*\/?>(?=\s*\n?)/gi, " ")
                             .replace(/<\/(p|div|li|tr|h[1-6])>/gi, " ")
                             .replace(/<[^>]+>/g, " ")
-                            .replace(/&nbsp;/g, " ")
-                            .replace(/&amp;/g, "&")
-                            .replace(/&lt;/g, "<")
-                            .replace(/&gt;/g, ">")
-                            .replace(/&quot;/g, '"')
                             .replace(/\s+/g, " ")
                             .trim()
                         : "";
@@ -2493,17 +2485,9 @@ export default function PatientActivityCard({
 
                   const preview = email.body
                     ? email.body
-                        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-                        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, "")
-                        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
                         .replace(/<br\s*\/?>(?=\s*\n?)/gi, " ")
                         .replace(/<\/(p|div|li|tr|h[1-6])>/gi, " ")
                         .replace(/<[^>]+>/g, " ")
-                        .replace(/&nbsp;/g, " ")
-                        .replace(/&amp;/g, "&")
-                        .replace(/&lt;/g, "<")
-                        .replace(/&gt;/g, ">")
-                        .replace(/&quot;/g, '"')
                         .replace(/\s+/g, " ")
                         .trim()
                     : "";

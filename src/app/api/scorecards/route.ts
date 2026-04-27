@@ -36,17 +36,32 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("scorecards")
-    .select("*, user:users(id, full_name, email, designation)");
+    .select("*");
 
   if (quarter) query = query.eq("quarter", quarter);
   if (userId) query = query.eq("user_id", userId);
 
   query = query.order("total_score", { ascending: false });
 
-  const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data: scorecards, error } = await query;
+  if (error) {
+    console.error("[scorecards GET error]", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
-  return NextResponse.json({ scorecards: data || [] });
+  // Fetch user details separately (no FK constraint needed)
+  const userIds = [...new Set((scorecards || []).map((s: any) => s.user_id))];
+  const { data: usersData } = userIds.length
+    ? await supabaseAdmin.from("users").select("id, full_name, email, designation").in("id", userIds)
+    : { data: [] };
+  const usersMap = new Map((usersData || []).map((u: any) => [u.id, u]));
+
+  const merged = (scorecards || []).map((s: any) => ({
+    ...s,
+    user: usersMap.get(s.user_id) || null,
+  }));
+
+  return NextResponse.json({ scorecards: merged });
 }
 
 // POST /api/scorecards — create or update a scorecard
@@ -71,8 +86,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const qStart = new Date(quarter_start);
-  const qEnd = new Date(quarter_end);
+  const qStart = new Date(quarter_start + "T00:00:00");
+  const qEnd = new Date(quarter_end + "T23:59:59");
 
   // --- Auto-calculate attendance from attendance_logs ---
   const { data: logs } = await supabaseAdmin
@@ -87,28 +102,26 @@ export async function POST(request: NextRequest) {
   const attendanceScore = getAttendanceScore(lateCount, absentCount);
 
   // --- Auto-calculate on-time delivery from tasks ---
-  const { data: tasks } = await supabaseAdmin
+  // Fetch all assigned tasks in the quarter, filter client-side to handle both date and timestamp formats
+  const { data: allUserTasks } = await supabaseAdmin
     .from("tasks")
     .select("id, status, activity_date, updated_at")
     .eq("assigned_user_id", user_id)
-    .gte("activity_date", quarter_start)
-    .lte("activity_date", quarter_end)
     .not("activity_date", "is", null);
 
-  const totalTasks = (tasks || []).length;
+  const tasks = (allUserTasks || []).filter((t: any) => {
+    if (!t.activity_date) return false;
+    const d = new Date(t.activity_date);
+    return !isNaN(d.getTime()) && d >= qStart && d <= qEnd;
+  });
+
+  const totalTasks = tasks.length;
   let onTimeTasks = 0;
 
-  (tasks || []).forEach((task: any) => {
+  tasks.forEach((task: any) => {
     if (task.status === "completed") {
-      const due = new Date(task.activity_date);
-      const completedAt = task.updated_at ? new Date(task.updated_at) : null;
-      // On time = completed on or before due date
-      if (completedAt && completedAt <= due) {
-        onTimeTasks++;
-      } else if (task.status === "completed") {
-        // If we can't determine exact time, count as on-time if status is completed
-        onTimeTasks++;
-      }
+      // All completed tasks count as on-time (updated_at check is unreliable after bulk migrations)
+      onTimeTasks++;
     }
   });
 
@@ -158,7 +171,10 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[scorecards POST upsert error]", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ scorecard: data });
 }

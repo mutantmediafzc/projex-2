@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { resend, FROM_EMAIL, APP_URL } from "@/lib/resend";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -256,6 +257,15 @@ export async function POST(request: NextRequest) {
       } else if (task) {
         console.log(`[Notify-Workflow] Created task ${task.id} for user ${userId}`);
         notifications.push({ userId, taskId: task.id });
+
+        // Send notification email (non-blocking)
+        const { data: userRow } = await supabaseAdmin.from("users").select("email, full_name").eq("id", userId).single();
+        if (userRow?.email) {
+          const msgBody = taskData.content;
+          const firstName = (userRow.full_name || "").split(" ")[0] || "there";
+          const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8fafc;padding:32px 16px;"><div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;"><div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:20px 28px;"><h2 style="margin:0;color:#fff;font-size:18px;">Projex — Social Media Notification</h2></div><div style="padding:24px 28px;"><p style="font-size:15px;color:#1e293b;">Hi ${firstName},</p><div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin:12px 0 20px;font-size:14px;color:#334155;line-height:1.6;">${msgBody}</div><a href="${APP_URL}/messages" style="display:inline-block;background:#6366f1;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600;">View in Projex →</a></div></div></body></html>`;
+          resend.emails.send({ from: FROM_EMAIL, to: userRow.email, subject: `[Projex] ${taskData.name}`, html }).catch(() => {});
+        }
       }
     }
 

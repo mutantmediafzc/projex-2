@@ -451,6 +451,9 @@ export default function CalendarPage() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [draftMeetLink, setDraftMeetLink] = useState("");
   const [editMeetLink, setEditMeetLink] = useState("");
+  const [attendeeIds, setAttendeeIds] = useState<string[]>([]);
+  const [attendeeSearch, setAttendeeSearch] = useState("");
+  const [showAttendeeSuggestions, setShowAttendeeSuggestions] = useState(false);
 
   const monthStart = useMemo(() => {
     return new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
@@ -1058,6 +1061,7 @@ export default function CalendarPage() {
           reason,
           location: draftLocation || null,
           source: "manual",
+          attendee_ids: attendeeIds.length > 0 ? attendeeIds : [],
         })
         .select(
           "id, patient_id, contact_id, provider_id, start_time, end_time, status, reason, location, patient:patients(id, first_name, last_name, email, phone), contact:contacts(id, first_name, last_name, email, phone), provider:providers(id, name)",
@@ -1114,6 +1118,8 @@ export default function CalendarPage() {
       setBookingStatus("");
       setCreateError(null);
       setCreateDoctorCalendarId("");
+      setAttendeeIds([]);
+      setAttendeeSearch("");
     } catch {
       setCreateError("Failed to create appointment.");
       setSavingCreate(false);
@@ -2246,6 +2252,52 @@ export default function CalendarPage() {
                     className="w-full rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                     placeholder="Add notes for this appointment"
                   />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-medium text-slate-600">Members / Attendees</p>
+                  {attendeeIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-1">
+                      {attendeeIds.map((id) => {
+                        const user = providers.find((p) => p.id === id);
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-700">
+                            {user?.name || id}
+                            <button type="button" onClick={() => setAttendeeIds((prev) => prev.filter((x) => x !== id))} className="ml-0.5 hover:text-sky-900">×</button>
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={attendeeSearch}
+                      onChange={(e) => { setAttendeeSearch(e.target.value); setShowAttendeeSuggestions(true); }}
+                      onFocus={() => setShowAttendeeSuggestions(true)}
+                      placeholder="Search and add members..."
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                    />
+                    {showAttendeeSuggestions && attendeeSearch && (
+                      <div className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 text-xs shadow-lg">
+                        {providers
+                          .filter((p) => (p.name || "").toLowerCase().includes(attendeeSearch.toLowerCase()) && !attendeeIds.includes(p.id))
+                          .slice(0, 8)
+                          .map((p) => (
+                            <button
+                              key={p.id}
+                              type="button"
+                              className="flex w-full items-center px-3 py-1.5 text-left hover:bg-slate-50"
+                              onClick={() => { setAttendeeIds((prev) => [...prev, p.id]); setAttendeeSearch(""); setShowAttendeeSuggestions(false); }}
+                            >
+                              <span className="text-[11px] font-medium text-slate-800">{p.name}</span>
+                            </button>
+                          ))}
+                        {providers.filter((p) => (p.name || "").toLowerCase().includes(attendeeSearch.toLowerCase()) && !attendeeIds.includes(p.id)).length === 0 && (
+                          <div className="px-3 py-1.5 text-[11px] text-slate-500">No users found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[11px] font-medium text-slate-600">Company <span className="text-slate-400">(optional)</span></p>

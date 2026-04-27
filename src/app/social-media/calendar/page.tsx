@@ -35,6 +35,7 @@ type Post = {
   danote_board_id: string | null;
   platform_budgets: Record<string, number>;
   published_urls: Record<string, string>;
+  assigned_creative_ids: string[];
   created_at: string;
   project?: {
     id: string;
@@ -142,6 +143,21 @@ export default function ContentCalendar2026() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
 
+  // Users map for assigned creatives display
+  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    async function fetchUsers() {
+      const { data } = await supabaseClient.from("users").select("id, full_name").order("full_name");
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const u of data) map[u.id] = u.full_name || u.id;
+        setUsersMap(map);
+      }
+    }
+    fetchUsers();
+  }, []);
+
   useEffect(() => {
     if (!roleLoading) {
       loadData();
@@ -198,7 +214,7 @@ export default function ContentCalendar2026() {
         id, project_id, platforms, subject, caption, media_urls, scheduled_date, scheduled_time,
         status, workflow_status, hashtags, post_type, content_type, image_asset_url, video_url,
         first_comment, shoot_status, shoot_date, shoot_time, shoot_count, raw_assets_link, shoot_notes,
-        creative_notes, danote_board_id, platform_budgets, published_urls, created_at,
+        creative_notes, danote_board_id, platform_budgets, published_urls, assigned_creative_ids, created_at,
         project:social_projects!inner(id, name, brand_color, status, company:companies(id, name, logo_url))
       `)
       .in("project.status", ["active", "paused"])
@@ -772,12 +788,13 @@ export default function ContentCalendar2026() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap">Caption</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-36">Type</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-40">Assigned Creatives</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {filteredPosts.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-sm text-slate-500">
+                      <td colSpan={9} className="px-4 py-8 text-center text-sm text-slate-500">
                         No posts found matching your filters
                       </td>
                     </tr>
@@ -862,6 +879,19 @@ export default function ContentCalendar2026() {
                                 <span className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
                                 {WORKFLOW_LABELS[post.workflow_status || "captions"]}
                               </span>
+                            </td>
+                            <td className="px-4 py-3 w-40">
+                              {post.assigned_creative_ids && post.assigned_creative_ids.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {post.assigned_creative_ids.map((id) => (
+                                    <span key={id} className="inline-flex items-center rounded-full bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700 whitespace-nowrap">
+                                      {usersMap[id] || id}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-slate-400">—</span>
+                              )}
                             </td>
                           </tr>
                         );

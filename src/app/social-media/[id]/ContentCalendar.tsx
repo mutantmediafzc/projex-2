@@ -43,6 +43,7 @@ type Post = {
   danote_board_id: string | null;
   platform_budgets: Record<string, number>;
   published_urls: Record<string, string>;
+  assigned_creative_ids: string[];
   created_at: string;
 };
 

@@ -575,6 +575,24 @@ export default function ProjectNotesTasksCard({
           .from("project_note_mentions")
           .insert(mentionRows);
 
+        // Send email notification to each mentioned user (non-blocking)
+        const currentProject = await supabaseClient.from("projects").select("name").eq("id", projectId).single();
+        const projectName = currentProject.data?.name || null;
+        for (const uid of mentionedUserIds) {
+          fetch("/api/notifications/email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: uid,
+              type: "note",
+              body: trimmed,
+              authorName: (data as any).author_name || null,
+              projectName,
+              linkPath: `/projects/${projectId}`,
+            }),
+          }).catch(() => {});
+        }
+
         // Refresh unread count for mentioned users
         refreshUnread().catch(() => {});
       }
@@ -943,6 +961,25 @@ export default function ProjectNotesTasksCard({
         await supabaseClient
           .from("task_comment_mentions")
           .insert(mentionRows);
+
+        const taskName = selectedTaskGroup?.name || null;
+        const currentProject2 = await supabaseClient.from("projects").select("name").eq("id", projectId).single();
+        const projectName2 = currentProject2.data?.name || null;
+        for (const uid of mentionedUserIds) {
+          fetch("/api/notifications/email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: uid,
+              type: "task_comment",
+              body: newCommentBody.trim(),
+              authorName: (data as any).author_name || null,
+              projectName: projectName2,
+              taskName,
+              linkPath: `/projects/${projectId}`,
+            }),
+          }).catch(() => {});
+        }
 
         refreshUnread().catch(() => {});
       }

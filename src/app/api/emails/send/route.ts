@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resend, FROM_EMAIL } from "@/lib/resend";
 
 export async function POST(request: Request) {
   try {
@@ -28,18 +29,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Email sending is intentionally disabled: no external provider is configured.
-    return NextResponse.json(
-      {
-        error:
-          "Email sending is disabled in this project (no email provider configured).",
-      },
-      { status: 503 },
-    );
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: trimmedTo,
+      subject: trimmedSubject,
+      html: trimmedHtml,
+      replyTo: fromUserEmail || undefined,
+    });
+
+    if (error) {
+      console.error("Resend error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, id: data?.id });
   } catch (error) {
-    console.error("Error in /api/emails/send (email disabled)", error);
+    console.error("Error in /api/emails/send", error);
     return NextResponse.json(
-      { error: "Failed to handle email send request" },
+      { error: "Failed to send email" },
       { status: 500 },
     );
   }

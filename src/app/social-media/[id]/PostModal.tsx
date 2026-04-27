@@ -53,6 +53,7 @@ type Post = {
   danote_board_id: string | null;
   platform_budgets: Record<string, number>;
   published_urls: Record<string, string>;
+  assigned_creative_ids: string[];
   created_at: string;
 };
 
@@ -131,6 +132,10 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
   
   // Creatives
   const [creativeNotes, setCreativeNotes] = useState(post?.creative_notes || "");
+  const [assignedCreativeIds, setAssignedCreativeIds] = useState<string[]>(post?.assigned_creative_ids || []);
+  const [creativeSearch, setCreativeSearch] = useState("");
+  const [showCreativeSuggestions, setShowCreativeSuggestions] = useState(false);
+  const [allUsers, setAllUsers] = useState<{ id: string; name: string }[]>([]);
   
   // Danote board association
   const [danoteBoardId, setDanoteBoardId] = useState(post?.danote_board_id || "");
@@ -172,9 +177,19 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
       setRawAssetsLink(post.raw_assets_link || "");
       setShootNotes(post.shoot_notes || "");
       setCreativeNotes(post.creative_notes || "");
+      setAssignedCreativeIds(post.assigned_creative_ids || []);
       setDanoteBoardId(post.danote_board_id || "");
     }
   }, [post]);
+
+  // Fetch all users for Assigned Creatives
+  useEffect(() => {
+    async function fetchUsers() {
+      const { data } = await supabaseClient.from("users").select("id, full_name").order("full_name");
+      if (data) setAllUsers(data.map((u: any) => ({ id: u.id, name: u.full_name || u.id })));
+    }
+    fetchUsers();
+  }, []);
 
   // Fetch Danote boards
   useEffect(() => {
@@ -272,6 +287,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
       raw_assets_link: rawAssetsLink || null,
       shoot_notes: shootNotes || null,
       creative_notes: creativeNotes || null,
+      assigned_creative_ids: assignedCreativeIds,
       danote_board_id: danoteBoardId || null,
       platform_budgets: platformBudgets,
     };
@@ -795,6 +811,54 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
                 Creatives
               </h3>
               
+              {/* Assigned Creatives */}
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-slate-600">🎨 Assigned Creatives</label>
+                {assignedCreativeIds.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {assignedCreativeIds.map((id) => {
+                      const user = allUsers.find((u) => u.id === id);
+                      return (
+                        <span key={id} className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700">
+                          {user?.name || id}
+                          <button type="button" onClick={() => setAssignedCreativeIds((prev) => prev.filter((x) => x !== id))} className="ml-0.5 hover:text-purple-900">×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={creativeSearch}
+                    onChange={(e) => { setCreativeSearch(e.target.value); setShowCreativeSuggestions(true); }}
+                    onFocus={() => setShowCreativeSuggestions(true)}
+                    placeholder="Search and add creatives..."
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black placeholder:text-slate-400 focus:border-purple-300 focus:outline-none"
+                  />
+                  {showCreativeSuggestions && creativeSearch && (
+                    <div className="absolute z-20 mt-1 max-h-40 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                      {allUsers
+                        .filter((u) => u.name.toLowerCase().includes(creativeSearch.toLowerCase()) && !assignedCreativeIds.includes(u.id))
+                        .slice(0, 8)
+                        .map((u) => (
+                          <button key={u.id} type="button"
+                            className="flex w-full items-center px-3 py-2 text-left text-sm hover:bg-purple-50"
+                            onClick={() => { setAssignedCreativeIds((prev) => [...prev, u.id]); setCreativeSearch(""); setShowCreativeSuggestions(false); }}>
+                            <span className="font-medium text-slate-800">{u.name}</span>
+                          </button>
+                        ))}
+                      {allUsers.filter((u) => u.name.toLowerCase().includes(creativeSearch.toLowerCase()) && !assignedCreativeIds.includes(u.id)).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-slate-400">No users found</div>
+                      )}
+                    </div>
+                  )}
+                  {showCreativeSuggestions && (
+                    <div className="fixed inset-0 z-10" onClick={() => setShowCreativeSuggestions(false)} />
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📝 Creative Notes</label>
                 <textarea value={creativeNotes} onChange={(e) => setCreativeNotes(e.target.value)} rows={3}

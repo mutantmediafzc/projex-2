@@ -729,6 +729,13 @@ export default function SEOWorkflows({ projectId }: { projectId: string }) {
         await supabaseClient.from("workflow_step_mentions").insert(mentionedIds.map(uid => ({
           project_id: projectId, step_id: stepId, mentioned_user_id: uid, comment_body: body.trim(), author_name: userName
         })));
+        for (const uid of mentionedIds) {
+          fetch("/api/notifications/email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: uid, type: "workflow", body: body.trim(), authorName: userName, linkPath: `/projects/${projectId}` }),
+          }).catch(() => {});
+        }
       } catch (e) { console.warn("Mentions table not ready:", e); }
     }
   }

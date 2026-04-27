@@ -171,6 +171,7 @@ export default function DesignWorkflows({ projectId }: { projectId: string }) {
       status: "not_started", priority: "high", type: "todo",
       created_by_user_id: auth.user.id, created_by_name: name,
       assigned_user_id: userId, assigned_user_name: userName, source: "admin",
+      activity_date: new Date().toISOString().slice(0, 10),
     }).select("id").single();
     return t?.id || null;
   }

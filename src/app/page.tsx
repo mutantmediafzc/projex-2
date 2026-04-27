@@ -76,6 +76,7 @@ export default function Home() {
   const [workflowStats, setWorkflowStats] = useState<WorkflowStats>({ total: 0, avgCompletion: 0, completed: 0 });
   const [userTaskStats, setUserTaskStats] = useState<UserTaskStats[]>([]);
   const [chartsLoading, setChartsLoading] = useState(true);
+  const [userStatsRefreshCount, setUserStatsRefreshCount] = useState(0);
 
   const { unreadCount } = useMessagesUnread();
   const { role } = useUserRole();
@@ -88,6 +89,7 @@ export default function Home() {
   const [weeklyChart, setWeeklyChart] = useState<DayCompletion[]>([]);
   const [adminLoading, setAdminLoading] = useState(true);
   const [adminTaskFilter, setAdminTaskFilter] = useState<"today" | "overdue">("today");
+  const [adminRefreshCount, setAdminRefreshCount] = useState(0);
   // Admin filter/search/pagination
   const [adminSearch, setAdminSearch] = useState("");
   const [adminUserFilter, setAdminUserFilter] = useState("all");
@@ -166,6 +168,7 @@ export default function Home() {
     });
     
     setUserTaskStats(Array.from(userMap.values()));
+    setUserStatsRefreshCount(c => c + 1);
   }, []);
 
   // Handle task status change - refresh tasks list
@@ -324,14 +327,23 @@ export default function Home() {
           .order("priority", { ascending: true })
           .limit(50);
 
-        // Overdue tasks (activity_date < today, not completed) — no limit so counter is accurate
-        const { data: overdueTasks } = await supabaseClient
+        // Overdue tasks — fetch all non-completed with activity_date set, then filter client-side
+        // (DB lt filter misses ISO timestamps like "2026-01-15T10:00:00+00:00" vs plain "2026-01-15")
+        const { data: allPendingTasks } = await supabaseClient
           .from("tasks")
           .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name, project_id, source")
-          .lt("activity_date", todayStr)
           .neq("status", "completed")
-          .not("activity_date", "is", null)
-          .order("activity_date", { ascending: true });
+          .not("activity_date", "is", null);
+
+        const todayMidnight = new Date(todayStr + "T00:00:00");
+        const overdueTasks = (allPendingTasks || []).filter((t: any) => {
+          if (!t.activity_date) return false;
+          const raw = String(t.activity_date);
+          const d = raw.includes("T") || raw.includes("Z") || raw.includes("+")
+            ? new Date(raw)
+            : new Date(raw + "T00:00:00");
+          return !isNaN(d.getTime()) && d < todayMidnight;
+        });
 
         // Fetch project names
         const { data: projectsData } = await supabaseClient.from("projects").select("id, name");
@@ -371,6 +383,7 @@ export default function Home() {
           days.push({ label, completed, total });
         }
         setWeeklyChart(days);
+        setAdminRefreshCount(c => c + 1);
       } catch (e) {
         console.error("Admin data load error:", e);
       } finally {
@@ -380,11 +393,12 @@ export default function Home() {
 
     void loadAdminData();
 
-    // Real-time subscription: reload admin tasks whenever any task changes
+    // Real-time subscription: reload admin tasks + user stats whenever any task changes
     const channel = supabaseClient
       .channel("admin-tasks-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
         void loadAdminData();
+        void loadUserStats();
       })
       .subscribe();
 
@@ -535,7 +549,7 @@ export default function Home() {
         </div>
 
         {/* Task Leaderboard - Most Assigned */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-amber-50/30 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
+        <div key={`warriors-${userStatsRefreshCount}`} className="stat-flash relative overflow-hidden rounded-2xl border border-slate-200/60 bg-gradient-to-br from-white via-white to-amber-50/30 p-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)]">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/10 to-amber-600/5" />
           <div className="relative">
             <div className="flex items-center gap-2 mb-3">
@@ -568,7 +582,7 @@ export default function Home() {
         </div>
 
         {/* MVP of the Week */}
-        <div className="relative overflow-hidden rounded-2xl border border-purple-200/60 bg-gradient-to-br from-purple-50 via-white to-pink-50/30 p-5 shadow-[0_20px_50px_rgba(139,92,246,0.12)]">
+        <div key={`mvp-${userStatsRefreshCount}`} className="stat-flash relative overflow-hidden rounded-2xl border border-purple-200/60 bg-gradient-to-br from-purple-50 via-white to-pink-50/30 p-5 shadow-[0_20px_50px_rgba(139,92,246,0.12)]">
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gradient-to-br from-purple-400/20 to-pink-400/10" />
           <div className="absolute right-3 top-3">
             <span className="text-2xl">👑</span>
@@ -816,19 +830,19 @@ export default function Home() {
             {/* Top Row: Stats + Chart */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {/* Today card */}
-              <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-sky-50 to-blue-50/40 p-5 shadow-sm">
+              <div key={`today-${adminRefreshCount}`} className="stat-flash rounded-2xl border border-slate-200/60 bg-gradient-to-br from-sky-50 to-blue-50/40 p-5 shadow-sm">
                 <p className="text-[10px] font-semibold text-sky-600 uppercase tracking-wide mb-1">Today</p>
                 <p className="text-3xl font-bold text-slate-900">{adminTeamTasks.length}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5">tasks scheduled</p>
               </div>
               {/* Overdue card — links to dedicated page */}
-              <Link href="/admin/overdue" className="rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50 to-pink-50/40 p-5 shadow-sm hover:shadow-md transition-shadow group block">
+              <Link key={`overdue-${adminRefreshCount}`} href="/admin/overdue" className="stat-flash rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50 to-pink-50/40 p-5 shadow-sm hover:shadow-md transition-shadow group block">
                 <p className="text-[10px] font-semibold text-rose-600 uppercase tracking-wide mb-1">Overdue</p>
                 <p className="text-3xl font-bold text-rose-600">{adminOverdueTasks.length}</p>
                 <p className="text-[10px] text-slate-500 mt-0.5 group-hover:text-rose-500 transition-colors">need attention → view all</p>
               </Link>
               {/* 7-Day Chart */}
-              <div className="sm:col-span-2 rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
+              <div key={`chart-${adminRefreshCount}`} className="stat-flash sm:col-span-2 rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <h4 className="text-xs font-bold text-slate-800">7-Day Completion</h4>
@@ -867,7 +881,7 @@ export default function Home() {
 
             {/* Team Completion Rate row */}
             {!adminLoading && userTaskStats.length > 0 && (
-              <div className="rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
+              <div key={`completion-${adminRefreshCount}`} className="stat-flash rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm">
                 <h4 className="text-xs font-bold text-slate-800 mb-4">Team Completion Rate</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
                   {[...userTaskStats]

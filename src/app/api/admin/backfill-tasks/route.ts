@@ -52,30 +52,47 @@ export async function POST() {
       }
     }
 
-    // Step 2: Find social_workflow tasks with null activity_date — set to today (they were created today)
     const todayStr = new Date().toISOString().slice(0, 10);
-    const { data: tasksNeedingDate, error: e2 } = await supabaseAdmin
+
+    // Step 2a: Fix tasks with NULL activity_date — all sources, use created_at as fallback
+    const { data: tasksNullDate } = await supabaseAdmin
       .from("tasks")
       .select("id, created_at")
-      .eq("source", "social_workflow")
       .is("activity_date", null);
 
-    if (e2) {
-      console.error("Backfill: error fetching tasks needing activity_date:", e2);
-    }
+    // Step 2b: Fetch ALL tasks to find those with malformed ISO activity_date (contains "T")
+    const { data: allTaskDates } = await supabaseAdmin
+      .from("tasks")
+      .select("id, activity_date, created_at")
+      .not("activity_date", "is", null);
 
     let dateBackfillCount = 0;
-    if (tasksNeedingDate && tasksNeedingDate.length > 0) {
-      for (const task of tasksNeedingDate) {
-        // Use the task's created_at date as fallback activity_date
-        const fallbackDate = (task as any).created_at
-          ? String((task as any).created_at).slice(0, 10)
-          : todayStr;
-        await supabaseAdmin
-          .from("tasks")
-          .update({ activity_date: fallbackDate })
-          .eq("id", (task as any).id);
-        dateBackfillCount++;
+
+    // Fix null activity_date
+    for (const task of (tasksNullDate || [])) {
+      const fallbackDate = (task as any).created_at
+        ? String((task as any).created_at).slice(0, 10)
+        : todayStr;
+      await supabaseAdmin
+        .from("tasks")
+        .update({ activity_date: fallbackDate })
+        .eq("id", (task as any).id);
+      dateBackfillCount++;
+    }
+
+    // Fix malformed ISO timestamps — normalize to YYYY-MM-DD
+    for (const task of (allTaskDates || [])) {
+      const raw = String((task as any).activity_date || "");
+      // If it contains T, Z, or + it's a full ISO timestamp, not YYYY-MM-DD
+      if (raw.includes("T") || raw.includes("Z") || (raw.includes("+") && raw.length > 10)) {
+        const normalized = raw.slice(0, 10);
+        if (normalized.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          await supabaseAdmin
+            .from("tasks")
+            .update({ activity_date: normalized })
+            .eq("id", (task as any).id);
+          dateBackfillCount++;
+        }
       }
     }
 

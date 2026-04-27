@@ -737,3 +737,32 @@ textarea::placeholder {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Table horizontal scroll — thin, auto-hides when not hovered */
+.table-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.table-scroll:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+}
+
+.table-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+  transition: background 0.3s ease;
+}
+
+.table-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.7);
+}

@@ -776,8 +776,8 @@ export default function ContentCalendar2026() {
             </div>
           ) : viewMode === "list" ? (
             /* List View */
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-              <table className="w-full min-w-[1000px]">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto table-scroll">
+              <table className="w-full min-w-[1200px]">
                 <thead className="bg-slate-50 border-b border-slate-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase whitespace-nowrap w-28">Date</th>

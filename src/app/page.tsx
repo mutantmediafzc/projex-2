@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useMessagesUnread } from "@/components/MessagesUnreadContext";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 import DubaiInfoPill from "@/components/DubaiInfoPill";
 import TaskDetailModal from "@/components/TaskDetailModal";
 
@@ -27,6 +28,23 @@ interface UserTaskStats {
   assignedCount: number;
   completedCount: number;
   completedThisWeek: number;
+}
+
+interface AdminTeamTask {
+  id: string;
+  name: string;
+  status: string;
+  priority: string | null;
+  activity_date: string | null;
+  assigneeName: string;
+  assigneeId: string;
+  isOverdue: boolean;
+}
+
+interface DayCompletion {
+  label: string; // "Mon", "Tue" etc
+  completed: number;
+  total: number;
 }
 
 const PROJECT_TYPE_COLORS: Record<string, { bg: string; text: string; ring: string }> = {
@@ -57,7 +75,16 @@ export default function Home() {
   const [chartsLoading, setChartsLoading] = useState(true);
 
   const { unreadCount } = useMessagesUnread();
+  const { role } = useUserRole();
+  const isAdmin = role === "admin" || role === "hr";
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  // Admin state
+  const [adminTeamTasks, setAdminTeamTasks] = useState<AdminTeamTask[]>([]);
+  const [adminOverdueTasks, setAdminOverdueTasks] = useState<AdminTeamTask[]>([]);
+  const [weeklyChart, setWeeklyChart] = useState<DayCompletion[]>([]);
+  const [adminLoading, setAdminLoading] = useState(true);
+  const [adminTaskFilter, setAdminTaskFilter] = useState<"today" | "overdue">("today");
 
   // Load tasks function - extracted for reuse
   const loadTasks = useCallback(async (userId: string) => {
@@ -73,6 +100,15 @@ export default function Home() {
 
   // Load user task stats
   const loadUserStats = useCallback(async () => {
+    // Fetch all users for name resolution
+    const { data: usersData } = await supabaseClient
+      .from("users")
+      .select("id, full_name");
+    const usersNameMap = new Map<string, string>();
+    (usersData || []).forEach((u: any) => {
+      if (u.id && u.full_name) usersNameMap.set(u.id, u.full_name);
+    });
+
     // Get all tasks with user info
     const { data: allTasks } = await supabaseClient
       .from("tasks")
@@ -91,10 +127,13 @@ export default function Home() {
     allTasks.forEach(task => {
       if (!task.assigned_user_id) return;
       const userId = task.assigned_user_id;
+      // Resolve name: users table > assigned_user_name field > "Unknown"
+      const resolvedName = usersNameMap.get(userId) || task.assigned_user_name || null;
+      if (!resolvedName) return; // skip users with no resolvable name
       if (!userMap.has(userId)) {
         userMap.set(userId, {
           userId,
-          userName: task.assigned_user_name || "Unknown",
+          userName: resolvedName,
           assignedCount: 0,
           completedCount: 0,
           completedThisWeek: 0,
@@ -247,6 +286,79 @@ export default function Home() {
 
     return () => { cancelled = true; };
   }, [loadTasks, loadUserStats]);
+
+  // Admin data loading
+  useEffect(() => {
+    if (!isAdmin) { setAdminLoading(false); return; }
+
+    async function loadAdminData() {
+      setAdminLoading(true);
+      try {
+        // Fetch all users for name resolution
+        const { data: usersData } = await supabaseClient.from("users").select("id, full_name");
+        const usersMap = new Map<string, string>();
+        (usersData || []).forEach((u: any) => { if (u.id) usersMap.set(u.id, u.full_name || "Unknown"); });
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        // Today's team tasks
+        const { data: todayTasks } = await supabaseClient
+          .from("tasks")
+          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name")
+          .eq("activity_date", todayStr)
+          .neq("status", "completed")
+          .order("priority", { ascending: true })
+          .limit(50);
+
+        // Overdue tasks (activity_date < today, not completed)
+        const { data: overdueTasks } = await supabaseClient
+          .from("tasks")
+          .select("id, name, status, priority, activity_date, assigned_user_id, assigned_user_name")
+          .lt("activity_date", todayStr)
+          .neq("status", "completed")
+          .not("activity_date", "is", null)
+          .order("activity_date", { ascending: true })
+          .limit(50);
+
+        const mapTask = (t: any, overdue: boolean): AdminTeamTask => ({
+          id: t.id,
+          name: t.name || "Untitled",
+          status: t.status || "not_started",
+          priority: t.priority || null,
+          activity_date: t.activity_date || null,
+          assigneeId: t.assigned_user_id || "",
+          assigneeName: usersMap.get(t.assigned_user_id) || t.assigned_user_name || "Unassigned",
+          isOverdue: overdue,
+        });
+
+        setAdminTeamTasks((todayTasks || []).map((t: any) => mapTask(t, false)));
+        setAdminOverdueTasks((overdueTasks || []).map((t: any) => mapTask(t, true)));
+
+        // Weekly chart: last 7 days completed vs total
+        const days: DayCompletion[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dayStr = d.toISOString().slice(0, 10);
+          const label = d.toLocaleDateString("en", { weekday: "short" });
+          const { data: dayTasks } = await supabaseClient
+            .from("tasks")
+            .select("id, status")
+            .eq("activity_date", dayStr);
+          const total = (dayTasks || []).length;
+          const completed = (dayTasks || []).filter((t: any) => t.status === "completed").length;
+          days.push({ label, completed, total });
+        }
+        setWeeklyChart(days);
+      } catch (e) {
+        console.error("Admin data load error:", e);
+      } finally {
+        setAdminLoading(false);
+      }
+    }
+
+    void loadAdminData();
+  }, [isAdmin]);
 
   // Computed leaderboards
   const taskAssignedLeaderboard = useMemo(() => 
@@ -601,6 +713,232 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Admin Dashboard Section */}
+      {isAdmin && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Team Productivity Dashboard</h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">Admin view — team tasks, overdue items &amp; weekly performance</p>
+            </div>
+            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1">
+              <button onClick={() => setAdminTaskFilter("today")}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                  adminTaskFilter === "today" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"
+                }`}>Today</button>
+              <button onClick={() => setAdminTaskFilter("overdue")}
+                className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                  adminTaskFilter === "overdue" ? "bg-white shadow text-slate-900" : "text-slate-500 hover:text-slate-700"
+                }`}>
+                Overdue
+                {adminOverdueTasks.length > 0 && (
+                  <span className="ml-1.5 rounded-full bg-rose-500 px-1.5 py-0.5 text-[9px] font-bold text-white">{adminOverdueTasks.length}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            {/* Task List Panel */}
+            <div className="lg:col-span-2 rounded-2xl border border-slate-200/60 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.06)] overflow-hidden">
+              <div className="border-b border-slate-100 px-5 py-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-800">
+                  {adminTaskFilter === "today" ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
+                      Team Tasks Today
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-rose-500" />
+                      Overdue Tasks
+                    </span>
+                  )}
+                </h3>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {adminTaskFilter === "today" ? adminTeamTasks.length : adminOverdueTasks.length} tasks
+                </span>
+              </div>
+              {adminLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+                </div>
+              ) : (() => {
+                const displayTasks = adminTaskFilter === "today" ? adminTeamTasks : adminOverdueTasks;
+                if (displayTasks.length === 0) return (
+                  <div className="flex flex-col items-center justify-center py-10 text-center px-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 mb-3">
+                      <svg className="h-6 w-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                    </div>
+                    <p className="text-sm font-medium text-slate-600">{adminTaskFilter === "today" ? "No tasks scheduled for today" : "No overdue tasks!"}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{adminTaskFilter === "overdue" ? "Great job keeping up!" : "Team is all caught up"}</p>
+                  </div>
+                );
+                return (
+                  <div className="divide-y divide-slate-50 max-h-80 overflow-y-auto table-scroll">
+                    {displayTasks.map((task) => {
+                      const priorityColors: Record<string, string> = {
+                        high: "bg-rose-100 text-rose-700",
+                        medium: "bg-amber-100 text-amber-700",
+                        low: "bg-slate-100 text-slate-600",
+                      };
+                      const statusColors: Record<string, string> = {
+                        not_started: "bg-slate-100 text-slate-500",
+                        in_progress: "bg-sky-100 text-sky-700",
+                        completed: "bg-emerald-100 text-emerald-700",
+                      };
+                      const statusLabels: Record<string, string> = {
+                        not_started: "Not Started",
+                        in_progress: "In Progress",
+                        completed: "Done",
+                      };
+                      return (
+                        <button key={task.id} type="button"
+                          onClick={() => setSelectedTaskId(task.id)}
+                          className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-slate-50 transition-colors group">
+                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white ${
+                            task.isOverdue ? "bg-rose-500" : "bg-sky-500"
+                          }`}>
+                            {task.assigneeName.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-semibold text-slate-800 truncate group-hover:text-slate-900">{task.name}</p>
+                            <p className="text-[11px] text-slate-500 truncate">{task.assigneeName}{task.activity_date ? ` · ${task.activity_date}` : ""}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {task.priority && (
+                              <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${priorityColors[task.priority] || "bg-slate-100 text-slate-500"}`}>
+                                {task.priority}
+                              </span>
+                            )}
+                            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${statusColors[task.status] || "bg-slate-100 text-slate-500"}`}>
+                              {statusLabels[task.status] || task.status}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Right column: Summary stats + Weekly chart */}
+            <div className="space-y-4">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-slate-200/60 bg-gradient-to-br from-sky-50 to-blue-50/40 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold text-sky-600 uppercase tracking-wide mb-1">Today</p>
+                  <p className="text-2xl font-bold text-slate-900">{adminTeamTasks.length}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">tasks scheduled</p>
+                </div>
+                <div className="rounded-2xl border border-rose-200/60 bg-gradient-to-br from-rose-50 to-pink-50/40 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold text-rose-600 uppercase tracking-wide mb-1">Overdue</p>
+                  <p className="text-2xl font-bold text-rose-600">{adminOverdueTasks.length}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">need attention</p>
+                </div>
+              </div>
+
+              {/* Weekly Productivity Bar Chart */}
+              <div className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-800">7-Day Completion</h4>
+                    <p className="text-[10px] text-slate-500">Tasks completed vs total</p>
+                  </div>
+                  {!adminLoading && weeklyChart.length > 0 && (() => {
+                    const totCompleted = weeklyChart.reduce((s, d) => s + d.completed, 0);
+                    const totTotal = weeklyChart.reduce((s, d) => s + d.total, 0);
+                    const pct = totTotal > 0 ? Math.round((totCompleted / totTotal) * 100) : 0;
+                    return (
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-slate-900">{pct}%</span>
+                        <p className="text-[10px] text-slate-500">{totCompleted}/{totTotal} done</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+                {adminLoading ? (
+                  <div className="h-28 flex items-center justify-center">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+                  </div>
+                ) : (
+                  <div className="flex items-end gap-1.5 h-28">
+                    {weeklyChart.map((day, idx) => {
+                      const maxVal = Math.max(...weeklyChart.map(d => d.total), 1);
+                      const totalH = day.total > 0 ? Math.round((day.total / maxVal) * 96) : 4;
+                      const completedH = day.total > 0 ? Math.round((day.completed / maxVal) * 96) : 0;
+                      const isToday = idx === weeklyChart.length - 1;
+                      return (
+                        <div key={day.label} className="flex-1 flex flex-col items-center gap-1">
+                          <div className="relative w-full flex flex-col justify-end rounded-t-sm" style={{ height: 96 }}>
+                            {/* Total bar (background) */}
+                            <div
+                              className={`absolute bottom-0 left-0 right-0 rounded-t-md transition-all duration-500 ${
+                                isToday ? "bg-sky-100" : "bg-slate-100"
+                              }`}
+                              style={{ height: totalH }}
+                            />
+                            {/* Completed bar (foreground) */}
+                            <div
+                              className={`absolute bottom-0 left-0 right-0 rounded-t-md transition-all duration-700 ${
+                                isToday ? "bg-sky-500" : "bg-emerald-400"
+                              }`}
+                              style={{ height: completedH }}
+                            />
+                          </div>
+                          <span className={`text-[9px] font-semibold ${isToday ? "text-sky-600" : "text-slate-400"}`}>{day.label}</span>
+                          {day.total > 0 && (
+                            <span className="text-[8px] text-slate-400">{day.completed}/{day.total}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Completion Rate by Priority */}
+              {!adminLoading && userTaskStats.length > 0 && (
+                <div className="rounded-2xl border border-slate-200/60 bg-white p-4 shadow-sm">
+                  <h4 className="text-xs font-bold text-slate-800 mb-3">Team Completion Rate</h4>
+                  <div className="space-y-2.5">
+                    {[...userTaskStats]
+                      .filter(u => u.assignedCount > 0)
+                      .sort((a, b) => {
+                        const rateA = a.assignedCount > 0 ? a.completedCount / a.assignedCount : 0;
+                        const rateB = b.assignedCount > 0 ? b.completedCount / b.assignedCount : 0;
+                        return rateB - rateA;
+                      })
+                      .slice(0, 6)
+                      .map(u => {
+                        const rate = u.assignedCount > 0 ? Math.round((u.completedCount / u.assignedCount) * 100) : 0;
+                        const shortName = u.userName.split(" ").map((n: string, i: number) => i === 0 ? n : n.charAt(0) + ".").join(" ");
+                        return (
+                          <div key={u.userId}>
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-[11px] text-slate-700 font-medium truncate flex-1">{shortName}</span>
+                              <span className="text-[10px] font-bold text-slate-500 ml-2">{rate}%</span>
+                            </div>
+                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  rate >= 75 ? "bg-emerald-400" : rate >= 50 ? "bg-amber-400" : "bg-rose-400"
+                                }`}
+                                style={{ width: `${rate}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {selectedTaskId && (
         <TaskDetailModal

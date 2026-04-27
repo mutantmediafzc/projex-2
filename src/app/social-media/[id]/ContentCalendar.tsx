@@ -158,7 +158,7 @@ export default function ContentCalendar({ projectId, projectName, platforms, bra
         project_id: projectId,
         subject: post.subject ? `${post.subject} (Copy)` : "(Copy)",
         status: "draft",
-        workflow_status: "captions",
+        workflow_status: "production",
       })
       .select()
       .single();
@@ -263,11 +263,17 @@ export default function ContentCalendar({ projectId, projectName, platforms, bra
   const allFormatsCount = statusFilteredPosts.length;
 
   const getPostsForDay = (day: number) =>
-    filteredPosts.filter((post) => {
-      if (!post.scheduled_date) return false;
-      const d = new Date(post.scheduled_date);
-      return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
-    });
+    filteredPosts
+      .filter((post) => {
+        if (!post.scheduled_date) return false;
+        const d = new Date(post.scheduled_date);
+        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+      })
+      .sort((a, b) => {
+        const tA = a.scheduled_time || "00:00";
+        const tB = b.scheduled_time || "00:00";
+        return tA.localeCompare(tB);
+      });
 
   const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -659,11 +665,14 @@ export default function ContentCalendar({ projectId, projectName, platforms, bra
             </div>
           ) : (
             filteredPosts
+              .slice()
               .sort((a, b) => {
                 if (!a.scheduled_date && !b.scheduled_date) return 0;
                 if (!a.scheduled_date) return 1;
                 if (!b.scheduled_date) return -1;
-                return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
+                const dateA = a.scheduled_date.slice(0, 10) + (a.scheduled_time ? "T" + a.scheduled_time : "T00:00");
+                const dateB = b.scheduled_date.slice(0, 10) + (b.scheduled_time ? "T" + b.scheduled_time : "T00:00");
+                return dateA.localeCompare(dateB);
               })
               .map((post) => {
                 const style = getWorkflowStyle(post.workflow_status);

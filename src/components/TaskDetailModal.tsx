@@ -132,7 +132,7 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange, onSav
         const [taskRes, checklistRes, commentsRes, historyRes] = await Promise.all([
           supabaseClient
             .from("tasks")
-            .select("id, project_id, patient_id, name, content, status, priority, type, activity_date, created_at, updated_at, created_by_name, assigned_user_name, updated_by_name, updated_by_user_id, patient:patients(id, first_name, last_name, email, phone), project:projects(id, name)")
+            .select("id, project_id, patient_id, name, content, status, priority, type, activity_date, created_at, updated_at, created_by_name, assigned_user_id, assigned_user_name, updated_by_name, updated_by_user_id, patient:patients(id, first_name, last_name, email, phone), project:projects(id, name)")
             .eq("id", taskId)
             .single(),
           supabaseClient
@@ -153,12 +153,30 @@ export default function TaskDetailModal({ taskId, onClose, onStatusChange, onSav
         ]);
 
         if (!taskRes.error && taskRes.data) {
-          setTask(taskRes.data);
-          setEditName(taskRes.data.name || "");
-          setEditContent(taskRes.data.content || "");
-          setEditPriority(taskRes.data.priority || "low");
-          setEditActivityDate(taskRes.data.activity_date || "");
-          setEditAssignedUserName(taskRes.data.assigned_user_name || "");
+          let taskData = taskRes.data;
+          // If assigned_user_name is missing but assigned_user_id exists, resolve from users table
+          if (!taskData.assigned_user_name && taskData.assigned_user_id) {
+            const { data: userRow } = await supabaseClient
+              .from("users")
+              .select("full_name")
+              .eq("id", taskData.assigned_user_id)
+              .single();
+            if (userRow?.full_name) {
+              taskData = { ...taskData, assigned_user_name: userRow.full_name };
+              // Backfill the DB so future loads are instant
+              supabaseClient
+                .from("tasks")
+                .update({ assigned_user_name: userRow.full_name })
+                .eq("id", taskData.id)
+                .then(() => {});
+            }
+          }
+          setTask(taskData);
+          setEditName(taskData.name || "");
+          setEditContent(taskData.content || "");
+          setEditPriority(taskData.priority || "low");
+          setEditActivityDate(taskData.activity_date || "");
+          setEditAssignedUserName(taskData.assigned_user_name || "");
         }
         if (!checklistRes.error && checklistRes.data) {
           setChecklist(checklistRes.data as TaskChecklistItem[]);

@@ -376,6 +376,18 @@ export default function Home() {
     }
 
     void loadAdminData();
+
+    // Real-time subscription: reload admin tasks whenever any task changes
+    const channel = supabaseClient
+      .channel("admin-tasks-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
+        void loadAdminData();
+      })
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
   }, [isAdmin]);
 
   // Computed leaderboards

@@ -198,13 +198,28 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Notify-Workflow] Total users to notify: ${usersToNotify.size}`);
     console.log(`[Notify-Workflow] User IDs: ${Array.from(usersToNotify).join(", ") || "none"}`);
-    
+
+    // Resolve all user IDs -> full_name in one query
+    const allUserIds = Array.from(usersToNotify);
+    const userNamesMap = new Map<string, string>();
+    if (allUserIds.length > 0) {
+      const { data: usersRows } = await supabaseAdmin
+        .from("users")
+        .select("id, full_name")
+        .in("id", allUserIds);
+      (usersRows || []).forEach((u: any) => { if (u.id) userNamesMap.set(u.id, u.full_name || "Unknown"); });
+    }
 
     // Get current user for "created_by_name"
     const { data: authData } = await supabaseAdmin.auth.getUser();
     const currentUserName = authData?.user?.user_metadata?.first_name 
       ? `${authData.user.user_metadata.first_name} ${authData.user.user_metadata.last_name || ""}`.trim()
       : "System";
+
+    // Determine activity_date: use post's scheduled_date (YYYY-MM-DD) or today
+    const activityDate = postData?.scheduled_date
+      ? String(postData.scheduled_date).slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
 
     // Create tasks/notifications for each user
     const notifications = [];
@@ -232,8 +247,10 @@ export async function POST(request: NextRequest) {
     };
 
     for (const userId of usersToNotify) {
+      const assigneeName = userNamesMap.get(userId) || "Unknown";
       const taskData = {
         assigned_user_id: userId,
+        assigned_user_name: assigneeName,
         name: `Social Post: ${statusLabels[newStatus]?.replace(" Tab", "") || newStatus}`,
         content: generateNotificationMessage(newStatus),
         status: "not_started",  // Valid enum: not_started, in_progress, completed
@@ -242,6 +259,7 @@ export async function POST(request: NextRequest) {
         source: "social_workflow",
         created_by_name: currentUserName,
         project_id: null,
+        activity_date: activityDate,
         // Include image URL for Live notifications
         ...(newStatus === "published" && postData?.image_asset_url ? { image_url: postData.image_asset_url } : {}),
       };

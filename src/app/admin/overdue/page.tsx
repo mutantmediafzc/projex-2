@@ -72,6 +72,8 @@ export default function OverdueTasksPage() {
   const [tasks, setTasks] = useState<OverdueTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<string | null>(null);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -126,7 +128,20 @@ export default function OverdueTasksPage() {
         setLoading(false);
       }
     }
-    load();
+
+    void load();
+
+    // Real-time: reload whenever any task row changes
+    const channel = supabaseClient
+      .channel("overdue-tasks-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks" }, () => {
+        void load();
+      })
+      .subscribe();
+
+    return () => {
+      supabaseClient.removeChannel(channel);
+    };
   }, []);
 
   // Unique filter options derived from data
@@ -170,6 +185,27 @@ export default function OverdueTasksPage() {
   const hasActiveFilters = search || userFilter !== "all" || statusFilter !== "all" || priorityFilter !== "all" || sourceFilter !== "all" || projectFilter !== "all";
   const resetFilters = () => { setSearch(""); setUserFilter("all"); setStatusFilter("all"); setPriorityFilter("all"); setSourceFilter("all"); setProjectFilter("all"); setPage(1); };
 
+  async function runBackfill() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const res = await fetch("/api/admin/backfill-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const json = await res.json();
+      if (json.success) {
+        setBackfillResult(`✓ ${json.message}`);
+      } else {
+        setBackfillResult(`Error: ${json.error || "unknown"}`);
+      }
+    } catch {
+      setBackfillResult("Failed to run migration");
+    } finally {
+      setBackfilling(false);
+    }
+  }
+
   // Summary stats
   const highCount = tasks.filter(t => t.priority === "high").length;
   const inProgressCount = tasks.filter(t => t.status === "in_progress").length;
@@ -203,8 +239,27 @@ export default function OverdueTasksPage() {
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">All overdue tasks across the entire workforce</p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">{tasks.length} overdue</span>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">{tasks.length} overdue</span>
+            <button
+              onClick={runBackfill}
+              disabled={backfilling}
+              title="Fix existing tasks missing assignee name or due date"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 shadow-sm transition-colors"
+            >
+              {backfilling ? (
+                <><div className="h-3 w-3 animate-spin rounded-full border-2 border-slate-300 border-t-slate-600" />Running…</>
+              ) : (
+                <><svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Fix Missing Data</>
+              )}
+            </button>
+          </div>
+          {backfillResult && (
+            <p className={`text-[11px] font-medium ${backfillResult.startsWith("✓") ? "text-emerald-600" : "text-rose-600"}`}>
+              {backfillResult}
+            </p>
+          )}
         </div>
       </div>
 

@@ -347,6 +347,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
               content_type: contentType,
               image_asset_url: imageAssetUrl,
               post_type: postType,
+              scheduled_date: scheduledDate || null,
             },
           }),
         });

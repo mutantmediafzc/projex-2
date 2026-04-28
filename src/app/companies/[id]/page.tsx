@@ -2048,9 +2048,17 @@ function AddProjectModal({
             </label>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { value: "social_media", label: "Social Media", color: "from-pink-500 to-fuchsia-500", icon: "📱" },
-                { value: "website", label: "Website", color: "from-blue-500 to-cyan-500", icon: "🌐" },
-                { value: "branding", label: "Branding", color: "from-purple-500 to-violet-500", icon: "🎨" },
+                { value: "social_media_seo", label: "Social Media & SEO", color: "from-pink-500 to-fuchsia-500", icon: "📱" },
+                { value: "performance_marketing", label: "Performance Marketing", color: "from-orange-500 to-red-500", icon: "🚀" },
+                { value: "seo_aeo", label: "SEO & AEO", color: "from-emerald-500 to-green-500", icon: "🔍" },
+                { value: "app_design", label: "App Design & Dev", color: "from-violet-500 to-purple-500", icon: "📲" },
+                { value: "brand_development", label: "Brand Development", color: "from-amber-500 to-orange-500", icon: "🎨" },
+                { value: "content_creation", label: "Content Creation", color: "from-rose-500 to-pink-500", icon: "✍️" },
+                { value: "digital_marketing", label: "Digital Marketing", color: "from-cyan-500 to-blue-500", icon: "📊" },
+                { value: "event_services", label: "Event Services", color: "from-emerald-500 to-teal-500", icon: "🎪" },
+                { value: "studio_rental", label: "Studio / Production", color: "from-indigo-500 to-violet-500", icon: "🎬" },
+                { value: "technical_assistance", label: "Technical Assistance", color: "from-slate-500 to-gray-600", icon: "🔧" },
+                { value: "web_design", label: "Web Design & Dev", color: "from-blue-500 to-cyan-500", icon: "🌐" },
               ].map((type) => (
                 <label
                   key={type.value}
@@ -2067,7 +2075,7 @@ function AddProjectModal({
                     <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br ${type.color} text-white text-base shadow-lg`}>
                       {type.icon}
                     </div>
-                    <span className="text-[11px] font-semibold text-slate-700">{type.label}</span>
+                    <span className="text-[11px] font-semibold text-slate-700 text-center leading-tight">{type.label}</span>
                   </div>
                   <div className="absolute -top-1 -right-1 hidden h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white peer-checked:flex">
                     <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">

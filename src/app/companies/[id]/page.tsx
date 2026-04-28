@@ -59,6 +59,25 @@ type Project = {
   created_at: string | null;
 };
 
+type CompanyInvoice = {
+  id: string;
+  project_id: string | null;
+  invoice_number: string;
+  invoice_type: "quote" | "invoice";
+  status: string;
+  client_name: string;
+  issue_date: string;
+  due_date: string | null;
+  paid_date: string | null;
+  subtotal: number;
+  tax_amount: number;
+  discount_amount: number;
+  total: number;
+  currency: string;
+  created_at: string;
+  project_name?: string;
+};
+
 const COMPANY_SELECT =
   "id, name, legal_name, website, email, phone, industry, size, street_address, postal_code, town, country, notes, social_facebook, social_instagram, social_twitter, social_linkedin, social_youtube, social_tiktok, logo_url, brand_color_1, brand_color_2";
 
@@ -109,7 +128,9 @@ export default function CompanyDetailPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"contacts" | "projects">("contacts");
+  const [activeTab, setActiveTab] = useState<"contacts" | "projects" | "invoices">("contacts");
+  const [invoices, setInvoices] = useState<CompanyInvoice[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
   const [savingDetails, setSavingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
@@ -219,6 +240,24 @@ export default function CompanyDetailPage() {
         const { data: projectsData, error: projectsError } = projectsResult;
         if (!projectsError && projectsData) {
           setProjects(projectsData as Project[]);
+          // Load invoices for all projects in this company
+          const projectIds = (projectsData as Project[]).map(p => p.id);
+          if (projectIds.length > 0) {
+            setInvoicesLoading(true);
+            const { data: invData } = await supabaseClient
+              .from("invoices")
+              .select("id, project_id, invoice_number, invoice_type, status, client_name, issue_date, due_date, paid_date, subtotal, tax_amount, discount_amount, total, currency, created_at")
+              .in("project_id", projectIds)
+              .order("created_at", { ascending: false });
+            if (isMounted) {
+              const enriched = (invData || []).map((inv: CompanyInvoice) => ({
+                ...inv,
+                project_name: (projectsData as Project[]).find(p => p.id === inv.project_id)?.name ?? undefined,
+              }));
+              setInvoices(enriched as CompanyInvoice[]);
+              setInvoicesLoading(false);
+            }
+          }
         } else {
           setProjects([]);
         }
@@ -622,25 +661,45 @@ export default function CompanyDetailPage() {
                 Projects ({projects.length})
               </span>
             </button>
+            <button
+              type="button"
+              className={`rounded-full px-4 py-2 text-[12px] font-medium transition-all ${
+                activeTab === "invoices"
+                  ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+              onClick={() => setActiveTab("invoices")}
+            >
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Invoices ({invoices.length})
+              </span>
+            </button>
           </div>
           
-          <button
-            type="button"
-            onClick={() => activeTab === "contacts" ? setShowContactModal(true) : setShowProjectModal(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:shadow-violet-500/30"
-          >
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Add {activeTab === "contacts" ? "Contact" : "Project"}
-          </button>
+          {activeTab !== "invoices" && (
+            <button
+              type="button"
+              onClick={() => activeTab === "contacts" ? setShowContactModal(true) : setShowProjectModal(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-[12px] font-medium text-white shadow-lg shadow-violet-500/25 transition-all hover:shadow-xl hover:shadow-violet-500/30"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {activeTab === "contacts" ? "Add Contact" : "Add Project"}
+            </button>
+          )}
         </div>
 
         {/* Content Area */}
         {activeTab === "contacts" ? (
           <ContactsDisplay contacts={contacts} onEdit={setEditingContact} />
-        ) : (
+        ) : activeTab === "projects" ? (
           <ProjectsDisplay projects={projects} contactsById={contactsById} company={company} />
+        ) : (
+          <InvoicesDisplay invoices={invoices} loading={invoicesLoading} />
         )}
       </section>
 
@@ -1238,6 +1297,204 @@ function SocialField({
         <a href={value.startsWith("http") ? value : `https://${value}`} target="_blank" rel="noreferrer" className="opacity-0 group-hover:opacity-100 transition-opacity">
           <svg className="h-4 w-4 text-slate-400 hover:text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
         </a>
+      )}
+    </div>
+  );
+}
+
+// ── Invoice status colors ────────────────────────────────────────────────────
+const INV_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-slate-100 text-slate-700",
+  sent: "bg-blue-100 text-blue-700",
+  paid: "bg-emerald-100 text-emerald-700",
+  unpaid: "bg-amber-100 text-amber-700",
+  overdue: "bg-red-100 text-red-700",
+  cancelled: "bg-slate-100 text-slate-400",
+  accepted: "bg-emerald-100 text-emerald-700",
+  rejected: "bg-red-100 text-red-700",
+};
+
+function fmtMoney(amount: number, currency = "AED") {
+  return new Intl.NumberFormat("en-AE", { style: "currency", currency, minimumFractionDigits: 0 }).format(amount);
+}
+function fmtDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function InvoicesDisplay({ invoices, loading }: { invoices: CompanyInvoice[]; loading: boolean }) {
+  const [typeFilter, setTypeFilter] = useState<"all" | "quote" | "invoice">("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [projectFilter, setProjectFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const projectOptions = Array.from(new Map(
+    invoices.filter(i => i.project_id && i.project_name).map(i => [i.project_id, i.project_name])
+  ).entries());
+
+  const filtered = invoices.filter(inv => {
+    if (typeFilter !== "all" && inv.invoice_type !== typeFilter) return false;
+    if (statusFilter !== "all" && inv.status !== statusFilter) return false;
+    if (projectFilter !== "all" && inv.project_id !== projectFilter) return false;
+    if (dateFrom && inv.issue_date < dateFrom) return false;
+    if (dateTo && inv.issue_date > dateTo) return false;
+    return true;
+  });
+
+  const hasFilters = typeFilter !== "all" || statusFilter !== "all" || projectFilter !== "all" || dateFrom || dateTo;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-200 border-t-violet-600" />
+      </div>
+    );
+  }
+
+  if (invoices.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-16">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-indigo-100">
+          <svg className="h-8 w-8 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <p className="mt-4 text-[14px] font-medium text-slate-700">No invoices or quotes yet</p>
+        <p className="mt-1 text-[12px] text-slate-500">Invoices and quotes linked to this company's projects will appear here</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/60 bg-white/80 p-3 shadow-sm">
+        {/* Type toggle */}
+        <div className="flex rounded-xl border border-slate-200 bg-slate-50 p-0.5">
+          {(["all", "quote", "invoice"] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTypeFilter(t)}
+              className={`rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition-all ${
+                typeFilter === t
+                  ? t === "quote" ? "bg-blue-600 text-white shadow-sm"
+                    : t === "invoice" ? "bg-violet-600 text-white shadow-sm"
+                    : "bg-slate-800 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {t === "all" ? "All" : t === "quote" ? "Quotes" : "Invoices"}
+            </button>
+          ))}
+        </div>
+
+        {/* Status */}
+        <select
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          className="h-8 rounded-xl border border-slate-200 bg-white px-3 text-[11px] text-black shadow-sm focus:border-violet-400 focus:outline-none"
+        >
+          <option value="all">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="sent">Sent</option>
+          <option value="paid">Paid</option>
+          <option value="unpaid">Unpaid</option>
+          <option value="overdue">Overdue</option>
+          <option value="accepted">Accepted</option>
+          <option value="rejected">Rejected</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        {/* Project */}
+        {projectOptions.length > 1 && (
+          <select
+            value={projectFilter}
+            onChange={e => setProjectFilter(e.target.value)}
+            className="h-8 rounded-xl border border-slate-200 bg-white px-3 text-[11px] text-black shadow-sm focus:border-violet-400 focus:outline-none max-w-[180px] truncate"
+          >
+            <option value="all">All Projects</option>
+            {projectOptions.map(([id, name]) => (
+              <option key={id} value={id ?? ""}>{name}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Date range */}
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[11px] text-black shadow-sm focus:border-violet-400 focus:outline-none" />
+        <span className="text-[10px] text-slate-400">to</span>
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="h-8 rounded-xl border border-slate-200 bg-white px-2 text-[11px] text-black shadow-sm focus:border-violet-400 focus:outline-none" />
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={() => { setTypeFilter("all"); setStatusFilter("all"); setProjectFilter("all"); setDateFrom(""); setDateTo(""); }}
+            className="inline-flex items-center gap-1 rounded-xl bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100"
+          >
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            Clear
+          </button>
+        )}
+        <span className="ml-auto text-[11px] text-slate-400">{filtered.length} records</span>
+      </div>
+
+      {/* Table */}
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 py-12">
+          <p className="text-[13px] font-medium text-slate-600">No records match your filters</p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-lg">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/80">
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Number</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Type</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Status</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Project</th>
+                <th className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">Date</th>
+                <th className="px-4 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-slate-500">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filtered.map(inv => (
+                <tr key={inv.id} className="group transition-colors hover:bg-slate-50/60">
+                  <td className="px-4 py-3">
+                    <p className="text-[12px] font-semibold text-slate-900">{inv.invoice_number}</p>
+                    <p className="text-[10px] text-slate-400">{inv.client_name}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${inv.invoice_type === "quote" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"}`}>
+                      {inv.invoice_type}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${INV_STATUS_COLORS[inv.status] || "bg-slate-100 text-slate-600"}`}>
+                      {inv.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {inv.project_name ? (
+                      <Link href={`/projects/${inv.project_id}`} className="text-[12px] text-indigo-600 hover:underline">
+                        {inv.project_name}
+                      </Link>
+                    ) : (
+                      <span className="text-[12px] text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-[12px] text-slate-700">{fmtDate(inv.issue_date)}</p>
+                    {inv.due_date && <p className="text-[10px] text-slate-400">Due {fmtDate(inv.due_date)}</p>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <p className="text-[13px] font-bold text-slate-900">{fmtMoney(inv.total, inv.currency)}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

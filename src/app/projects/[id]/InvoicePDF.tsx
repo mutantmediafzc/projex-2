@@ -3,9 +3,21 @@
 import { Document, Page, Text, View, StyleSheet, PDFViewer, Image } from "@react-pdf/renderer";
 import type { Invoice } from "./InvoiceManagement";
 
+const MUTANT = {
+  name: "Mutant Media Fzc.",
+  bank: "Mashreq Bank",
+  address: "Al Ghurair City, 339-C, AGC, Al Riqqa Street, Dubai, UAE",
+  account: "019100924426",
+  iban: "AE320330000019100924426",
+  swift: "BOMLAEAD",
+};
+
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
-  header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 30 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24, paddingBottom: 16, borderBottomWidth: 2, borderBottomColor: "#7c3aed" },
+  headerLeft: { flexDirection: "column" },
+  headerCompanyName: { fontSize: 18, fontWeight: "bold", color: "#1e293b", marginBottom: 3 },
+  headerLine: { fontSize: 9, color: "#475569", marginBottom: 2 },
   logo: { width: 120, height: 40, objectFit: "contain" },
   companyInfo: { textAlign: "right" },
   companyName: { fontSize: 16, fontWeight: "bold", marginBottom: 4 },
@@ -30,8 +42,12 @@ const styles = StyleSheet.create({
   grandTotal: { flexDirection: "row", width: 200, justifyContent: "space-between", paddingVertical: 8, borderTopWidth: 2, borderTopColor: "#7c3aed", marginTop: 4 },
   grandTotalLabel: { fontSize: 12, fontWeight: "bold", color: "#1e293b" },
   grandTotalValue: { fontSize: 12, fontWeight: "bold", color: "#7c3aed" },
-  footer: { marginTop: 40, paddingTop: 20, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
-  bankTitle: { fontSize: 10, fontWeight: "bold", marginBottom: 8, color: "#475569" },
+  footer: { marginTop: 30, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
+  bankTitle: { fontSize: 10, fontWeight: "bold", marginBottom: 6, color: "#475569" },
+  bankRow: { fontSize: 9, color: "#334155", marginBottom: 3 },
+  bankLabel: { fontWeight: "bold" },
+  paymentNote: { marginTop: 10, padding: 10, backgroundColor: "#fef9ec", borderRadius: 4, borderLeftWidth: 3, borderLeftColor: "#f59e0b" },
+  paymentNoteText: { fontSize: 9, color: "#78350f", lineHeight: 1.5 },
   notes: { marginTop: 20, padding: 12, backgroundColor: "#f8fafc", borderRadius: 4 },
   notesTitle: { fontSize: 9, fontWeight: "bold", marginBottom: 4, color: "#475569" },
   notesText: { fontSize: 9, color: "#64748b" },
@@ -53,20 +69,24 @@ function InvoiceDocument({ invoice }: { invoice: Invoice }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header */}
+        {/* Header — Mutant Media fixed block */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
             {invoice.company_logo_url ? (
               <Image src={invoice.company_logo_url} style={styles.logo} />
-            ) : (
-              <Text style={styles.companyName}>{invoice.company_name || "Your Company"}</Text>
-            )}
+            ) : null}
+            <Text style={styles.headerCompanyName}>{MUTANT.name}</Text>
+            <Text style={styles.headerLine}>{MUTANT.bank}</Text>
+            <Text style={styles.headerLine}>{MUTANT.address}</Text>
+            <Text style={styles.headerLine}>Account #  {MUTANT.account}</Text>
+            <Text style={styles.headerLine}>IBAN  {MUTANT.iban}</Text>
+            <Text style={styles.headerLine}>Swift Code:  {MUTANT.swift}</Text>
           </View>
-          <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>{invoice.company_name}</Text>
-            {invoice.company_address && <Text style={styles.value}>{invoice.company_address}</Text>}
-            {invoice.company_phone && <Text style={styles.value}>{invoice.company_phone}</Text>}
-            {invoice.company_email && <Text style={styles.value}>{invoice.company_email}</Text>}
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontSize: 28, fontWeight: "bold", color: "#7c3aed" }}>
+              {isQuote ? "QUOTE" : "INVOICE"}
+            </Text>
+            <Text style={[styles.headerLine, { marginTop: 6 }]}>{invoice.invoice_number}</Text>
           </View>
         </View>
 
@@ -144,15 +164,25 @@ function InvoiceDocument({ invoice }: { invoice: Invoice }) {
           </View>
         )}
 
-        {/* Bank Details */}
-        {(invoice.bank_name || invoice.bank_account_number) && (
-          <View style={styles.footer}>
-            <Text style={styles.bankTitle}>Payment Details</Text>
-            {invoice.bank_name && <Text style={styles.value}>Bank: {invoice.bank_name}</Text>}
-            {invoice.bank_account_number && <Text style={styles.value}>Account: {invoice.bank_account_number}</Text>}
-            {invoice.bank_iban && <Text style={styles.value}>IBAN: {invoice.bank_iban}</Text>}
-          </View>
-        )}
+        {/* Bank Details — always shown */}
+        <View style={styles.footer}>
+          <Text style={styles.bankTitle}>Payment Details</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Company: </Text>{MUTANT.name}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Bank: </Text>{MUTANT.bank}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Address: </Text>{MUTANT.address}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Account #: </Text>{MUTANT.account}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>IBAN: </Text>{MUTANT.iban}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Swift Code: </Text>{MUTANT.swift}</Text>
+
+          {/* Invoice-only payment reference note */}
+          {!isQuote && (
+            <View style={styles.paymentNote}>
+              <Text style={styles.paymentNoteText}>
+                Please include the INVOICE NUMBER as a reference when making your payment so we can track and confirm. Note that bank transfer charges should be borne by the client.
+              </Text>
+            </View>
+          )}
+        </View>
       </Page>
     </Document>
   );

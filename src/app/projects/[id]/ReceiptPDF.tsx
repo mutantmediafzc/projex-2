@@ -12,7 +12,7 @@ const MUTANT = {
   account: "019100924426",
   iban: "AE320330000019100924426",
   swift: "BOMLAEAD",
-  logoUrl: "https://creamcrm.io/mutant-logo.png", // Update this with actual logo URL
+  logoUrl: "https://www.creamcrm.io/logos/mutant-logo.avif",
 };
 
 // Logo size mapping

@@ -42,8 +42,8 @@ function createReceiptStyles(settings?: InvoiceSettings | null) {
   return StyleSheet.create({
     page: { padding, fontSize, fontFamily: "Helvetica" },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: headerMargin, paddingBottom: 16, borderBottomWidth: 2, borderBottomColor: "#7c3aed" },
-    headerLeft: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-    headerTextBlock: { flexDirection: "column" },
+    headerLeft: { flexDirection: "column", alignItems: "flex-start", gap: 8 },
+    headerTextBlock: { flexDirection: "column", alignItems: "flex-start" },
     headerCompanyName: { fontSize: 18, fontWeight: "bold", color: "#1e293b", marginBottom: 2 },
     headerTrn: { fontSize: 9, color: "#64748b", marginBottom: 6 },
     headerLine: { fontSize: 9, color: "#475569", marginBottom: 2 },
@@ -81,7 +81,7 @@ function ReceiptDocument({ invoice, payment, allPayments, settings }: {
   return (
     <Document>
       <Page size="A4" style={rStyles.page}>
-        {/* Header with logo and TRN */}
+        {/* Header — Logo on top, text left-aligned */}
         <View style={rStyles.header}>
           <View style={rStyles.headerLeft}>
             {showLogo && <Image src={MUTANT.logoUrl} style={rStyles.logo} />}
@@ -204,8 +204,8 @@ function createSOAStyles(settings?: InvoiceSettings | null) {
   return StyleSheet.create({
     page: { padding, fontSize, fontFamily: "Helvetica" },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: headerMargin, paddingBottom: 16, borderBottomWidth: 2, borderBottomColor: "#7c3aed" },
-    headerLeft: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-    headerTextBlock: { flexDirection: "column" },
+    headerLeft: { flexDirection: "column", alignItems: "flex-start", gap: 8 },
+    headerTextBlock: { flexDirection: "column", alignItems: "flex-start" },
     headerCompanyName: { fontSize: 18, fontWeight: "bold", color: "#1e293b", marginBottom: 2 },
     headerTrn: { fontSize: 9, color: "#64748b", marginBottom: 6 },
     headerLine: { fontSize: 9, color: "#475569", marginBottom: 2 },

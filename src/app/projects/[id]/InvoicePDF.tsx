@@ -22,63 +22,77 @@ const LOGO_SIZES = {
 };
 
 // Function to create dynamic styles based on settings
-function createStyles(settings?: InvoiceSettings | null) {
-  const padding = settings?.pdf_page_padding ?? 40;
-  const fontSize = settings?.pdf_font_size ?? 10;
-  const headerMargin = settings?.pdf_header_margin ?? 24;
-  const footerMargin = settings?.pdf_footer_margin ?? 30;
-  const logoSize = LOGO_SIZES[settings?.pdf_logo_size ?? "medium"];
+function createStyles(settings?: InvoiceSettings | null, isQuote = false) {
+  // For quotes, use compact single-page settings
+  const padding = isQuote ? 30 : (settings?.pdf_page_padding ?? 40);
+  const fontSize = isQuote ? 9 : (settings?.pdf_font_size ?? 10);
+  const headerMargin = isQuote ? 12 : (settings?.pdf_header_margin ?? 24);
+  const footerMargin = isQuote ? 10 : (settings?.pdf_footer_margin ?? 30);
+  const logoSize = isQuote ? LOGO_SIZES.small : LOGO_SIZES[settings?.pdf_logo_size ?? "medium"];
   const headerStyle = settings?.pdf_header_style ?? "detailed";
 
   return StyleSheet.create({
-    page: { padding, fontSize, fontFamily: "Helvetica" },
+    page: {
+      padding,
+      fontSize,
+      fontFamily: "Helvetica",
+      // For quotes, ensure content fits on single page
+      ...(isQuote && {
+        minHeight: "100%",
+        maxHeight: "100%",
+      }),
+    },
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "flex-start",
       marginBottom: headerMargin,
-      paddingBottom: 16,
+      paddingBottom: isQuote ? 10 : 16,
       borderBottomWidth: 2,
       borderBottomColor: "#7c3aed",
     },
-    headerLeft: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
-    headerTextBlock: { flexDirection: "column" },
-    headerCompanyName: { fontSize: 18, fontWeight: "bold", color: "#1e293b", marginBottom: 2 },
+    headerLeft: { flexDirection: "column", alignItems: "flex-start", gap: 8 },
+    headerTextBlock: { flexDirection: "column", alignItems: "flex-start" },
+    headerCompanyName: { fontSize: isQuote ? 16 : 18, fontWeight: "bold", color: "#1e293b", marginBottom: 2 },
     headerTrn: { fontSize: 9, color: "#64748b", marginBottom: 6 },
-    headerLine: { fontSize: 9, color: "#475569", marginBottom: 2 },
+    headerLine: { fontSize: isQuote ? 8 : 9, color: "#475569", marginBottom: 2 },
     logo: { width: logoSize.width, height: logoSize.height, objectFit: "contain" },
     companyInfo: { textAlign: "right" },
     companyName: { fontSize: 16, fontWeight: "bold", marginBottom: 4 },
-    title: { fontSize: 24, fontWeight: "bold", marginBottom: 20, color: "#7c3aed" },
-    row: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
+    title: { fontSize: isQuote ? 20 : 24, fontWeight: "bold", marginBottom: isQuote ? 12 : 20, color: "#7c3aed" },
+    row: { flexDirection: "row", justifyContent: "space-between", marginBottom: isQuote ? 12 : 20 },
     col: { width: "48%" },
-    label: { fontSize: 8, color: "#64748b", marginBottom: 2, textTransform: "uppercase" },
+    label: { fontSize: isQuote ? 7 : 8, color: "#64748b", marginBottom: 2, textTransform: "uppercase" },
     value: { fontSize, color: "#1e293b" },
-    table: { marginTop: 20 },
-    tableHeader: { flexDirection: "row", backgroundColor: "#f1f5f9", padding: 8, borderRadius: 4 },
-    tableHeaderCell: { fontWeight: "bold", color: "#475569" },
-    tableRow: { flexDirection: "row", padding: 8, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
-    tableCell: { color: "#334155" },
+    table: { marginTop: isQuote ? 12 : 20 },
+    tableHeader: { flexDirection: "row", backgroundColor: "#f1f5f9", padding: isQuote ? 6 : 8, borderRadius: 4 },
+    tableHeaderCell: { fontWeight: "bold", color: "#475569", fontSize },
+    tableRow: { flexDirection: "row", padding: isQuote ? 5 : 8, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+    tableCell: { color: "#334155", fontSize },
     descCol: { width: "50%" },
     qtyCol: { width: "15%", textAlign: "right" },
     priceCol: { width: "17%", textAlign: "right" },
     amountCol: { width: "18%", textAlign: "right" },
-    totals: { marginTop: 20, alignItems: "flex-end" },
-    totalRow: { flexDirection: "row", width: 200, justifyContent: "space-between", paddingVertical: 4 },
-    totalLabel: { color: "#64748b" },
-    totalValue: { fontWeight: "bold", color: "#1e293b" },
-    grandTotal: { flexDirection: "row", width: 200, justifyContent: "space-between", paddingVertical: 8, borderTopWidth: 2, borderTopColor: "#7c3aed", marginTop: 4 },
-    grandTotalLabel: { fontSize: 12, fontWeight: "bold", color: "#1e293b" },
-    grandTotalValue: { fontSize: 12, fontWeight: "bold", color: "#7c3aed" },
-    footer: { marginTop: footerMargin, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
-    bankTitle: { fontSize: 10, fontWeight: "bold", marginBottom: 6, color: "#475569" },
-    bankRow: { fontSize: 9, color: "#334155", marginBottom: 3 },
+    totals: { marginTop: isQuote ? 12 : 20, alignItems: "flex-end" },
+    totalRow: { flexDirection: "row", width: isQuote ? 160 : 200, justifyContent: "space-between", paddingVertical: isQuote ? 2 : 4 },
+    totalLabel: { color: "#64748b", fontSize },
+    totalValue: { fontWeight: "bold", color: "#1e293b", fontSize },
+    grandTotal: { flexDirection: "row", width: isQuote ? 160 : 200, justifyContent: "space-between", paddingVertical: isQuote ? 6 : 8, borderTopWidth: 2, borderTopColor: "#7c3aed", marginTop: isQuote ? 2 : 4 },
+    grandTotalLabel: { fontSize: isQuote ? 10 : 12, fontWeight: "bold", color: "#1e293b" },
+    grandTotalValue: { fontSize: isQuote ? 10 : 12, fontWeight: "bold", color: "#7c3aed" },
+    footer: { marginTop: footerMargin, paddingTop: isQuote ? 10 : 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
+    bankTitle: { fontSize: isQuote ? 8 : 10, fontWeight: "bold", marginBottom: isQuote ? 4 : 6, color: "#475569" },
+    bankRow: { fontSize: isQuote ? 7 : 9, color: "#334155", marginBottom: 3 },
     bankLabel: { fontWeight: "bold" },
-    paymentNote: { marginTop: 10, padding: 10, backgroundColor: "#fef9ec", borderRadius: 4, borderLeftWidth: 3, borderLeftColor: "#f59e0b" },
-    paymentNoteText: { fontSize: 9, color: "#78350f", lineHeight: 1.5 },
-    notes: { marginTop: 20, padding: 12, backgroundColor: "#f8fafc", borderRadius: 4 },
-    notesTitle: { fontSize: 9, fontWeight: "bold", marginBottom: 4, color: "#475569" },
-    notesText: { fontSize: 9, color: "#64748b" },
+    paymentNote: { marginTop: isQuote ? 6 : 10, padding: isQuote ? 6 : 10, backgroundColor: "#fef9ec", borderRadius: 4, borderLeftWidth: 3, borderLeftColor: "#f59e0b" },
+    paymentNoteText: { fontSize: isQuote ? 7 : 9, color: "#78350f", lineHeight: 1.5 },
+    notes: { marginTop: isQuote ? 10 : 20, padding: isQuote ? 8 : 12, backgroundColor: "#f8fafc", borderRadius: 4 },
+    notesTitle: { fontSize: isQuote ? 7 : 9, fontWeight: "bold", marginBottom: isQuote ? 2 : 4, color: "#475569" },
+    notesText: { fontSize: isQuote ? 7 : 9, color: "#64748b" },
+    // Quote-specific compressed styles
+    quoteCompactHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+    quoteHeaderLeft: { flexDirection: "column", alignItems: "flex-start", gap: 6 },
+    quoteHeaderRight: { alignItems: "flex-end" },
   });
 }
 
@@ -94,7 +108,7 @@ function formatDate(date: string | null): string {
 function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: InvoiceSettings | null }) {
   const items = invoice.items || [];
   const isQuote = invoice.invoice_type === "quote";
-  const styles = createStyles(settings);
+  const styles = createStyles(settings, isQuote);
   const headerStyle = settings?.pdf_header_style ?? "detailed";
 
   // Determine what to show in header based on header style
@@ -104,9 +118,9 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* Header — Mutant Media fixed block with logo and TRN */}
+        {/* Header — Logo on top, text left-aligned */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
+          <View style={isQuote ? styles.quoteHeaderLeft : styles.headerLeft}>
             {showLogo && <Image src={MUTANT.logoUrl} style={styles.logo} />}
             <View style={styles.headerTextBlock}>
               <Text style={styles.headerCompanyName}>{MUTANT.name}</Text>
@@ -122,8 +136,8 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
               )}
             </View>
           </View>
-          <View style={{ alignItems: "flex-end" }}>
-            <Text style={{ fontSize: 28, fontWeight: "bold", color: "#7c3aed" }}>
+          <View style={isQuote ? styles.quoteHeaderRight : { alignItems: "flex-end" }}>
+            <Text style={{ fontSize: isQuote ? 22 : 28, fontWeight: "bold", color: "#7c3aed" }}>
               {isQuote ? "QUOTE" : "INVOICE"}
             </Text>
             <Text style={[styles.headerLine, { marginTop: 6 }]}>{invoice.invoice_number}</Text>

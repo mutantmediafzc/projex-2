@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { Invoice } from "./InvoiceManagement";
+import type { Invoice, InvoiceSettings } from "./InvoiceManagement";
 import type { Payment } from "./PaymentModal";
 
 const ReceiptPDFViewer = dynamic(() => import("./ReceiptPDF").then(m => m.ReceiptPDFViewer), {
@@ -13,10 +13,11 @@ type Props = {
   invoice: Invoice;
   payment: Payment;
   allPayments: Payment[];
+  settings?: InvoiceSettings | null;
   onClose: () => void;
 };
 
-export default function ReceiptModal({ invoice, payment, allPayments, onClose }: Props) {
+export default function ReceiptModal({ invoice, payment, allPayments, settings, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
       <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
@@ -29,7 +30,7 @@ export default function ReceiptModal({ invoice, payment, allPayments, onClose }:
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200">×</button>
         </div>
         <div className="flex-1 overflow-hidden min-h-0">
-          <ReceiptPDFViewer invoice={invoice} payment={payment} allPayments={allPayments} />
+          <ReceiptPDFViewer invoice={invoice} payment={payment} allPayments={allPayments} settings={settings} />
         </div>
       </div>
     </div>

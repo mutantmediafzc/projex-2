@@ -66,6 +66,14 @@ export type InvoiceSettings = {
   quote_prefix: string;
   currency: string;
   tax_rate: number;
+  // PDF Layout Settings
+  pdf_page_padding?: number;
+  pdf_font_size?: number;
+  pdf_header_margin?: number;
+  pdf_footer_margin?: number;
+  pdf_line_spacing?: number;
+  pdf_logo_size?: "small" | "medium" | "large";
+  pdf_header_style?: "compact" | "standard" | "detailed";
 };
 
 type FinancialSummary = { quoted: number; invoiced: number; paid: number; overdue: number };
@@ -399,7 +407,7 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
 
       {showCreateModal && <InvoiceCreateModal projectId={projectId} projectName={projectName} clientName={clientName} type={createType} settings={settings} onClose={() => setShowCreateModal(false)} onCreated={loadInvoices} />}
       {showSettingsModal && <InvoiceSettingsModal settings={settings} onClose={() => setShowSettingsModal(false)} onSaved={loadSettings} />}
-      {showPdfModal && selectedInvoice && <InvoicePdfModal invoice={selectedInvoice} onClose={() => setShowPdfModal(false)} />}
+      {showPdfModal && selectedInvoice && <InvoicePdfModal invoice={selectedInvoice} settings={settings} onClose={() => setShowPdfModal(false)} />}
       {showPaymentModal && paymentInvoice && (
         <PaymentModal
           invoice={paymentInvoice}
@@ -413,6 +421,7 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
           invoice={receiptInvoice}
           payment={receiptPayment}
           allPayments={paymentsMap[receiptInvoice.id] || []}
+          settings={settings}
           onClose={() => { setShowReceiptModal(false); setReceiptInvoice(null); setReceiptPayment(null); }}
         />
       )}
@@ -420,6 +429,7 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
         <SOAModal
           invoices={invoices.filter(i => i.invoice_type === "invoice").map(i => ({ ...i, payments: paymentsMap[i.id] || [] })) as SOAInvoice[]}
           clientName={clientName || invoices[0]?.client_name || "Client"}
+          settings={settings}
           onClose={() => setShowSOAModal(false)}
         />
       )}

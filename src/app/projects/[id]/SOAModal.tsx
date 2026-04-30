@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import type { SOAInvoice } from "./ReceiptPDF";
+import type { InvoiceSettings } from "./InvoiceManagement";
 
 const SOAPDFViewer = dynamic(() => import("./ReceiptPDF").then(m => m.SOAPDFViewer), {
   ssr: false,
@@ -12,10 +13,11 @@ const SOAPDFViewer = dynamic(() => import("./ReceiptPDF").then(m => m.SOAPDFView
 type Props = {
   invoices: SOAInvoice[];
   clientName: string;
+  settings?: InvoiceSettings | null;
   onClose: () => void;
 };
 
-export default function SOAModal({ invoices, clientName, onClose }: Props) {
+export default function SOAModal({ invoices, clientName, settings, onClose }: Props) {
   const today = new Date().toISOString().split("T")[0];
   const yearStart = `${new Date().getFullYear()}-01-01`;
 
@@ -144,7 +146,7 @@ export default function SOAModal({ invoices, clientName, onClose }: Props) {
               <p className="text-[12px] text-slate-500">{filtered.length} invoices · {dateFrom} to {dateTo}</p>
             </div>
             <div className="flex-1 min-h-0">
-              <SOAPDFViewer clientName={clientName} dateFrom={dateFrom} dateTo={dateTo} invoices={filtered} />
+              <SOAPDFViewer clientName={clientName} dateFrom={dateFrom} dateTo={dateTo} invoices={filtered} settings={settings} />
             </div>
           </div>
         )}

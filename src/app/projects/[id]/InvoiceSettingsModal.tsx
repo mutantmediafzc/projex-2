@@ -23,6 +23,14 @@ export default function InvoiceSettingsModal({ settings, onClose, onSaved }: Pro
   const [quotePrefix, setQuotePrefix] = useState(settings?.quote_prefix || "QUO");
   const [currency, setCurrency] = useState(settings?.currency || "AED");
   const [taxRate, setTaxRate] = useState(settings?.tax_rate || 5);
+  // PDF Layout Settings
+  const [pdfPagePadding, setPdfPagePadding] = useState(settings?.pdf_page_padding ?? 40);
+  const [pdfFontSize, setPdfFontSize] = useState(settings?.pdf_font_size ?? 10);
+  const [pdfHeaderMargin, setPdfHeaderMargin] = useState(settings?.pdf_header_margin ?? 24);
+  const [pdfFooterMargin, setPdfFooterMargin] = useState(settings?.pdf_footer_margin ?? 30);
+  const [pdfLineSpacing, setPdfLineSpacing] = useState(settings?.pdf_line_spacing ?? 1.5);
+  const [pdfLogoSize, setPdfLogoSize] = useState<"small" | "medium" | "large">(settings?.pdf_logo_size ?? "medium");
+  const [pdfHeaderStyle, setPdfHeaderStyle] = useState<"compact" | "standard" | "detailed">(settings?.pdf_header_style ?? "detailed");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -45,6 +53,14 @@ export default function InvoiceSettingsModal({ settings, onClose, onSaved }: Pro
         quote_prefix: quotePrefix,
         currency,
         tax_rate: taxRate,
+        // PDF Layout Settings
+        pdf_page_padding: pdfPagePadding,
+        pdf_font_size: pdfFontSize,
+        pdf_header_margin: pdfHeaderMargin,
+        pdf_footer_margin: pdfFooterMargin,
+        pdf_line_spacing: pdfLineSpacing,
+        pdf_logo_size: pdfLogoSize,
+        pdf_header_style: pdfHeaderStyle,
         updated_at: new Date().toISOString(),
       };
 
@@ -125,15 +141,15 @@ export default function InvoiceSettingsModal({ settings, onClose, onSaved }: Pro
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Invoice Prefix</label>
-                <input type="text" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                <input type="text" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Quote Prefix</label>
-                <input type="text" value={quotePrefix} onChange={(e) => setQuotePrefix(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                <input type="text" value={quotePrefix} onChange={(e) => setQuotePrefix(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Currency</label>
-                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none">
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none">
                   <option value="AED">AED</option>
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
@@ -142,7 +158,77 @@ export default function InvoiceSettingsModal({ settings, onClose, onSaved }: Pro
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tax Rate (%)</label>
-                <input type="number" value={taxRate} onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                <input type="number" value={taxRate} onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* PDF Layout Settings */}
+          <div>
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-3">PDF Layout Settings</h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Page Padding (px)</label>
+                  <input type="number" min="20" max="80" value={pdfPagePadding} onChange={(e) => setPdfPagePadding(parseInt(e.target.value) || 40)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Base Font Size (pt)</label>
+                  <input type="number" min="8" max="14" value={pdfFontSize} onChange={(e) => setPdfFontSize(parseInt(e.target.value) || 10)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Header Margin Bottom (px)</label>
+                  <input type="number" min="10" max="50" value={pdfHeaderMargin} onChange={(e) => setPdfHeaderMargin(parseInt(e.target.value) || 24)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Footer Margin Top (px)</label>
+                  <input type="number" min="20" max="60" value={pdfFooterMargin} onChange={(e) => setPdfFooterMargin(parseInt(e.target.value) || 30)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Logo Size</label>
+                <div className="flex gap-2">
+                  {(["small", "medium", "large"] as const).map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setPdfLogoSize(size)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-[12px] font-medium capitalize transition-colors ${
+                        pdfLogoSize === size
+                          ? "border-violet-500 bg-violet-50 text-violet-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Header Style</label>
+                <div className="flex gap-2">
+                  {(["compact", "standard", "detailed"] as const).map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      onClick={() => setPdfHeaderStyle(style)}
+                      className={`flex-1 rounded-lg border px-3 py-2 text-[12px] font-medium capitalize transition-colors ${
+                        pdfHeaderStyle === style
+                          ? "border-violet-500 bg-violet-50 text-violet-700"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  {pdfHeaderStyle === "compact" && "Minimal header with just company name and TRN"}
+                  {pdfHeaderStyle === "standard" && "Balanced header with logo, company info and TRN"}
+                  {pdfHeaderStyle === "detailed" && "Full header with logo, TRN, bank details and contact info"}
+                </p>
               </div>
             </div>
           </div>

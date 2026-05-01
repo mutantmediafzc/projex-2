@@ -259,12 +259,12 @@ export default function ProjectDocumentsTab({
           .from(BUCKET_NAME)
           .upload(storagePath, file, {
             cacheControl: "3600",
-            upsert: false,
+            upsert: true,
             contentType: file.type || undefined,
           });
 
         if (uploadError) {
-          throw uploadError;
+          throw new Error(`Failed to upload "${file.name}": ${uploadError.message}`);
         }
 
         uploadedFileNames.push(file.name);

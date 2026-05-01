@@ -69,7 +69,9 @@ export default function PaymentModal({ invoice, payments, onClose, onSaved }: Pr
       onSaved();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to record payment.");
+      console.error("Payment recording error:", e);
+      const errorMsg = e instanceof Error ? e.message : "Failed to record payment.";
+      setError(`Error: ${errorMsg}. Check console for details.`);
     } finally {
       setSaving(false);
     }

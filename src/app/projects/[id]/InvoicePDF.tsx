@@ -11,7 +11,8 @@ const MUTANT = {
   account: "019100924426",
   iban: "AE320330000019100924426",
   swift: "BOMLAEAD",
-  logoUrl: "https://www.creamcrm.io/logos/mutant-logo.avif",
+  // Using PNG format for react-pdf compatibility (AVIF not supported)
+  logoUrl: "https://www.creamcrm.io/logos/cream-logo.png",
 };
 
 // Logo size mapping
@@ -138,14 +139,14 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           </View>
           <View style={isQuote ? styles.quoteHeaderRight : { alignItems: "flex-end" }}>
             <Text style={{ fontSize: isQuote ? 22 : 28, fontWeight: "bold", color: "#7c3aed" }}>
-              {isQuote ? "QUOTE" : "INVOICE"}
+              {isQuote ? "QUOTE" : "TAX INVOICE"}
             </Text>
             <Text style={[styles.headerLine, { marginTop: 6 }]}>{invoice.invoice_number}</Text>
           </View>
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>{isQuote ? "QUOTE" : "INVOICE"}</Text>
+        <Text style={styles.title}>{isQuote ? "QUOTE" : "TAX INVOICE"}</Text>
 
         {/* Invoice Details & Client */}
         <View style={styles.row}>

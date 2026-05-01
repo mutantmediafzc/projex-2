@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import { ExpenseLog, Campaign, MarketingChannel, CHANNELS, COMMON_COUNTRIES, UAE_EMIRATES, formatMoney, getChannelLabel } from "./types";
+import { ExpenseLog, Campaign, MarketingChannel, CHANNELS, UAE_EMIRATES, formatMoney, getChannelLabel } from "./types";
+import MultiCountrySelect from "./MultiCountrySelect";
 
 export default function ExpenseManagementTab({
   projectId,
@@ -29,7 +30,7 @@ export default function ExpenseManagementTab({
     manual_impressions: "",
     manual_reach: "",
     notes: "",
-    country: "United Arab Emirates",
+    countries: ["United Arab Emirates"] as string[],
     region: "",
     city: "",
   });
@@ -58,7 +59,7 @@ export default function ExpenseManagementTab({
       notes: form.notes || null,
       import_source: "manual",
       created_by_user_id: user?.id,
-      country: form.country || null,
+      country: form.countries.length > 0 ? form.countries.join(", ") : null,
       region: form.region || null,
       city: form.city || null,
     });
@@ -68,7 +69,7 @@ export default function ExpenseManagementTab({
       setSaving(false);
       return;
     }
-    setForm({ campaign_objective: "", date_start: new Date().toISOString().split("T")[0], date_end: new Date().toISOString().split("T")[0], channel: "google_ads", campaign_name: "", spend_amount: "", currency: "AED", manual_clicks: "", manual_impressions: "", manual_reach: "", notes: "", country: "United Arab Emirates", region: "", city: "" });
+    setForm({ campaign_objective: "", date_start: new Date().toISOString().split("T")[0], date_end: new Date().toISOString().split("T")[0], channel: "google_ads", campaign_name: "", spend_amount: "", currency: "AED", manual_clicks: "", manual_impressions: "", manual_reach: "", notes: "", countries: ["United Arab Emirates"], region: "", city: "" });
     setSaving(false);
     setShowModal(false);
     onRefresh();
@@ -250,8 +251,8 @@ export default function ExpenseManagementTab({
               <div className="border-t border-slate-200 pt-4">
                 <h4 className="text-xs font-semibold text-slate-600 mb-3">Geographic Location</h4>
                 <div className="grid grid-cols-3 gap-3">
-                  <div><label className="mb-1 block text-xs text-slate-500">Country</label><select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value, region: e.target.value === "United Arab Emirates" ? form.region : "" })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900">{COMMON_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
-                  <div><label className="mb-1 block text-xs text-slate-500">Region/Emirate</label>{form.country === "United Arab Emirates" ? <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900"><option value="">All Emirates</option>{UAE_EMIRATES.map(e => <option key={e} value={e}>{e}</option>)}</select> : <input type="text" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} placeholder="Region/State" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900" />}</div>
+                  <div><label className="mb-1 block text-xs text-slate-500">Country</label><MultiCountrySelect value={form.countries} onChange={(countries) => setForm({ ...form, countries, region: countries.includes("United Arab Emirates") ? form.region : "" })} /></div>
+                  <div><label className="mb-1 block text-xs text-slate-500">Region/Emirate</label>{form.countries.length === 1 && form.countries[0] === "United Arab Emirates" ? <select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900"><option value="">All Emirates</option>{UAE_EMIRATES.map(e => <option key={e} value={e}>{e}</option>)}</select> : <input type="text" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} placeholder="Region/State" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900" />}</div>
                   <div><label className="mb-1 block text-xs text-slate-500">City</label><input type="text" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="City" className="w-full rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-900" /></div>
                 </div>
               </div>

@@ -32,6 +32,12 @@ export default function ProfileSecurity() {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const cropContainerRef = useRef<HTMLDivElement>(null);
   const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  const [editingName, setEditingName] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [nameSuccess, setNameSuccess] = useState<string | null>(null);
 
   // Load theme preference on mount
   useEffect(() => {
@@ -71,9 +77,11 @@ export default function ProfileSecurity() {
       const user = data.user;
       if (!isMounted || !user) { setProfile(null); return; }
       const meta = (user.user_metadata || {}) as Record<string, unknown>;
-      const firstName = (meta["first_name"] as string) || "";
-      const lastName = (meta["last_name"] as string) || "";
-      const fullName = [firstName, lastName].filter(Boolean).join(" ") || user.email || "";
+      const fn = (meta["first_name"] as string) || "";
+      const ln = (meta["last_name"] as string) || "";
+      const fullName = [fn, ln].filter(Boolean).join(" ") || user.email || "";
+      setFirstName(fn);
+      setLastName(ln);
       setProfile({ fullName, email: user.email ?? "", avatarUrl: (meta["avatar_url"] as string) || null });
     }
     load();
@@ -282,16 +290,91 @@ export default function ProfileSecurity() {
 
       {/* Account Info */}
       <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 shadow-lg backdrop-blur">
-        <h3 className="text-sm font-semibold text-slate-900">Account Information</h3>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Account Information</h3>
+            <p className="mt-1 text-xs text-slate-500">Update your name as it appears across the platform.</p>
+          </div>
+          {!editingName && (
+            <button
+              onClick={() => { setEditingName(true); setNameError(null); setNameSuccess(null); }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+              Edit
+            </button>
+          )}
+        </div>
         <div className="mt-4 space-y-3">
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
-            <span className="text-xs font-medium text-slate-500">Full Name</span>
-            <span className="text-sm font-medium text-slate-900">{profile.fullName}</span>
-          </div>
-          <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
-            <span className="text-xs font-medium text-slate-500">Email</span>
-            <span className="text-sm font-medium text-slate-900">{profile.email}</span>
-          </div>
+          {editingName ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700">First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                    placeholder="First name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-black shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                    placeholder="Last name"
+                  />
+                </div>
+              </div>
+              {nameError && <p className="text-xs text-red-600">{nameError}</p>}
+              {nameSuccess && <p className="text-xs text-emerald-600">{nameSuccess}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={async () => {
+                    if (!firstName.trim()) { setNameError("First name is required."); return; }
+                    setNameSaving(true); setNameError(null); setNameSuccess(null);
+                    try {
+                      const { error } = await supabaseClient.auth.updateUser({
+                        data: { first_name: firstName.trim(), last_name: lastName.trim() },
+                      });
+                      if (error) { setNameError(error.message); return; }
+                      const newFullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+                      setProfile(p => p ? { ...p, fullName: newFullName } : p);
+                      setNameSuccess("Name updated successfully!");
+                      setEditingName(false);
+                    } catch { setNameError("Failed to update name."); }
+                    finally { setNameSaving(false); }
+                  }}
+                  disabled={nameSaving}
+                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-lg hover:from-violet-600 hover:to-purple-600 disabled:opacity-50"
+                >
+                  {nameSaving ? "Saving…" : "Save Name"}
+                </button>
+                <button
+                  onClick={() => { setEditingName(false); setNameError(null); setNameSuccess(null); }}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
+                <span className="text-xs font-medium text-slate-500">Full Name</span>
+                <span className="text-sm font-medium text-slate-900">{profile.fullName}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-slate-50 p-3">
+                <span className="text-xs font-medium text-slate-500">Email</span>
+                <span className="text-sm font-medium text-slate-900">{profile.email}</span>
+              </div>
+              {nameSuccess && <p className="text-xs text-emerald-600">{nameSuccess}</p>}
+            </>
+          )}
         </div>
       </div>
 

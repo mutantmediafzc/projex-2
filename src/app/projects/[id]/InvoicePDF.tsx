@@ -11,8 +11,7 @@ const MUTANT = {
   account: "019100924426",
   iban: "AE320330000019100924426",
   swift: "BOMLAEAD",
-  // Using PNG format for react-pdf compatibility (AVIF not supported)
-  logoUrl: "https://www.creamcrm.io/logos/cream-logo.png",
+  logoUrl: "https://www.creamcrm.io/logos/mutant-logo.png",
 };
 
 // Logo size mapping

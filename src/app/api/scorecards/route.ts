@@ -97,8 +97,29 @@ export async function POST(request: NextRequest) {
     .gte("log_date", quarter_start)
     .lte("log_date", quarter_end);
 
-  const lateCount = (logs || []).filter((l: any) => l.is_late && !l.is_absent).length;
-  const absentCount = (logs || []).filter((l: any) => l.is_absent).length;
+  // Build a set of dates that have a log entry
+  const logDateSet = new Set((logs || []).map((l: any) => l.log_date));
+
+  // Count workdays (Mon–Fri) from quarter start up to TODAY (not into the future)
+  const today = new Date();
+  const effectiveEnd = qEnd < today ? qEnd : today;
+
+  let absentCount = (logs || []).filter((l: any) => l.is_absent).length;
+  let lateCount = (logs || []).filter((l: any) => l.is_late && !l.is_absent).length;
+
+  // Any workday that has no log row at all counts as absent
+  const cursor = new Date(qStart);
+  while (cursor <= effectiveEnd) {
+    const dayOfWeek = cursor.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      const dateStr = cursor.toISOString().slice(0, 10);
+      if (!logDateSet.has(dateStr)) {
+        absentCount++;
+      }
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
   const attendanceScore = getAttendanceScore(lateCount, absentCount);
 
   // --- Auto-calculate on-time delivery from tasks ---

@@ -79,12 +79,12 @@ export async function POST(request: NextRequest) {
 
   // Log attendance: record first time user sets status to "available" each day
   if (work_status === "available") {
-    const todayStr = now.toISOString().slice(0, 10);
-    // is_late = set available after 09:10 (10-min grace past 09:00)
-    const hours = now.getUTCHours();
-    const minutes = now.getUTCMinutes();
-    // Convert to UTC+4 (Gulf Standard Time) for the office
-    const gstHour = (hours + 4) % 24;
+    // Use GST (UTC+4) for both the date and the late check
+    const gstOffsetMs = 4 * 60 * 60 * 1000;
+    const gstNow = new Date(now.getTime() + gstOffsetMs);
+    const todayStr = gstNow.toISOString().slice(0, 10); // YYYY-MM-DD in GST
+    const gstHour = gstNow.getUTCHours();
+    const minutes = gstNow.getUTCMinutes();
     const isLate = gstHour > 9 || (gstHour === 9 && minutes >= 10);
 
     // Upsert: only set first_available_at if not already logged today

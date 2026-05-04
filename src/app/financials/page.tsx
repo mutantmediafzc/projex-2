@@ -269,6 +269,7 @@ export default function FinancialsPage() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
 
   // Filters
   const [dateFromFilter, setDateFromFilter] = useState("");
@@ -654,6 +655,16 @@ export default function FinancialsPage() {
                     {inv.invoice_type === "invoice" && inv.status === "paid" && (
                       <button type="button" onClick={() => handleUpdateStatus(inv, "unpaid")} className="h-8 rounded-lg bg-amber-50 px-2.5 text-[11px] font-semibold text-amber-700 hover:bg-amber-100">Unpaid</button>
                     )}
+                    {inv.status !== "paid" && inv.status !== "cancelled" && inv.status !== "rejected" && (
+                      <button
+                        type="button"
+                        onClick={() => setCancelTarget(inv)}
+                        className="h-8 rounded-lg bg-red-50 px-2.5 text-[11px] font-semibold text-red-600 hover:bg-red-100"
+                        title="Cancel"
+                      >
+                        Cancel
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -679,6 +690,38 @@ export default function FinancialsPage() {
         onClose={() => setShowSettingsModal(false)}
         onSaved={() => { void loadSettings(); setShowSettingsModal(false); }}
       />
+    )}
+    {cancelTarget && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100">
+            <svg className="h-6 w-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          </div>
+          <h3 className="mt-4 text-base font-bold text-slate-900">Cancel {cancelTarget.invoice_type === "quote" ? "Quote" : "Invoice"}?</h3>
+          <p className="mt-1.5 text-sm text-slate-500">
+            <span className="font-semibold text-slate-700">{cancelTarget.invoice_number}</span> will be marked as cancelled. This cannot be undone.
+          </p>
+          <div className="mt-5 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setCancelTarget(null)}
+              className="flex-1 rounded-xl border border-slate-200 bg-white py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Keep
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await handleUpdateStatus(cancelTarget, "cancelled");
+                setCancelTarget(null);
+              }}
+              className="flex-1 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Yes, Cancel
+            </button>
+          </div>
+        </div>
+      </div>
     )}
     {showPdfModal && selectedInvoice && (
       <InvoicePdfModal

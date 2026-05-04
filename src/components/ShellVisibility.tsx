@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 // Routes that should hide the app shell (sidebar, header)
-const headlessRoutes = ["/login", "/roca", "/strategy", "/elitestory"];
+const headlessRoutes = ["/login", "/roca", "/strategy", "/elitestory", "/public"];
 
 function isHeadlessRoute(pathname: string) {
   return headlessRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));

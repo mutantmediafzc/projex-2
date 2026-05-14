@@ -7,6 +7,7 @@ import RequireAdmin from "@/components/RequireAdmin";
 import InvoiceCreateModal from "@/app/projects/[id]/InvoiceCreateModal";
 import InvoicePdfModal from "@/app/projects/[id]/InvoicePdfModal";
 import InvoiceSettingsModal from "@/app/projects/[id]/InvoiceSettingsModal";
+import InvoiceEditModal from "@/app/projects/[id]/InvoiceEditModal";
 import type { InvoiceType, InvoiceSettings, InvoiceItem } from "@/app/projects/[id]/InvoiceManagement";
 
 type Invoice = {
@@ -270,6 +271,7 @@ export default function FinancialsPage() {
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
+  const [editTarget, setEditTarget] = useState<Invoice | null>(null);
 
   // Filters
   const [dateFromFilter, setDateFromFilter] = useState("");
@@ -637,6 +639,14 @@ export default function FinancialsPage() {
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditTarget(inv)}
+                      title="Edit"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                    >
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
                     {inv.status === "draft" && (
                       <button type="button" onClick={() => handleUpdateStatus(inv, "sent")} className="h-8 rounded-lg bg-blue-50 px-2.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Send</button>
                     )}
@@ -727,6 +737,14 @@ export default function FinancialsPage() {
       <InvoicePdfModal
         invoice={selectedInvoice as Parameters<typeof InvoicePdfModal>[0]["invoice"]}
         onClose={() => setShowPdfModal(false)}
+      />
+    )}
+    {editTarget && (
+      <InvoiceEditModal
+        invoice={editTarget}
+        settings={settings}
+        onClose={() => setEditTarget(null)}
+        onSaved={() => { void loadAll(); setEditTarget(null); }}
       />
     )}
     </RequireAdmin>

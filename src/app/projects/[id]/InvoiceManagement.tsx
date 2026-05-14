@@ -8,6 +8,7 @@ import InvoicePdfModal from "./InvoicePdfModal";
 import PaymentModal, { type Payment } from "./PaymentModal";
 import ReceiptModal from "./ReceiptModal";
 import SOAModal from "./SOAModal";
+import InvoiceEditModal from "./InvoiceEditModal";
 import type { SOAInvoice } from "./ReceiptPDF";
 
 export type InvoiceStatus = "draft" | "sent" | "paid" | "unpaid" | "overdue" | "cancelled" | "accepted" | "rejected" | "partially_paid";
@@ -122,6 +123,8 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
   const [showSOAModal, setShowSOAModal] = useState(false);
   // Cancel confirm
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
+  // Edit
+  const [editTarget, setEditTarget] = useState<Invoice | null>(null);
 
   useEffect(() => { loadInvoices(); loadSettings(); }, [projectId]);
 
@@ -354,6 +357,10 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
                         <button type="button" onClick={() => handleViewPdf(inv)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" title="View PDF">
                           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                         </button>
+                        {/* Edit */}
+                        <button type="button" onClick={() => setEditTarget(inv)} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50" title="Edit">
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
 
                         {/* Draft actions */}
                         {inv.status === "draft" && <button type="button" onClick={() => handleUpdateStatus(inv, "sent")} className="h-9 rounded-lg bg-blue-50 px-3 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Send</button>}
@@ -479,6 +486,15 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
           clientName={clientName || invoices[0]?.client_name || "Client"}
           settings={settings}
           onClose={() => setShowSOAModal(false)}
+        />
+      )}
+
+      {editTarget && (
+        <InvoiceEditModal
+          invoice={editTarget}
+          settings={settings}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { loadInvoices(); setEditTarget(null); }}
         />
       )}
     </div>

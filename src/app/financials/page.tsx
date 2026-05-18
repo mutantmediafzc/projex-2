@@ -8,7 +8,9 @@ import InvoiceCreateModal from "@/app/projects/[id]/InvoiceCreateModal";
 import InvoicePdfModal from "@/app/projects/[id]/InvoicePdfModal";
 import InvoiceSettingsModal from "@/app/projects/[id]/InvoiceSettingsModal";
 import InvoiceEditModal from "@/app/projects/[id]/InvoiceEditModal";
-import type { InvoiceType, InvoiceSettings, InvoiceItem } from "@/app/projects/[id]/InvoiceManagement";
+import PaymentModal, { type Payment } from "@/app/projects/[id]/PaymentModal";
+import ReceiptModal from "@/app/projects/[id]/ReceiptModal";
+import type { InvoiceType, InvoiceSettings, InvoiceItem, Invoice as MgmtInvoice } from "@/app/projects/[id]/InvoiceManagement";
 
 type Invoice = {
   id: string;
@@ -273,6 +275,14 @@ export default function FinancialsPage() {
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
 
+  // Payments & Receipts
+  const [paymentsMap, setPaymentsMap] = useState<Record<string, Payment[]>>({});
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<Payment | null>(null);
+  const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
+
   // Filters
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
@@ -291,9 +301,27 @@ export default function FinancialsPage() {
         supabaseClient.from("companies").select("id, name").order("name"),
       ]);
       if (invoicesRes.error) { setError(invoicesRes.error.message); setLoading(false); return; }
-      setInvoices((invoicesRes.data as unknown as Invoice[]) || []);
+      const invoiceList = (invoicesRes.data as unknown as Invoice[]) || [];
+      setInvoices(invoiceList);
       setProjects((projectsRes.data as unknown as Project[]) || []);
       setCompanies((companiesRes.data as Company[]) || []);
+
+      // Load payments for all invoices
+      if (invoiceList.length > 0) {
+        const invoiceIds = invoiceList.map(i => i.id);
+        const { data: pData } = await supabaseClient
+          .from("invoice_payments")
+          .select("*")
+          .in("invoice_id", invoiceIds)
+          .order("payment_date", { ascending: true });
+        const map: Record<string, Payment[]> = {};
+        for (const p of (pData || []) as Payment[]) {
+          if (!map[p.invoice_id]) map[p.invoice_id] = [];
+          map[p.invoice_id].push(p);
+        }
+        setPaymentsMap(map);
+      }
+
       setLoading(false);
     } catch {
       setError("Failed to load financial data.");
@@ -628,6 +656,16 @@ export default function FinancialsPage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <p className="text-[15px] font-bold text-slate-900">{formatMoney(inv.total, inv.currency)}</p>
+                    {inv.invoice_type === "invoice" && (paymentsMap[inv.id] || []).length > 0 && (() => {
+                      const totalPaid = (paymentsMap[inv.id] || []).reduce((s, p) => s + p.amount, 0);
+                      const balance = inv.total - totalPaid;
+                      return (
+                        <div className="flex items-center gap-2 text-[10px] mt-0.5">
+                          <span className="text-emerald-600 font-medium">Paid: {formatMoney(totalPaid, inv.currency)}</span>
+                          {balance > 0.01 && <span className="text-amber-600 font-medium">Balance: {formatMoney(balance, inv.currency)}</span>}
+                        </div>
+                      );
+                    })()}
                   </div>
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
@@ -659,11 +697,32 @@ export default function FinancialsPage() {
                     {inv.invoice_type === "quote" && inv.status === "accepted" && (
                       <button type="button" onClick={() => handleCreateInvoiceFromQuote(inv)} className="h-8 rounded-lg bg-violet-50 px-2.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-100">→ Invoice</button>
                     )}
-                    {inv.invoice_type === "invoice" && (inv.status === "sent" || inv.status === "unpaid") && (
-                      <button type="button" onClick={() => handleUpdateStatus(inv, "paid")} className="h-8 rounded-lg bg-emerald-50 px-2.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100">Mark Paid</button>
+                    {/* Payment recording for invoices */}
+                    {inv.invoice_type === "invoice" && inv.status !== "paid" && inv.status !== "cancelled" && (
+                      <button
+                        type="button"
+                        onClick={() => { setPaymentInvoice(inv); setShowPaymentModal(true); }}
+                        className="h-8 rounded-lg bg-emerald-50 px-2.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                      >
+                        {(paymentsMap[inv.id] || []).length > 0 ? "+ Payment" : "Record Payment"}
+                      </button>
                     )}
-                    {inv.invoice_type === "invoice" && inv.status === "paid" && (
-                      <button type="button" onClick={() => handleUpdateStatus(inv, "unpaid")} className="h-8 rounded-lg bg-amber-50 px-2.5 text-[11px] font-semibold text-amber-700 hover:bg-amber-100">Unpaid</button>
+                    {/* Receipt buttons for each payment */}
+                    {inv.invoice_type === "invoice" && (paymentsMap[inv.id] || []).length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {(paymentsMap[inv.id] || []).map((p, idx) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            title={`Receipt for payment ${idx + 1}`}
+                            onClick={() => { setReceiptInvoice(inv); setReceiptPayment(p); setShowReceiptModal(true); }}
+                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100"
+                          >
+                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+                            {(paymentsMap[inv.id] || []).length > 1 ? `R${idx + 1}` : "Receipt"}
+                          </button>
+                        ))}
+                      </div>
                     )}
                     {inv.status !== "paid" && inv.status !== "cancelled" && inv.status !== "rejected" && (
                       <button
@@ -745,6 +804,23 @@ export default function FinancialsPage() {
         settings={settings}
         onClose={() => setEditTarget(null)}
         onSaved={() => { void loadAll(); setEditTarget(null); }}
+      />
+    )}
+    {showPaymentModal && paymentInvoice && (
+      <PaymentModal
+        invoice={paymentInvoice as unknown as MgmtInvoice}
+        payments={paymentsMap[paymentInvoice.id] || []}
+        onClose={() => { setShowPaymentModal(false); setPaymentInvoice(null); }}
+        onSaved={() => { void loadAll(); }}
+      />
+    )}
+    {showReceiptModal && receiptInvoice && receiptPayment && (
+      <ReceiptModal
+        invoice={receiptInvoice as unknown as MgmtInvoice}
+        payment={receiptPayment}
+        allPayments={paymentsMap[receiptInvoice.id] || []}
+        settings={settings}
+        onClose={() => { setShowReceiptModal(false); setReceiptInvoice(null); setReceiptPayment(null); }}
       />
     )}
     </RequireAdmin>

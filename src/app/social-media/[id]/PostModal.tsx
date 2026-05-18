@@ -606,7 +606,7 @@ export default function PostModal({ post, projectId, projectInfo, availablePlatf
               <div>
                 <label className="mb-1.5 block text-xs font-medium text-slate-600">📱 Platforms <span className="text-red-500">*</span></label>
                 <div className="flex flex-wrap gap-2">
-                  {[...new Set([...availablePlatforms, "youtube", "whatsapp"])].map((p) => (
+                  {[...new Set([...availablePlatforms, "youtube", "whatsapp", "pinterest"])].map((p) => (
                     <button key={p} type="button" onClick={() => togglePlatform(p)}
                       className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all ${
                         platforms.includes(p) 

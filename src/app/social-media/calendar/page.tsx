@@ -1199,7 +1199,7 @@ export default function ContentCalendar2026() {
           post={editingPost as any}
           projectId={editingPost.project_id}
           projectInfo={editingPost.project as any}
-          availablePlatforms={["instagram", "facebook", "tiktok", "linkedin", "x", "youtube", "whatsapp"]}
+          availablePlatforms={["instagram", "facebook", "tiktok", "linkedin", "x", "youtube", "whatsapp", "pinterest"]}
           onClose={() => { setShowPostModal(false); setEditingPost(null); }}
           onSaved={() => { setShowPostModal(false); setEditingPost(null); loadData(); }}
         />

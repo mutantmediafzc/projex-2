@@ -7,6 +7,7 @@ import type { Invoice } from "./InvoiceManagement";
 export type Payment = {
   id: string;
   invoice_id: string;
+  receipt_number: string;
   amount: number;
   payment_date: string;
   payment_method: string;
@@ -50,8 +51,15 @@ export default function PaymentModal({ invoice, payments, onClose, onSaved }: Pr
     setSaving(true);
     setError(null);
     try {
+      // Generate receipt number: REC-YYYYMMDD-XXXXXX
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const receiptNumber = `REC-${dateStr}-${randomStr}`;
+
       const { error: insErr } = await supabaseClient.from("invoice_payments").insert({
         invoice_id: invoice.id,
+        receipt_number: receiptNumber,
         amount: amt,
         payment_date: date,
         payment_method: method,

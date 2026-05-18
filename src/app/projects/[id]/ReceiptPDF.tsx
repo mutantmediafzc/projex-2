@@ -101,7 +101,10 @@ function ReceiptDocument({ invoice, payment, allPayments, settings }: {
           </View>
           <View style={{ alignItems: "flex-end" }}>
             <Text style={rStyles.badge}>RECEIPT</Text>
-            <Text style={[rStyles.headerLine, { marginTop: 6 }]}>For: {invoice.invoice_number}</Text>
+            <Text style={[rStyles.headerLine, { marginTop: 6, fontWeight: "bold", fontSize: 11, color: "#1e293b" }]}>
+              {payment.receipt_number || `REC-${invoice.invoice_number}`}
+            </Text>
+            <Text style={rStyles.headerLine}>For Invoice: {invoice.invoice_number}</Text>
             <Text style={rStyles.headerLine}>Date: {fmtDate(payment.payment_date)}</Text>
           </View>
         </View>
@@ -124,6 +127,10 @@ function ReceiptDocument({ invoice, payment, allPayments, settings }: {
         {/* Payment details */}
         <View style={rStyles.section}>
           <Text style={rStyles.sectionTitle}>Payment Details</Text>
+          <View style={rStyles.row}>
+            <Text style={rStyles.label}>Receipt Number</Text>
+            <Text style={rStyles.value}>{payment.receipt_number || `REC-${invoice.invoice_number}`}</Text>
+          </View>
           <View style={rStyles.row}>
             <Text style={rStyles.label}>Invoice Number</Text>
             <Text style={rStyles.value}>{invoice.invoice_number}</Text>

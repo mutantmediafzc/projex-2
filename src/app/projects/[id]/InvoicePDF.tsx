@@ -121,9 +121,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
         {/* Header — Logo on top, text left-aligned */}
         <View style={styles.header}>
           <View style={isQuote ? styles.quoteHeaderLeft : styles.headerLeft}>
-            {showLogo && <Image src={MUTANT.logoUrl} style={styles.logo} />}
             <View style={styles.headerTextBlock}>
-              <Text style={styles.headerCompanyName}>{MUTANT.name}</Text>
               <Text style={styles.headerTrn}>TRN: {MUTANT.trn}</Text>
               {showBankDetails && (
                 <>
@@ -137,15 +135,12 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             </View>
           </View>
           <View style={isQuote ? styles.quoteHeaderRight : { alignItems: "flex-end" }}>
-            <Text style={{ fontSize: isQuote ? 22 : 28, fontWeight: "bold", color: "#7c3aed" }}>
+            <Text style={{ fontSize: isQuote ? 24 : 36, fontWeight: "bold", color: "#7c3aed", letterSpacing: 1 }}>
               {isQuote ? "QUOTE" : "TAX INVOICE"}
             </Text>
             <Text style={[styles.headerLine, { marginTop: 6 }]}>{invoice.invoice_number}</Text>
           </View>
         </View>
-
-        {/* Title */}
-        <Text style={styles.title}>{isQuote ? "QUOTE" : "TAX INVOICE"}</Text>
 
         {/* Invoice Details & Client */}
         <View style={styles.row}>

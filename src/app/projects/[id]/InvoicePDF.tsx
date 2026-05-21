@@ -113,7 +113,6 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
 
   // Determine what to show in header based on header style
   const showBankDetails = headerStyle === "detailed";
-  const showLogo = headerStyle !== "compact";
 
   return (
     <Document>
@@ -122,6 +121,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
         <View style={styles.header}>
           <View style={isQuote ? styles.quoteHeaderLeft : styles.headerLeft}>
             <View style={styles.headerTextBlock}>
+              <Text style={styles.headerCompanyName}>{MUTANT.name}</Text>
               <Text style={styles.headerTrn}>TRN: {MUTANT.trn}</Text>
               {showBankDetails && (
                 <>
@@ -135,10 +135,10 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             </View>
           </View>
           <View style={isQuote ? styles.quoteHeaderRight : { alignItems: "flex-end" }}>
-            <Text style={{ fontSize: isQuote ? 24 : 36, fontWeight: "bold", color: "#7c3aed", letterSpacing: 1 }}>
+            <Text style={{ fontSize: isQuote ? 22 : 28, fontWeight: "bold", color: "#7c3aed" }}>
               {isQuote ? "QUOTE" : "TAX INVOICE"}
             </Text>
-            <Text style={[styles.headerLine, { marginTop: 6 }]}>{invoice.invoice_number}</Text>
+            <Text style={{ fontSize: 16, fontWeight: "bold", marginTop: 6, color: "#1e293b" }}>{invoice.invoice_number}</Text>
           </View>
         </View>
 

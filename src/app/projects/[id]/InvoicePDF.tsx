@@ -6,8 +6,16 @@ import type { Invoice, InvoiceSettings } from "./InvoiceManagement";
 const MUTANT = {
   name: "Mutant Media Fzc.",
   trn: "104081933400003",
+  // Office address for header
+  officeAddress1: "Office 303, O2 Tower",
+  officeAddress2: "Business District 14,",
+  officeAddress3: "JVC, Dubai, UAE",
+  phone: "+971 4 433 2156",
+  website: "www.mutant.ae",
+  email: "finance@mutant.ae",
+  // Bank details for payment section
   bank: "Mashreq Bank",
-  address: "Al Ghurair City, 339-C, AGC, Al Riqqa Street, Dubai, UAE",
+  bankAddress: "Al Ghurair City, 339-C, AGC, Al Riqqa Street, Dubai, UAE",
   account: "019100924426",
   iban: "AE320330000019100924426",
   swift: "BOMLAEAD",
@@ -125,11 +133,12 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
               <Text style={styles.headerTrn}>TRN: {MUTANT.trn}</Text>
               {showBankDetails && (
                 <>
-                  <Text style={styles.headerLine}>{MUTANT.bank}</Text>
-                  <Text style={styles.headerLine}>{MUTANT.address}</Text>
-                  <Text style={styles.headerLine}>Account #  {MUTANT.account}</Text>
-                  <Text style={styles.headerLine}>IBAN  {MUTANT.iban}</Text>
-                  <Text style={styles.headerLine}>Swift Code:  {MUTANT.swift}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.officeAddress1}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.officeAddress2}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.officeAddress3}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.phone}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.website}</Text>
+                  <Text style={styles.headerLine}>{MUTANT.email}</Text>
                 </>
               )}
             </View>
@@ -218,7 +227,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           <Text style={styles.bankTitle}>Payment Details</Text>
           <Text style={styles.bankRow}><Text style={styles.bankLabel}>Company: </Text>{MUTANT.name}</Text>
           <Text style={styles.bankRow}><Text style={styles.bankLabel}>Bank: </Text>{MUTANT.bank}</Text>
-          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Address: </Text>{MUTANT.address}</Text>
+          <Text style={styles.bankRow}><Text style={styles.bankLabel}>Address: </Text>{MUTANT.bankAddress}</Text>
           <Text style={styles.bankRow}><Text style={styles.bankLabel}>Account #: </Text>{MUTANT.account}</Text>
           <Text style={styles.bankRow}><Text style={styles.bankLabel}>IBAN: </Text>{MUTANT.iban}</Text>
           <Text style={styles.bankRow}><Text style={styles.bankLabel}>Swift Code: </Text>{MUTANT.swift}</Text>

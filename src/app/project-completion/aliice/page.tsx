@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Image } from "@react-pdf/renderer";
 
+// Base64 encoded Mutant logo for reliable PDF rendering
+const MUTANT_LOGO_BASE64 = "data:image/png;base64,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";
+
 // Mutant Media details from invoices
 const MUTANT = {
   name: "Mutant Media Fzc.",
@@ -13,8 +16,7 @@ const MUTANT = {
   phone: "+971 4 433 2156",
   website: "www.mutant.ae",
   email: "finance@mutant.ae",
-  // Use absolute URL for PDF rendering
-  logoUrl: "https://creamcrm.io/logos/mutant-logo.png",
+  logoUrl: "/logos/mutant-logo.png", // For web preview
 };
 
 const CLIENT = {
@@ -295,7 +297,7 @@ function CompletionDocument() {
       {/* Page 1 - Cover & Parties */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <Image src={MUTANT.logoUrl} style={styles.logo} />
+          <Image src={MUTANT_LOGO_BASE64} style={styles.logo} />
           <View style={styles.headerRight}>
             <Text style={styles.title}>PROJECT COMPLETION</Text>
             <Text style={styles.subtitle}>Certificate & Deliverables</Text>

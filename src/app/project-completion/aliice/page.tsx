@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Image, Font } from "@react-pdf/renderer";
+import { useState } from "react";
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink, Image } from "@react-pdf/renderer";
 
 // Mutant Media details from invoices
 const MUTANT = {
@@ -13,7 +13,8 @@ const MUTANT = {
   phone: "+971 4 433 2156",
   website: "www.mutant.ae",
   email: "finance@mutant.ae",
-  logoUrl: "https://www.creamcrm.io/logos/mutant-logo.png",
+  // Use absolute URL for PDF rendering
+  logoUrl: "https://creamcrm.io/logos/mutant-logo.png",
 };
 
 const CLIENT = {
@@ -30,194 +31,84 @@ const PROJECT = {
   completionDate: new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" }),
 };
 
-// Complete list of finished features from the aesthetic-clinic project
+// Consolidated features for compact PDF display
 const COMPLETED_FEATURES = [
   {
-    category: "Core Platform",
+    category: "Core Platform & Authentication",
     features: [
-      "Next.js 15 App Router with React 19 frontend architecture",
-      "Supabase PostgreSQL database with Row Level Security (RLS)",
-      "Role-based authentication system (admin, doctor, nurse, staff, technician)",
-      "Multi-patient tab management for simultaneous patient access",
-      "Real-time notifications system for comments, tasks, and emails",
-      "Global patient search functionality",
-      "Responsive design with Tailwind CSS 4",
+      "Next.js 15 App Router with React 19 and Supabase PostgreSQL with RLS",
+      "Role-based authentication (admin, doctor, nurse, staff, technician)",
+      "Multi-patient tab management and global patient search",
+      "Real-time notifications for comments, tasks, and emails",
     ],
   },
   {
-    category: "Patient Management",
+    category: "Patient & Appointment Management",
     features: [
-      "Complete patient database with demographics and contact information",
-      "Patient profile with medical history tracking",
-      "Patient intake forms with digital signature capture",
-      "Address autocomplete integration",
-      "Patient document management and storage",
-      "Patient merge functionality for duplicate records",
-      "HEIC and TIFF image preview support",
-    ],
-  },
-  {
-    category: "Appointment System",
-    features: [
-      "Full appointment scheduling with calendar view",
-      "Appointment booking widget for website embedding",
-      "Appointment categories and service types management",
-      "Appointment reminders and confirmations",
+      "Complete patient database with demographics, medical history, and intake forms",
+      "Digital signature capture and document management",
+      "Full appointment scheduling with calendar view and booking widget",
       "Public booking page for patient self-scheduling",
-      "Appointment notes and documentation",
     ],
   },
   {
-    category: "Medical Records & Consultations",
+    category: "Medical Records & 3D Imaging",
     features: [
-      "Medical consultations tracking and documentation",
-      "Rich text editor for medical notes (Slate-based)",
-      "PDF annotation editor for medical documents",
-      "Document templates panel with pre-built templates",
-      "Medication templates management",
-      "Medical records API with secure access",
-    ],
-  },
-  {
-    category: "Crisalix 3D Integration",
-    features: [
-      "Complete OAuth authentication with Crisalix API",
-      "3D reconstruction creation for Breast, Face, and Body",
-      "Image upload workflow with preview",
-      "Measurement input (nipple-to-nipple, pupillary distance, hipline)",
-      "Interactive 3D player modal for viewing simulations",
-      "Existing reconstruction detection and reuse",
-      "Consultation tracking for 3D sessions",
+      "Medical consultations tracking with rich text editor (Slate-based)",
+      "PDF annotation editor and document templates",
+      "Crisalix 3D integration for Breast, Face, and Body reconstructions",
+      "Interactive 3D player modal with measurement inputs",
     ],
   },
   {
     category: "Swiss Medical Billing (SUMEX/TarDoc)",
     features: [
-      "SUMEX XML invoice generation (Swiss standard)",
-      "TarDoc medical procedure codes integration",
-      "Swiss QR-bill generation (ISO 20022 standard)",
-      "QR Reference with Modulo 10 check digit calculation",
+      "SUMEX XML invoice generation (Swiss standard) with TarDoc codes",
+      "Swiss QR-bill generation (ISO 20022) with Modulo 10 check digit",
       "Multiple billing entity support with separate IBANs",
-      "Doctor/Provider GLN and ZSR number management",
-      "Insurance billing modal with TP/TG support",
-      "ACF (Assura Claims Format) accordion tree viewer",
-      "TarDoc groups management and code lookup",
+      "Insurance billing modal with TP/TG support and ACF viewer",
     ],
   },
   {
     category: "Invoice & Payment System",
     features: [
-      "PDF invoice generation with QR codes",
-      "Magic link payment system (90-day expiration, no login required)",
-      "Payrexx payment gateway integration",
-      "Swiss QR-bill for bank transfers",
-      "Multiple payment methods: Cash, Online, Bank Transfer, Insurance",
-      "Payment status tracking and webhooks",
-      "Invoice status badges and management",
-      "Automatic payment reconciliation via QR references",
+      "PDF invoice generation with magic link payments (90-day expiration)",
+      "Payrexx gateway integration with multiple payment methods",
+      "Payment status tracking, webhooks, and automatic reconciliation",
     ],
   },
   {
-    category: "Communication System",
+    category: "Communication & Documents",
     features: [
-      "Email system with Mailgun integration (EU region)",
-      "Email template builder with visual editor",
-      "Scheduled email sending with cron jobs",
-      "WhatsApp integration via Twilio API",
-      "WhatsApp Web conversation interface",
-      "WhatsApp message templates for business messaging",
-      "In-app chat system for internal communication",
-      "Chat logs and conversation history",
+      "Email system with Mailgun, template builder, and scheduled sending",
+      "WhatsApp integration via Twilio with business messaging templates",
+      "OnlyOffice document editing with signature capture",
+      "In-app chat system with conversation history",
     ],
   },
   {
-    category: "Document Management",
+    category: "CRM & Automation",
     features: [
-      "OnlyOffice integration for document editing",
-      "DOCX editor with rich text capabilities",
-      "Document preview (DOCX, PDF, images)",
-      "Signature editor for electronic signatures",
-      "Document templates with variable substitution",
-      "Supabase storage bucket integration",
-      "Secure document access via tokens",
+      "Deal management with Kanban board and lead tracking",
+      "Workflow automation with stage change triggers",
+      "Automatic task creation and email automation",
     ],
   },
   {
-    category: "Automation & Workflows",
+    category: "Analytics & Integrations",
     features: [
-      "Workflow automation engine",
-      "Deal stage change triggers",
-      "Automatic task creation based on triggers",
-      "Email automation with templates",
-      "Workflow enrollment tracking",
-      "Template variables for patient/deal context",
+      "Financial statistics and reporting dashboard",
+      "Google Gemini AI integration for intelligent assistance",
+      "Medidata patient/insurer lookup and GTM tracking",
+      "Embeddable forms with postMessage communication",
     ],
   },
   {
-    category: "CRM & Sales Pipeline",
+    category: "Deployment & Infrastructure",
     features: [
-      "Deal management with Kanban board",
-      "Deal notifications and alerts",
-      "Lead import functionality",
-      "Lead management and conversion tracking",
-      "Deal pipeline customization",
-      "Activity tracking for deals",
-    ],
-  },
-  {
-    category: "Analytics & Reporting",
-    features: [
-      "Financial statistics dashboard",
-      "Email reports and analytics",
-      "Appointment statistics",
-      "Revenue tracking and reporting",
-    ],
-  },
-  {
-    category: "User & Team Management",
-    features: [
-      "User management with role assignment",
-      "Multi-user search and selection",
-      "User profile management",
-      "Provider and billing entity settings",
-      "Team task assignment",
-    ],
-  },
-  {
-    category: "Integration & Embedding",
-    features: [
-      "Embeddable forms for external websites",
-      "Google Tag Manager integration for conversion tracking",
-      "postMessage communication for iframe events",
-      "Client onboarding workflow",
-      "Aliice Chat embed widget",
-      "Aliice Story feature",
-    ],
-  },
-  {
-    category: "AI & Intelligence",
-    features: [
-      "Google Gemini AI integration",
-      "AI-powered prompt system",
-      "Intelligent form assistance",
-    ],
-  },
-  {
-    category: "Mobile & Deployment",
-    features: [
-      "Mobile app foundation (React Native)",
-      "Vercel deployment configuration",
-      "Railway deployment for WhatsApp server",
-      "Environment-based configuration",
-      "CSP headers for embed security",
-    ],
-  },
-  {
-    category: "Medidata Integration",
-    features: [
-      "Medidata patient lookup API",
-      "Medidata insurer search",
-      "Insurance provider database integration",
+      "Vercel deployment (main app) and Railway (WhatsApp server)",
+      "Mobile app foundation with React Native",
+      "Environment-based configuration with CSP headers",
     ],
   },
 ];
@@ -467,97 +358,60 @@ function CompletionDocument() {
           </Text>
         </View>
 
-        <Text style={styles.footer}>
-          {MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}
-        </Text>
-        <Text style={styles.pageNumber}>Page 1</Text>
-      </Page>
-
-      {/* Page 2 - Features Part 1 */}
-      <Page size="A4" style={styles.page}>
+        {/* Completed Features - Compact List */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Completed Features & Deliverables</Text>
-          <Text style={styles.paragraph}>
-            The following features have been successfully developed, tested, and delivered as part of the {PROJECT.name} project:
-          </Text>
-        </View>
-
-        {COMPLETED_FEATURES.slice(0, 9).map((category, idx) => (
-          <View key={idx} wrap={false}>
-            <Text style={styles.categoryTitle}>✓ {category.category}</Text>
-            {category.features.map((feature, fIdx) => (
-              <Text key={fIdx} style={styles.featureItem}>• {feature}</Text>
-            ))}
-          </View>
-        ))}
-
-        <Text style={styles.footer}>
-          {MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}
-        </Text>
-        <Text style={styles.pageNumber}>Page 2</Text>
-      </Page>
-
-      {/* Page 3 - Features Part 2 */}
-      <Page size="A4" style={styles.page}>
-        {COMPLETED_FEATURES.slice(9).map((category, idx) => (
-          <View key={idx} wrap={false}>
-            <Text style={styles.categoryTitle}>✓ {category.category}</Text>
-            {category.features.map((feature, fIdx) => (
-              <Text key={fIdx} style={styles.featureItem}>• {feature}</Text>
-            ))}
-          </View>
-        ))}
-
-        <View style={[styles.section, { marginTop: 20 }]}>
-          <Text style={styles.sectionTitle}>Documentation Provided</Text>
-          <Text style={styles.paragraph}>
-            The following technical documentation has been provided with the project delivery:{"\n\n"}
-            • CLAUDE.md - Project overview and commands{"\n"}
-            • FINAL_MIGRATION_SUMMARY.md - Database migration guide{"\n"}
-            • INVOICE_SYSTEM_SUMMARY.md - Invoice and payment system documentation{"\n"}
-            • CRISALIX_3D_WORKFLOW.md - 3D integration workflow{"\n"}
-            • WHATSAPP_SETUP.md - WhatsApp integration guide{"\n"}
-            • PAYMENT_SYSTEM_IMPLEMENTATION.md - Swiss QR-bill and Payrexx documentation{"\n"}
-            • GTM_IMPLEMENTATION_SUMMARY.md - Analytics tracking setup{"\n"}
-            • AUTOMATION_WORKFLOW_CONSOLE_GUIDE.md - Workflow automation guide{"\n"}
-            • Additional setup and configuration guides
-          </Text>
+          {COMPLETED_FEATURES.map((category, idx) => (
+            <View key={idx} style={{ marginBottom: 6 }}>
+              <Text style={[styles.categoryTitle, { marginTop: 4, marginBottom: 2 }]}>✓ {category.category}</Text>
+              {category.features.map((feature, fIdx) => (
+                <Text key={fIdx} style={[styles.featureItem, { marginBottom: 1 }]}>• {feature}</Text>
+              ))}
+            </View>
+          ))}
         </View>
 
         <Text style={styles.footer}>
           {MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}
         </Text>
-        <Text style={styles.pageNumber}>Page 3</Text>
+        <Text style={styles.pageNumber}>Page 1 of 2</Text>
       </Page>
 
-      {/* Page 4 - Terms & Signatures */}
+      {/* Page 2 - Terms & Signatures */}
       <Page size="A4" style={styles.page}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Acceptance & Terms</Text>
           <Text style={styles.paragraph}>
             By signing below, both parties acknowledge and agree to the following:
           </Text>
-          <Text style={styles.paragraph}>
-            1. <Text style={{ fontWeight: "bold" }}>Completion Acknowledgment:</Text> The Client acknowledges that the Service Provider has completed all deliverables as specified in the project scope and that the {PROJECT.name} platform is fully functional and operational.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            1. Completion Acknowledgment: The Client acknowledges that the Service Provider has completed all deliverables as specified in the project scope and that the {PROJECT.name} platform is fully functional and operational.
           </Text>
-          <Text style={styles.paragraph}>
-            2. <Text style={{ fontWeight: "bold" }}>Acceptance of Deliverables:</Text> The Client accepts all deliverables, including source code, documentation, and deployed applications, as satisfactory completion of the agreed project scope.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            2. Acceptance of Deliverables: The Client accepts all deliverables, including source code, documentation, and deployed applications, as satisfactory completion of the agreed project scope.
           </Text>
-          <Text style={styles.paragraph}>
-            3. <Text style={{ fontWeight: "bold" }}>Intellectual Property:</Text> Upon full payment, all intellectual property rights to the custom-developed code and assets transfer to the Client, excluding any third-party libraries and frameworks used under their respective licenses.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            3. Intellectual Property: Upon full payment, all intellectual property rights to the custom-developed code and assets transfer to the Client, excluding any third-party libraries and frameworks used under their respective licenses.
           </Text>
-          <Text style={styles.paragraph}>
-            4. <Text style={{ fontWeight: "bold" }}>Support Period:</Text> Any support, maintenance, or additional development beyond this completion date shall be subject to a separate agreement and associated fees.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            4. Support Period: Any support, maintenance, or additional development beyond this completion date shall be subject to a separate agreement and associated fees.
           </Text>
-          <Text style={styles.paragraph}>
-            5. <Text style={{ fontWeight: "bold" }}>Warranties:</Text> The Service Provider warrants that the delivered software is free from material defects at the time of delivery. Any issues discovered within 30 days of signing shall be addressed at no additional cost.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            5. Warranties: The Service Provider warrants that the delivered software is free from material defects at the time of delivery. Any issues discovered within 30 days of signing shall be addressed at no additional cost.
           </Text>
-          <Text style={styles.paragraph}>
-            6. <Text style={{ fontWeight: "bold" }}>Final Payment:</Text> This Certificate serves as confirmation that all project milestones have been met, and any remaining balance is due upon signing.
+          <Text style={[styles.paragraph, { fontSize: 9 }]}>
+            6. Final Payment: This Certificate serves as confirmation that all project milestones have been met, and any remaining balance is due upon signing.
           </Text>
         </View>
 
-        <View style={styles.signatureSection}>
+        <View style={[styles.section, { marginTop: 10 }]}>
+          <Text style={styles.sectionTitle}>Documentation Provided</Text>
+          <Text style={[styles.paragraph, { fontSize: 8 }]}>
+            Technical documentation included: CLAUDE.md (Project overview), FINAL_MIGRATION_SUMMARY.md, INVOICE_SYSTEM_SUMMARY.md, CRISALIX_3D_WORKFLOW.md, WHATSAPP_SETUP.md, PAYMENT_SYSTEM_IMPLEMENTATION.md, GTM_IMPLEMENTATION_SUMMARY.md, AUTOMATION_WORKFLOW_CONSOLE_GUIDE.md, and additional setup guides.
+          </Text>
+        </View>
+
+        <View style={[styles.signatureSection, { marginTop: 20 }]}>
           <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Signatures</Text>
           <Text style={styles.legalText}>
             IN WITNESS WHEREOF, the parties have executed this Project Completion Certificate as of the date written below.
@@ -581,7 +435,7 @@ function CompletionDocument() {
           </View>
         </View>
 
-        <View style={{ marginTop: 30 }}>
+        <View style={{ marginTop: 20 }}>
           <Text style={styles.legalText}>
             This document constitutes the entire agreement between the parties regarding the completion of the {PROJECT.name} project and supersedes all prior negotiations, representations, or agreements relating to this subject matter.
           </Text>
@@ -590,7 +444,7 @@ function CompletionDocument() {
         <Text style={styles.footer}>
           {MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}
         </Text>
-        <Text style={styles.pageNumber}>Page 4</Text>
+        <Text style={styles.pageNumber}>Page 2 of 2</Text>
       </Page>
     </Document>
   );

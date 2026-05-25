@@ -115,6 +115,21 @@ const COMPLETED_FEATURES = [
   },
 ];
 
+// Documentation files provided with the project
+const DOCUMENTATION = [
+  { name: "CLAUDE.md", title: "Project Overview & Commands", description: "Main project documentation with architecture overview and development commands" },
+  { name: "FINAL_MIGRATION_SUMMARY.md", title: "Database Migration Guide", description: "Provider/billing entity migration and database schema changes" },
+  { name: "INVOICE_SYSTEM_SUMMARY.md", title: "Invoice & Payment System", description: "Complete invoice generation and payment processing documentation" },
+  { name: "CRISALIX_3D_WORKFLOW.md", title: "Crisalix 3D Integration", description: "OAuth flow, API integration, and 3D reconstruction workflow" },
+  { name: "WHATSAPP_SETUP.md", title: "WhatsApp Integration", description: "Twilio WhatsApp API setup and messaging templates" },
+  { name: "PAYMENT_SYSTEM_IMPLEMENTATION.md", title: "Swiss QR-Bill & Payrexx", description: "Swiss payment standards and Payrexx gateway integration" },
+  { name: "GTM_IMPLEMENTATION_SUMMARY.md", title: "GTM & Analytics Tracking", description: "Google Tag Manager iframe tracking implementation" },
+  { name: "AUTOMATION_WORKFLOW_CONSOLE_GUIDE.md", title: "Workflow Automation", description: "Deal stage triggers and automatic task creation" },
+  { name: "BILLING_ENTITIES_SETUP.md", title: "Billing Entities Setup", description: "Multi-clinic billing configuration guide" },
+  { name: "MAILGUN_SETUP.md", title: "Email System Setup", description: "Mailgun integration and email template configuration" },
+  { name: "DOCSPACE_SETUP_GUIDE.md", title: "Document Management", description: "OnlyOffice DocSpace integration guide" },
+];
+
 // PDF Styles
 const styles = StyleSheet.create({
   page: {
@@ -560,6 +575,43 @@ export default function AliiceProjectCompletionPage() {
                   ))}
                 </ul>
               </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Documentation Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-6">
+          <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+            Documentation Provided
+          </h4>
+          <p className="text-slate-600 mb-4">
+            The following technical documentation has been provided with the project delivery. Click to download each document.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {DOCUMENTATION.map((doc, idx) => (
+              <a
+                key={idx}
+                href={`/project-completion/aliice-docs/${doc.name}`}
+                download={doc.name}
+                className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 hover:border-purple-300 hover:bg-purple-50 transition-colors group"
+              >
+                <div className="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200">
+                  <svg className="w-4 h-4 text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <polyline points="10 9 9 9 8 9" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-slate-900 text-sm truncate">{doc.title}</p>
+                  <p className="text-xs text-slate-500 truncate">{doc.description}</p>
+                </div>
+                <svg className="w-4 h-4 text-slate-400 group-hover:text-purple-600 flex-shrink-0 mt-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+              </a>
             ))}
           </div>
         </div>

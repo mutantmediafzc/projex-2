@@ -42,6 +42,28 @@ const COMPLETED_FEATURES = [
   { category: "Analytics & Integrations", features: ["Financial statistics, Medidata integration, and GTM tracking", "Embeddable forms with AI assistance (Google Gemini)"] },
 ];
 
+// Legal clauses for Terms & Conditions
+const LEGAL_CLAUSES = [
+  { title: "1. Project Acceptance", content: "By approving this handover, the Client confirms that the project has been reviewed, tested internally where applicable, and accepted in accordance with the agreed scope, approved deliverables, and documented revisions throughout the project lifecycle.\n\nCompleted and approved deliverables shall be considered accepted in their delivered state at the time of handover." },
+  { title: "2. Scope of Delivery", content: "The Client acknowledges that the agreed project scope and deliverables have been completed based on the approved proposal, discussions, and documented requirements.\n\nAny future enhancements, feature additions, workflow changes, integrations, revisions, optimisations, or functionality changes outside the approved scope may be treated as separate work and assessed accordingly." },
+  { title: "3. Project Closure", content: "Upon approval of this handover, the project shall be considered formally completed from Mutant Media FZC's delivery side.\n\nAny future development, support, maintenance, optimisation, troubleshooting, or enhancement requests may be handled under a separate agreement or support arrangement where required." },
+  { title: "4. Handover Confirmation", content: "The Client confirms receipt of the agreed project assets, credentials, files, documentation, source materials, and access details relevant to the project handover.\n\nFollowing handover, day-to-day operational management, administration, access control, and internal handling of the platform shall transition to the Client." },
+  { title: "5. Responsibility Following Handover", content: "From the handover approval date onwards, responsibility for ongoing management, administration, operational handling, infrastructure decisions, security management, and future technical decisions relating to the platform shall rest with the Client or its appointed representatives.\n\nMutant Media FZC's responsibility remains limited to the agreed and approved delivery completed up to the handover date." },
+  { title: "6. Internal & Third-Party Modifications", content: "Mutant Media FZC cannot assume responsibility for issues arising from: internal modifications, third-party development, hosting or infrastructure changes, platform or plugin updates, external integrations, server configurations, deployment changes, database modifications, operational handling after handover, unauthorised access or misuse." },
+  { title: "7. Developer / Technical Resource Transition", content: "Where technical personnel, developers, consultants, or project resources continue directly with the Client after handover, such work shall be considered independent from Mutant Media FZC moving forward.\n\nAny future modifications, deployments, operational decisions, technical developments, code changes, infrastructure adjustments, or implementations carried out after the transition date shall fall outside Mutant Media FZC's project delivery responsibility." },
+  { title: "8. Maintenance & Ongoing Support", content: "Unless otherwise agreed in writing, project approval and handover conclude the original delivery phase.\n\nMutant Media FZC is under no obligation to provide ongoing support, maintenance, troubleshooting, monitoring, updates, bug fixing, enhancements, or technical assistance following project completion unless covered under a separate written agreement." },
+  { title: "9. Third-Party Services & Infrastructure", content: "The Client acknowledges that certain areas of the project may rely on third-party providers, platforms, APIs, hosting services, cloud infrastructure, plugins, payment gateways, or external systems outside the direct control of Mutant Media FZC.\n\nFuture changes, interruptions, compatibility issues, service limitations, pricing changes, deprecated functionality, or outages relating to third-party systems may affect functionality over time." },
+  { title: "10. Platform Evolution & Compatibility", content: "The Client understands that digital platforms, browsers, operating systems, APIs, frameworks, hosting environments, and external technologies naturally evolve over time.\n\nMutant Media FZC cannot guarantee indefinite compatibility, uninterrupted functionality, or long-term platform stability where future environmental, infrastructure, or third-party changes occur after project completion." },
+  { title: "11. Client Review & Testing", content: "The Client confirms that appropriate internal review, operational checks, user acceptance testing, and internal approvals have been carried out prior to final approval and handover.\n\nAny items requiring adjustment prior to handover should be documented during the project closure process." },
+  { title: "12. Outstanding Items", content: "Any agreed pending items or snagging points identified before handover shall be documented separately and handled in accordance with mutual agreement between both parties.\n\nItems not formally documented prior to handover approval shall be considered accepted upon project completion." },
+  { title: "13. Commercial Completion", content: "Project approval and handover confirm acceptance of the delivered work and completion of the agreed delivery phase.\n\nFollowing approval and handover, the completed project scope shall be considered accepted by the Client. Any future revisions, support, enhancements, technical requests, operational assistance, or additional development shall fall outside the original project scope unless otherwise agreed in writing.\n\nNo refund, reimbursement, reversal, or compensation claims shall apply relating to approved and accepted deliverables following project handover." },
+  { title: "14. Intellectual Property & Ownership", content: "Ownership of final approved deliverables transfers upon settlement of all agreed project payments and outstanding balances.\n\nMutant Media FZC retains ownership of its internal methodologies, frameworks, reusable systems, proprietary structures, development approaches, and pre-existing intellectual property." },
+  { title: "15. Limitation of Responsibility", content: "Mutant Media FZC's responsibility remains limited to the agreed scope and approved deliverables completed up to the formal handover date.\n\nMutant Media FZC shall not be responsible for: indirect losses, operational interruptions, commercial losses, reputational impact, loss of revenue, downtime, loss of data, third-party failures, post-handover modifications, infrastructure issues, future operational management decisions." },
+  { title: "16. Confidentiality", content: "Both parties agree to maintain reasonable confidentiality regarding proprietary information, credentials, technical systems, operational processes, and business information shared throughout the project." },
+  { title: "17. Entire Agreement", content: "These terms form part of the overall agreement and should be read alongside approved quotations, proposals, contracts, invoices, emails, WhatsApp approvals, and documented discussions exchanged throughout the project lifecycle." },
+  { title: "18. Governing Law", content: "These terms shall be governed in accordance with the laws and regulations of the United Arab Emirates." },
+];
+
 // PDF Styles
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: "Helvetica" },
@@ -74,12 +96,19 @@ const styles = StyleSheet.create({
   projectName: { fontSize: 11, fontWeight: "bold", color: "#1e293b", marginBottom: 2 },
   projectDesc: { fontSize: 8, color: "#475569" },
   pageNumber: { position: "absolute", bottom: 15, right: 40, fontSize: 7, color: "#94a3b8" },
+  clauseTitle: { fontSize: 9, fontWeight: "bold", color: "#1e293b", marginTop: 8, marginBottom: 3 },
+  clauseContent: { fontSize: 8, lineHeight: 1.4, color: "#475569", marginBottom: 2 },
+  pageHeader: { marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
+  pageHeaderTitle: { fontSize: 14, fontWeight: "bold", color: "#7c3aed" },
+  pageHeaderSub: { fontSize: 8, color: "#64748b", marginTop: 2 },
 });
 
 // PDF Document Component
 function CompletionDocument() {
+  const totalPages = 5;
   return (
     <Document>
+      {/* Page 1: Cover with project info, parties, and features */}
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <Image src={MUTANT_LOGO_BASE64} style={styles.logo} />
@@ -131,31 +160,85 @@ function CompletionDocument() {
         </View>
 
         <Text style={styles.footer}>{MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}</Text>
-        <Text style={styles.pageNumber}>Page 1 of 2</Text>
+        <Text style={styles.pageNumber}>Page 1 of {totalPages}</Text>
       </Page>
 
+      {/* Page 2: Terms & Conditions - Clauses 1-6 */}
       <Page size="A4" style={styles.page}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Acceptance & Terms</Text>
-          <Text style={styles.paragraph}>By signing below, both parties acknowledge and agree to the following:</Text>
-          <Text style={styles.paragraph}>1. Completion Acknowledgment: The Client acknowledges that the Service Provider has completed all deliverables as specified in the project scope.</Text>
-          <Text style={styles.paragraph}>2. Acceptance of Deliverables: The Client accepts all deliverables, including source code, documentation, and deployed applications.</Text>
-          <Text style={styles.paragraph}>3. Intellectual Property: Upon full payment, all intellectual property rights to the custom-developed code transfer to the Client.</Text>
-          <Text style={styles.paragraph}>4. Support Period: Any support, maintenance, or additional development beyond this date shall be subject to a separate agreement.</Text>
-          <Text style={styles.paragraph}>5. Warranties: The Service Provider warrants that the delivered software is free from material defects. Issues discovered within 30 days shall be addressed at no additional cost.</Text>
-          <Text style={styles.paragraph}>6. Final Payment: This Certificate confirms that all project milestones have been met, and any remaining balance is due upon signing.</Text>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderTitle}>Terms & Conditions</Text>
+          <Text style={styles.pageHeaderSub}>{PROJECT.fullName} - Project Handover Agreement</Text>
         </View>
 
-        <View style={[styles.section, { marginTop: 8 }]}>
+        {LEGAL_CLAUSES.slice(0, 6).map((clause, idx) => (
+          <View key={idx} style={{ marginBottom: 6 }}>
+            <Text style={styles.clauseTitle}>{clause.title}</Text>
+            <Text style={styles.clauseContent}>{clause.content}</Text>
+          </View>
+        ))}
+
+        <Text style={styles.footer}>{MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}</Text>
+        <Text style={styles.pageNumber}>Page 2 of {totalPages}</Text>
+      </Page>
+
+      {/* Page 3: Terms & Conditions - Clauses 7-12 */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderTitle}>Terms & Conditions (continued)</Text>
+          <Text style={styles.pageHeaderSub}>{PROJECT.fullName} - Project Handover Agreement</Text>
+        </View>
+
+        {LEGAL_CLAUSES.slice(6, 12).map((clause, idx) => (
+          <View key={idx} style={{ marginBottom: 6 }}>
+            <Text style={styles.clauseTitle}>{clause.title}</Text>
+            <Text style={styles.clauseContent}>{clause.content}</Text>
+          </View>
+        ))}
+
+        <Text style={styles.footer}>{MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}</Text>
+        <Text style={styles.pageNumber}>Page 3 of {totalPages}</Text>
+      </Page>
+
+      {/* Page 4: Terms & Conditions - Clauses 13-18 */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderTitle}>Terms & Conditions (continued)</Text>
+          <Text style={styles.pageHeaderSub}>{PROJECT.fullName} - Project Handover Agreement</Text>
+        </View>
+
+        {LEGAL_CLAUSES.slice(12, 18).map((clause, idx) => (
+          <View key={idx} style={{ marginBottom: 6 }}>
+            <Text style={styles.clauseTitle}>{clause.title}</Text>
+            <Text style={styles.clauseContent}>{clause.content}</Text>
+          </View>
+        ))}
+
+        <Text style={styles.footer}>{MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}</Text>
+        <Text style={styles.pageNumber}>Page 4 of {totalPages}</Text>
+      </Page>
+
+      {/* Page 5: Documentation & Signatures */}
+      <Page size="A4" style={styles.page}>
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageHeaderTitle}>Documentation & Signatures</Text>
+          <Text style={styles.pageHeaderSub}>{PROJECT.fullName} - Project Handover Agreement</Text>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Documentation Provided</Text>
-          <Text style={[styles.paragraph, { fontSize: 7 }]}>
-            Technical documentation included: CLAUDE.md, FINAL_MIGRATION_SUMMARY.md, INVOICE_SYSTEM_SUMMARY.md, CRISALIX_3D_WORKFLOW.md, WHATSAPP_SETUP.md, PAYMENT_SYSTEM_IMPLEMENTATION.md, GTM_IMPLEMENTATION_SUMMARY.md, AUTOMATION_WORKFLOW_CONSOLE_GUIDE.md, and additional setup guides.
+          <Text style={styles.paragraph}>
+            The following technical documentation has been provided with the project delivery:
+          </Text>
+          <Text style={[styles.clauseContent, { marginTop: 4 }]}>
+            CLAUDE.md (Project Overview), FINAL_MIGRATION_SUMMARY.md (Database Migration Guide), INVOICE_SYSTEM_SUMMARY.md (Invoice & Payment System), CRISALIX_3D_WORKFLOW.md (3D Integration), WHATSAPP_SETUP.md (WhatsApp Integration), PAYMENT_SYSTEM_IMPLEMENTATION.md (Swiss QR-Bill & Payrexx), GTM_IMPLEMENTATION_SUMMARY.md (Analytics Tracking), AUTOMATION_WORKFLOW_CONSOLE_GUIDE.md (Workflow Automation), BILLING_ENTITIES_SETUP.md (Multi-clinic Billing), MAILGUN_SETUP.md (Email System), DOCSPACE_SETUP_GUIDE.md (Document Management).
           </Text>
         </View>
 
-        <View style={[styles.signatureSection, { marginTop: 15 }]}>
+        <View style={[styles.signatureSection, { marginTop: 20 }]}>
           <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Signatures</Text>
-          <Text style={styles.legalText}>IN WITNESS WHEREOF, the parties have executed this Project Completion Certificate as of the date written below.</Text>
+          <Text style={styles.legalText}>
+            IN WITNESS WHEREOF, the parties have executed this Project Completion Certificate and agree to the Terms & Conditions outlined in this document as of the date written below.
+          </Text>
 
           <View style={styles.signatureRow}>
             <View style={styles.signatureBox}>
@@ -175,14 +258,17 @@ function CompletionDocument() {
           </View>
         </View>
 
-        <View style={{ marginTop: 15 }}>
+        <View style={{ marginTop: 20 }}>
           <Text style={styles.legalText}>
+            By signing above, both parties acknowledge receipt of all deliverables and documentation, and agree to the Terms & Conditions set forth in this Project Completion Certificate.
+          </Text>
+          <Text style={[styles.legalText, { marginTop: 8 }]}>
             This document constitutes the entire agreement between the parties regarding the completion of the {PROJECT.name} project and supersedes all prior negotiations.
           </Text>
         </View>
 
         <Text style={styles.footer}>{MUTANT.name} • {MUTANT.officeAddress1}, {MUTANT.officeAddress3} • {MUTANT.website}</Text>
-        <Text style={styles.pageNumber}>Page 2 of 2</Text>
+        <Text style={styles.pageNumber}>Page 5 of {totalPages}</Text>
       </Page>
     </Document>
   );

@@ -66,6 +66,28 @@ const DOCUMENTATION = [
   { name: "DOCSPACE_SETUP_GUIDE.md", title: "Document Management", description: "OnlyOffice DocSpace integration guide" },
 ];
 
+// Legal clauses for Terms & Conditions
+const LEGAL_CLAUSES = [
+  { title: "1. Project Acceptance", content: "By approving this handover, the Client confirms that the project has been reviewed, tested internally where applicable, and accepted in accordance with the agreed scope, approved deliverables, and documented revisions throughout the project lifecycle. Completed and approved deliverables shall be considered accepted in their delivered state at the time of handover." },
+  { title: "2. Scope of Delivery", content: "The Client acknowledges that the agreed project scope and deliverables have been completed based on the approved proposal, discussions, and documented requirements. Any future enhancements, feature additions, workflow changes, integrations, revisions, optimisations, or functionality changes outside the approved scope may be treated as separate work and assessed accordingly." },
+  { title: "3. Project Closure", content: "Upon approval of this handover, the project shall be considered formally completed from Mutant Media FZC's delivery side. Any future development, support, maintenance, optimisation, troubleshooting, or enhancement requests may be handled under a separate agreement or support arrangement where required." },
+  { title: "4. Handover Confirmation", content: "The Client confirms receipt of the agreed project assets, credentials, files, documentation, source materials, and access details relevant to the project handover. Following handover, day-to-day operational management, administration, access control, and internal handling of the platform shall transition to the Client." },
+  { title: "5. Responsibility Following Handover", content: "From the handover approval date onwards, responsibility for ongoing management, administration, operational handling, infrastructure decisions, security management, and future technical decisions relating to the platform shall rest with the Client or its appointed representatives. Mutant Media FZC's responsibility remains limited to the agreed and approved delivery completed up to the handover date." },
+  { title: "6. Internal & Third-Party Modifications", content: "Mutant Media FZC cannot assume responsibility for issues arising from: internal modifications, third-party development, hosting or infrastructure changes, platform or plugin updates, external integrations, server configurations, deployment changes, database modifications, operational handling after handover, unauthorised access or misuse." },
+  { title: "7. Developer / Technical Resource Transition", content: "Where technical personnel, developers, consultants, or project resources continue directly with the Client after handover, such work shall be considered independent from Mutant Media FZC moving forward. Any future modifications, deployments, operational decisions, technical developments, code changes, infrastructure adjustments, or implementations carried out after the transition date shall fall outside Mutant Media FZC's project delivery responsibility." },
+  { title: "8. Maintenance & Ongoing Support", content: "Unless otherwise agreed in writing, project approval and handover conclude the original delivery phase. Mutant Media FZC is under no obligation to provide ongoing support, maintenance, troubleshooting, monitoring, updates, bug fixing, enhancements, or technical assistance following project completion unless covered under a separate written agreement." },
+  { title: "9. Third-Party Services & Infrastructure", content: "The Client acknowledges that certain areas of the project may rely on third-party providers, platforms, APIs, hosting services, cloud infrastructure, plugins, payment gateways, or external systems outside the direct control of Mutant Media FZC. Future changes, interruptions, compatibility issues, service limitations, pricing changes, deprecated functionality, or outages relating to third-party systems may affect functionality over time." },
+  { title: "10. Platform Evolution & Compatibility", content: "The Client understands that digital platforms, browsers, operating systems, APIs, frameworks, hosting environments, and external technologies naturally evolve over time. Mutant Media FZC cannot guarantee indefinite compatibility, uninterrupted functionality, or long-term platform stability where future environmental, infrastructure, or third-party changes occur after project completion." },
+  { title: "11. Client Review & Testing", content: "The Client confirms that appropriate internal review, operational checks, user acceptance testing, and internal approvals have been carried out prior to final approval and handover. Any items requiring adjustment prior to handover should be documented during the project closure process." },
+  { title: "12. Outstanding Items", content: "Any agreed pending items or snagging points identified before handover shall be documented separately and handled in accordance with mutual agreement between both parties. Items not formally documented prior to handover approval shall be considered accepted upon project completion." },
+  { title: "13. Commercial Completion", content: "Project approval and handover confirm acceptance of the delivered work and completion of the agreed delivery phase. Following approval and handover, the completed project scope shall be considered accepted by the Client. Any future revisions, support, enhancements, technical requests, operational assistance, or additional development shall fall outside the original project scope unless otherwise agreed in writing. No refund, reimbursement, reversal, or compensation claims shall apply relating to approved and accepted deliverables following project handover." },
+  { title: "14. Intellectual Property & Ownership", content: "Ownership of final approved deliverables transfers upon settlement of all agreed project payments and outstanding balances. Mutant Media FZC retains ownership of its internal methodologies, frameworks, reusable systems, proprietary structures, development approaches, and pre-existing intellectual property." },
+  { title: "15. Limitation of Responsibility", content: "Mutant Media FZC's responsibility remains limited to the agreed scope and approved deliverables completed up to the formal handover date. Mutant Media FZC shall not be responsible for: indirect losses, operational interruptions, commercial losses, reputational impact, loss of revenue, downtime, loss of data, third-party failures, post-handover modifications, infrastructure issues, future operational management decisions." },
+  { title: "16. Confidentiality", content: "Both parties agree to maintain reasonable confidentiality regarding proprietary information, credentials, technical systems, operational processes, and business information shared throughout the project." },
+  { title: "17. Entire Agreement", content: "These terms form part of the overall agreement and should be read alongside approved quotations, proposals, contracts, invoices, emails, WhatsApp approvals, and documented discussions exchanged throughout the project lifecycle." },
+  { title: "18. Governing Law", content: "These terms shall be governed in accordance with the laws and regulations of the United Arab Emirates." },
+];
+
 export default function AliiceProjectCompletionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -194,29 +216,32 @@ export default function AliiceProjectCompletionPage() {
           </div>
         </div>
 
+        {/* Terms & Conditions Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 mb-6">
+          <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
+            Terms & Conditions
+          </h4>
+          <p className="text-slate-600 mb-6">
+            By signing this Project Completion Certificate, both parties acknowledge and agree to the following terms:
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {LEGAL_CLAUSES.map((clause, idx) => (
+              <div key={idx} className="border border-slate-200 rounded-lg p-4">
+                <h5 className="font-semibold text-slate-900 text-sm mb-2">{clause.title}</h5>
+                <p className="text-xs text-slate-600 leading-relaxed">{clause.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Signatures Section */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
           <h4 className="text-lg font-semibold text-slate-900 mb-4 pb-2 border-b border-slate-200">
-            Acceptance & Signatures
+            Signatures
           </h4>
-          
-          <div className="space-y-4 mb-8">
-            <p className="text-slate-600">
-              <strong>1. Completion Acknowledgment:</strong> The Client acknowledges that the Service Provider has completed all deliverables as specified in the project scope.
-            </p>
-            <p className="text-slate-600">
-              <strong>2. Acceptance of Deliverables:</strong> The Client accepts all deliverables, including source code, documentation, and deployed applications.
-            </p>
-            <p className="text-slate-600">
-              <strong>3. Intellectual Property:</strong> Upon full payment, all intellectual property rights transfer to the Client.
-            </p>
-            <p className="text-slate-600">
-              <strong>4. Warranties:</strong> The Service Provider warrants that the delivered software is free from material defects at the time of delivery.
-            </p>
-          </div>
 
           <p className="text-sm text-slate-500 italic mb-6">
-            IN WITNESS WHEREOF, the parties have executed this Project Completion Certificate as of the date written below.
+            IN WITNESS WHEREOF, the parties have executed this Project Completion Certificate and agree to the Terms & Conditions outlined above as of the date written below.
           </p>
 
           <div className="grid grid-cols-2 gap-8">

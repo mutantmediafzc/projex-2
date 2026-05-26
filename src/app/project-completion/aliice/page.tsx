@@ -248,7 +248,7 @@ export default function AliiceProjectCompletionPage() {
             <div>
               <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Service Provider</p>
               <div className="h-16 border-b border-slate-900 mb-2"></div>
-              <p className="font-semibold text-slate-900">Authorized Signatory</p>
+              <p className="font-semibold text-slate-900">Jeano Pangan</p>
               <p className="text-sm text-slate-600">{MUTANT.name}</p>
               <p className="text-sm text-slate-500 mt-4">Date: _______________________</p>
             </div>

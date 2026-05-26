@@ -244,7 +244,7 @@ function CompletionDocument() {
             <View style={styles.signatureBox}>
               <Text style={styles.signatureLabel}>Service Provider</Text>
               <View style={styles.signatureLine} />
-              <Text style={styles.signatureName}>Authorized Signatory</Text>
+              <Text style={styles.signatureName}>Jeano Pangan</Text>
               <Text style={styles.signatureTitle}>{MUTANT.name}</Text>
               <Text style={styles.dateLine}>Date: _______________________</Text>
             </View>

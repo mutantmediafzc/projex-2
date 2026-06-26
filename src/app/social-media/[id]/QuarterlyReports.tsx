@@ -374,13 +374,18 @@ function QuarterlyReportModal({
   const [theme, setTheme] = useState(report?.theme_text || "");
   const [notes, setNotes] = useState(report?.notes || "");
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const quarterStartMonth = selectedQuarter === "Q1" ? 0 : selectedQuarter === "Q2" ? 3 : selectedQuarter === "Q3" ? 6 : 9;
-  const quarterStartDate = new Date(selectedYear, quarterStartMonth, 1).toISOString().split("T")[0];
-  const quarterEndDate = new Date(selectedYear, quarterStartMonth + 3, 0).toISOString().split("T")[0];
+  const formatDate = (year: number, monthIndex: number, day: number) =>
+    `${year}-${String(monthIndex + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const quarterStartDate = formatDate(selectedYear, quarterStartMonth, 1);
+  const quarterEndDay = new Date(selectedYear, quarterStartMonth + 3, 0).getDate();
+  const quarterEndDate = formatDate(selectedYear, quarterStartMonth + 2, quarterEndDay);
 
   async function handleSubmit() {
     setSaving(true);
+    setSaveError(null);
     const data = {
       project_id: projectId,
       report_quarter: `${selectedYear}-${selectedQuarter}`,
@@ -394,11 +399,17 @@ function QuarterlyReportModal({
       notes: notes || null,
     };
 
-    if (report) {
-      await supabaseClient.from("social_quarterly_reports").update(data).eq("id", report.id);
-    } else {
-      await supabaseClient.from("social_quarterly_reports").insert(data);
+    const { error } = report
+      ? await supabaseClient.from("social_quarterly_reports").update(data).eq("id", report.id)
+      : await supabaseClient.from("social_quarterly_reports").insert(data);
+
+    if (error) {
+      console.error("Error saving quarterly report:", error);
+      setSaveError(error.message);
+      setSaving(false);
+      return;
     }
+
     setSaving(false);
     onSaved();
   }
@@ -418,6 +429,12 @@ function QuarterlyReportModal({
         </div>
 
         <div className="p-6 space-y-6">
+          {saveError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {saveError}
+            </div>
+          )}
+
           {/* Objectives Section */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Quarterly Objectives</label>

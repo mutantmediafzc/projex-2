@@ -10,7 +10,7 @@ export default function RequireAuth({ children }: { children: ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/login", "/roca", "/strategy", "/elitestory", "/public", "/project-completion"];
+  const publicRoutes = ["/login", "/roca", "/strategy", "/reports", "/elitestory", "/public", "/project-completion"];
   const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
 
   useEffect(() => {

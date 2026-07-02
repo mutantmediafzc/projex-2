@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -25,7 +25,6 @@ type QuarterlyReport = {
     brand_color: string | null;
     logo_url: string | null;
     platforms: string[];
-    report_platforms: string[];
     company: { name: string; logo_url: string | null } | null;
   } | null;
 };
@@ -171,11 +170,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
   const [boostedPlatformFilter, setBoostedPlatformFilter] = useState<string>("all");
   const [downloading, setDownloading] = useState(false);
 
-  useEffect(() => {
-    loadReport();
-  }, [resolvedParams.token]);
-
-  async function loadReport() {
+  const loadReport = useCallback(async () => {
     setLoading(true);
 
     const { data, error: fetchError } = await supabaseClient
@@ -183,7 +178,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
       .select(`
         *,
         project:social_projects(
-          id, name, brand_color, logo_url, platforms, report_platforms,
+          id, name, brand_color, logo_url, platforms,
           company:companies(name, logo_url)
         )
       `)
@@ -221,7 +216,12 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
       },
     } as QuarterlyReport);
     setLoading(false);
-  }
+  }, [resolvedParams.token]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadReport();
+  }, [loadReport]);
 
   async function downloadPDF() {
     setDownloading(true);
@@ -254,7 +254,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
     );
   }
 
-  const displayPlatforms = (report.project?.report_platforms?.length ? report.project.report_platforms : report.project?.platforms) || [];
+  const displayPlatforms = report.project?.platforms || [];
   const filteredPlatformMetrics = platformFilter === "all"
     ? report.platform_metrics
     : { [platformFilter]: report.platform_metrics[platformFilter] };
@@ -443,13 +443,13 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
           <section className="rounded-2xl border border-slate-200 bg-white p-6 print:border print:shadow-none">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Quarter Growth</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {["reach", "views", "engagement", "followers"].map((metric) => (
+              {(["reach", "views", "engagement", "followers"] as const).map((metric) => (
                 <div key={metric} className="rounded-xl border border-slate-100 p-4">
                   <h3 className="text-sm font-semibold text-slate-600 capitalize mb-3">{metric}</h3>
                   <div className="space-y-2">
-                    {report.monthly_data.map((m, idx) => {
-                      const value = (m as any)[metric] || 0;
-                      const maxValue = Math.max(...report.monthly_data.map((d) => (d as any)[metric] || 0));
+                    {report.monthly_data.map((m) => {
+                      const value = m[metric] || 0;
+                      const maxValue = Math.max(...report.monthly_data.map((d) => d[metric] || 0));
                       const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
                       return (
                         <div key={m.month} className="flex items-center gap-2">

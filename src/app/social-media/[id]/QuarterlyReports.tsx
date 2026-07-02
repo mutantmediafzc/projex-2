@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import QuarterlyDeliverables from "./QuarterlyDeliverables";
 
@@ -158,11 +158,7 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    loadReports();
-  }, [projectId]);
-
-  async function loadReports() {
+  const loadReports = useCallback(async () => {
     setLoading(true);
     const { data } = await supabaseClient
       .from("social_quarterly_reports")
@@ -171,20 +167,24 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
       .order("quarter_start_date", { ascending: false });
     if (data) setReports(data as QuarterlyReport[]);
     setLoading(false);
-  }
+  }, [projectId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadReports();
+  }, [loadReports]);
 
   const currentQuarterKey = `${selectedYear}-${selectedQuarter}`;
   const currentReport = reports.find((r) => r.report_quarter === currentQuarterKey);
 
   async function togglePublish(report: QuarterlyReport) {
     setGenerating(true);
-    const expiresAt = report.is_published ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await supabaseClient
       .from("social_quarterly_reports")
       .update({
         public_link_token: report.public_link_token || crypto.randomUUID(),
-        public_link_expires_at: expiresAt,
+        public_link_expires_at: null,
         is_published: !report.is_published,
       })
       .eq("id", report.id);
@@ -193,7 +193,18 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
     setGenerating(false);
   }
 
-  function copyLink(token: string) {
+  async function copyLink(report: QuarterlyReport) {
+    if (report.public_link_expires_at && new Date(report.public_link_expires_at) <= new Date()) {
+      await supabaseClient
+        .from("social_quarterly_reports")
+        .update({ public_link_expires_at: null })
+        .eq("id", report.id);
+      await loadReports();
+    }
+
+    const token = report.public_link_token;
+    if (!token) return;
+
     const url = `${window.location.origin}/reports/quarterly/${token}`;
     navigator.clipboard.writeText(url);
     setCopiedToken(token);
@@ -269,7 +280,7 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
               <div className="flex items-center gap-2">
                 {currentReport.is_published && currentReport.public_link_token && (
                   <button
-                    onClick={() => copyLink(currentReport.public_link_token!)}
+                    onClick={() => copyLink(currentReport)}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                   >
                     {copiedToken === currentReport.public_link_token ? (
@@ -636,12 +647,12 @@ function QuarterlyReportModal({
                 <div key={platform} className="rounded-xl border border-slate-200 p-4">
                   <h4 className="mb-3 text-sm font-semibold text-slate-900 capitalize">{platform}</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    {["reach", "views", "engagement", "followers"].map((metric) => (
+                    {(["reach", "views", "engagement", "followers"] as const).map((metric) => (
                       <div key={metric}>
                         <label className="mb-1 block text-xs text-slate-500 capitalize">{metric}</label>
                         <input
                           type="number"
-                          value={(platformMetrics[platform] as any)?.[metric] || ""}
+                          value={platformMetrics[platform]?.[metric] || ""}
                           onChange={(e) => {
                             setPlatformMetrics((prev) => ({
                               ...prev,

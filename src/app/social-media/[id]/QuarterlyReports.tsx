@@ -60,6 +60,87 @@ const PLATFORM_ICONS: Record<string, { icon: string; color: string; bg: string }
   youtube: { icon: "▶️", color: "text-red-600", bg: "bg-red-100" },
 };
 
+function ReportStrategyCards({
+  objectives,
+  coreGoals,
+  theme,
+}: {
+  objectives: string | null;
+  coreGoals: string | null;
+  theme: string | null;
+}) {
+  const cards = [
+    {
+      key: "objectives",
+      title: "Quarterly Objectives",
+      content: objectives,
+      accent: "bg-blue-100 text-blue-600",
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 8v4l3 3" />
+        </svg>
+      ),
+    },
+    {
+      key: "core-goals",
+      title: "Core Goals",
+      content: coreGoals,
+      accent: "bg-emerald-100 text-emerald-600",
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 13l5 5L20 6" />
+        </svg>
+      ),
+    },
+    {
+      key: "theme",
+      title: "Theme",
+      content: theme,
+      accent: "bg-violet-100 text-violet-600",
+      icon: (
+        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 3l1.8 5.5h5.8l-4.7 3.4 1.8 5.6L12 14.1l-4.7 3.4 1.8-5.6-4.7-3.4h5.8L12 3z" />
+        </svg>
+      ),
+    },
+  ].filter((card) => card.content?.trim());
+
+  if (cards.length === 0) return null;
+
+  return (
+    <section>
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-500 to-fuchsia-500 text-white">
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M8 6h13" />
+            <path d="M8 12h13" />
+            <path d="M8 18h13" />
+            <path d="M3 6h.01" />
+            <path d="M3 12h.01" />
+            <path d="M3 18h.01" />
+          </svg>
+        </span>
+        <h3 className="text-lg font-bold text-slate-900">Strategy Overview</h3>
+      </div>
+      <div className="grid gap-4">
+        {cards.map((card) => (
+          <div key={card.key} className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <h4 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
+              <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${card.accent}`}>
+                {card.icon}
+              </span>
+              {card.title}
+            </h4>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{card.content}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function QuarterlyReports({ projectId, projectName, platforms }: Props) {
   const [reports, setReports] = useState<QuarterlyReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -238,6 +319,12 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
               })}
             </div>
           </div>
+
+          <ReportStrategyCards
+            objectives={currentReport.objectives_text}
+            coreGoals={currentReport.core_goals}
+            theme={currentReport.theme_text}
+          />
 
           {/* Monthly Breakdown */}
           {currentReport.monthly_data && currentReport.monthly_data.length > 0 && (

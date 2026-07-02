@@ -18,6 +18,7 @@ type QuarterlyReport = {
   theme_text: string | null;
   content_pillars: string[];
   public_link_token: string | null;
+  public_link_expires_at: string | null;
   is_published: boolean;
   notes: string | null;
   created_at: string;
@@ -175,20 +176,18 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
   const currentQuarterKey = `${selectedYear}-${selectedQuarter}`;
   const currentReport = reports.find((r) => r.report_quarter === currentQuarterKey);
 
-  async function generatePublicLink(reportId: string) {
+  async function togglePublish(report: QuarterlyReport) {
     setGenerating(true);
-    const token = crypto.randomUUID();
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    const expiresAt = report.is_published ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     await supabaseClient
       .from("social_quarterly_reports")
       .update({
-        public_link_token: token,
-        public_link_expires_at: expiresAt.toISOString(),
-        is_published: true,
+        public_link_token: report.public_link_token || crypto.randomUUID(),
+        public_link_expires_at: expiresAt,
+        is_published: !report.is_published,
       })
-      .eq("id", reportId);
+      .eq("id", report.id);
 
     await loadReports();
     setGenerating(false);
@@ -268,7 +267,7 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {currentReport.public_link_token ? (
+                {currentReport.is_published && currentReport.public_link_token && (
                   <button
                     onClick={() => copyLink(currentReport.public_link_token!)}
                     className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
@@ -279,19 +278,18 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
                       <><svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>Copy Link</>
                     )}
                   </button>
-                ) : (
-                  <button
-                    onClick={() => generatePublicLink(currentReport.id)}
-                    disabled={generating}
-                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                    </svg>
-                    Generate Public Link
-                  </button>
                 )}
+                <button
+                  onClick={() => togglePublish(currentReport)}
+                  disabled={generating}
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium disabled:opacity-50 ${
+                    currentReport.is_published
+                      ? "border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      : "border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  }`}
+                >
+                  {currentReport.is_published ? "Unpublish" : "Publish"}
+                </button>
                 <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${currentReport.is_published ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
                   {currentReport.is_published ? "Published" : "Draft"}
                 </span>

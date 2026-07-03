@@ -206,35 +206,6 @@ function formatDuration(totalSeconds: number): string {
     .padStart(2, "0")}`;
 }
 
-function StopwatchDisplay({
-  baseSeconds,
-  startedAt,
-}: {
-  baseSeconds: number;
-  startedAt: number | null;
-}) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!startedAt) return;
-
-    setNow(Date.now());
-    const intervalId = window.setInterval(() => {
-      setNow(Date.now());
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [startedAt]);
-
-  const runningSeconds = startedAt
-    ? baseSeconds + Math.max(0, Math.floor((now - startedAt) / 1000))
-    : baseSeconds;
-
-  return <>{formatDuration(runningSeconds)}</>;
-}
-
 export default function MedicalConsultationsCard({
   patientId,
   recordTypeFilter,
@@ -320,9 +291,11 @@ export default function MedicalConsultationsCard({
     setConsultationStopwatchStartedAt,
   ] = useState<number | null>(null);
   const [
-    cashReceiptModalOpen,
-    setCashReceiptModalOpen,
-  ] = useState(false);
+    consultationStopwatchNow,
+    setConsultationStopwatchNow,
+  ] = useState<number>(Date.now());
+
+  const [cashReceiptModalOpen, setCashReceiptModalOpen] = useState(false);
   const [cashReceiptTarget, setCashReceiptTarget] =
     useState<ConsultationRow | null>(null);
   const [cashReceiptFile, setCashReceiptFile] = useState<File | null>(null);
@@ -394,6 +367,18 @@ export default function MedicalConsultationsCard({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!consultationStopwatchStartedAt) return;
+
+    const intervalId = window.setInterval(() => {
+      setConsultationStopwatchNow(Date.now());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [consultationStopwatchStartedAt]);
 
   useEffect(() => {
     let isMounted = true;
@@ -814,9 +799,18 @@ export default function MedicalConsultationsCard({
     }
   }
 
+  const formBaseSeconds = consultationDurationSeconds;
+  const formRunningSeconds = consultationStopwatchStartedAt
+    ? formBaseSeconds +
+      Math.max(
+        0,
+        Math.floor(
+          (consultationStopwatchNow - consultationStopwatchStartedAt) / 1000,
+        ),
+      )
+    : formBaseSeconds;
+  const formDisplayDuration = formatDuration(formRunningSeconds);
   const formStopwatchRunning = consultationStopwatchStartedAt !== null;
-  const formHasDuration =
-    consultationDurationSeconds > 0 || consultationStopwatchStartedAt !== null;
 
   const invoiceTotal = invoiceServiceLines.reduce((sum, line) => {
     if (!line.serviceId) return sum;
@@ -887,6 +881,7 @@ export default function MedicalConsultationsCard({
                     setConsultationContentHtml("");
                     setConsultationDurationSeconds(0);
                     setConsultationStopwatchStartedAt(null);
+                    setConsultationStopwatchNow(Date.now());
                     setPrescriptionLines([
                       { medicineId: "", dosageId: "" },
                     ]);
@@ -979,6 +974,7 @@ export default function MedicalConsultationsCard({
                     setConsultationContentHtml("");
                     setConsultationDurationSeconds(0);
                     setConsultationStopwatchStartedAt(null);
+                    setConsultationStopwatchNow(Date.now());
                     setPrescriptionLines([]);
                     setInvoicePaymentMethod("");
                     setInvoiceMode("individual");
@@ -1473,6 +1469,7 @@ export default function MedicalConsultationsCard({
                     setNewConsultationOpen(false);
                     setConsultationDurationSeconds(0);
                     setConsultationStopwatchStartedAt(null);
+                    setConsultationStopwatchNow(Date.now());
                     setInvoicePaymentMethod("");
                     setInvoiceMode("individual");
                     setInvoiceGroupId("");
@@ -2412,10 +2409,7 @@ export default function MedicalConsultationsCard({
                 <span>Time spent</span>
                 <div className="flex items-center gap-1">
                   <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-700">
-                    <StopwatchDisplay
-                      baseSeconds={consultationDurationSeconds}
-                      startedAt={consultationStopwatchStartedAt}
-                    />
+                    {formDisplayDuration}
                   </span>
                   <button
                     type="button"
@@ -2431,20 +2425,24 @@ export default function MedicalConsultationsCard({
                           consultationDurationSeconds + elapsedSeconds,
                         );
                         setConsultationStopwatchStartedAt(null);
+                        setConsultationStopwatchNow(Date.now());
                       } else {
-                        setConsultationStopwatchStartedAt(Date.now());
+                        const nowTs = Date.now();
+                        setConsultationStopwatchStartedAt(nowTs);
+                        setConsultationStopwatchNow(nowTs);
                       }
                     }}
                     className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] font-medium text-slate-700 shadow-sm hover:bg-slate-50"
                   >
                     {formStopwatchRunning ? "Stop" : "Start"}
                   </button>
-                  {formHasDuration ? (
+                  {formRunningSeconds > 0 ? (
                     <button
                       type="button"
                       onClick={() => {
                         setConsultationDurationSeconds(0);
                         setConsultationStopwatchStartedAt(null);
+                        setConsultationStopwatchNow(Date.now());
                       }}
                       className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-500 shadow-sm hover:bg-slate-50"
                     >
@@ -2463,6 +2461,7 @@ export default function MedicalConsultationsCard({
                     setConsultationError(null);
                     setConsultationDurationSeconds(0);
                     setConsultationStopwatchStartedAt(null);
+                    setConsultationStopwatchNow(Date.now());
                     setInvoicePaymentMethod("");
                     setInvoiceMode("individual");
                     setInvoiceGroupId("");

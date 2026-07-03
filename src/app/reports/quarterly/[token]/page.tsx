@@ -4,6 +4,11 @@ import { useState, useEffect, use, useCallback } from "react";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import SocialKpiPerformanceCards, { type SocialKpiPerformance } from "@/components/SocialKpiPerformanceCards";
+import StrategyQuarterContentSections, {
+  type StrategyBlogArticle,
+  type StrategyContentPost,
+  type StrategyEmailCampaign,
+} from "@/components/StrategyQuarterContentSections";
 
 type QuarterlyReport = {
   id: string;
@@ -44,6 +49,12 @@ type Post = {
 type SocialKpiRow = SocialKpiPerformance & {
   strategy: { id: string; quarter: string } | { id: string; quarter: string }[] | null;
 };
+
+type StrategyQuarterContent = {
+  socialPosts: StrategyContentPost[];
+  emailCampaigns: StrategyEmailCampaign[];
+  blogArticles: StrategyBlogArticle[];
+} | null;
 
 const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
   instagram: {
@@ -175,6 +186,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
   const [boostedPlatformFilter, setBoostedPlatformFilter] = useState<string>("all");
   const [downloading, setDownloading] = useState(false);
   const [quarterKpis, setQuarterKpis] = useState<SocialKpiPerformance[]>([]);
+  const [strategyQuarterContent, setStrategyQuarterContent] = useState<StrategyQuarterContent>(null);
 
   const loadReport = useCallback(async () => {
     setLoading(true);
@@ -231,6 +243,65 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
       const strategy = Array.isArray(kpi.strategy) ? kpi.strategy[0] : kpi.strategy;
       return strategy?.quarter === data.report_quarter;
     });
+
+    const { data: matchingStrategies } = await supabaseClient
+      .from("social_strategy_links")
+      .select("id")
+      .eq("project_id", data.project.id)
+      .eq("quarter", data.report_quarter)
+      .limit(1);
+
+    if (matchingStrategies && matchingStrategies.length > 0) {
+      const [strategyPostsResult, campaignsResult, blogsResult] = await Promise.all([
+        supabaseClient
+          .from("social_posts")
+          .select("id, scheduled_date, platforms, content_type, subject, caption, image_asset_url, media_urls, workflow_status, post_type")
+          .eq("project_id", data.project.id)
+          .gte("scheduled_date", data.quarter_start_date)
+          .lte("scheduled_date", data.quarter_end_date)
+          .order("scheduled_date", { ascending: true })
+          .limit(50),
+        supabaseClient
+          .from("email_campaigns")
+          .select("id, campaign_type, status, scheduled_date, title, image_url")
+          .eq("project_id", data.project.id)
+          .gte("scheduled_date", data.quarter_start_date)
+          .lte("scheduled_date", data.quarter_end_date)
+          .order("scheduled_date", { ascending: true })
+          .limit(50),
+        supabaseClient
+          .from("website_blogs")
+          .select("id, publication_type, status, scheduled_date, title, image_url")
+          .eq("project_id", data.project.id)
+          .gte("scheduled_date", data.quarter_start_date)
+          .lte("scheduled_date", data.quarter_end_date)
+          .order("scheduled_date", { ascending: true })
+          .limit(50),
+      ]);
+
+      type PostRow = StrategyContentPost & {
+        image_asset_url?: string | null;
+        media_urls?: { url: string; type: string }[] | null;
+      };
+
+      setStrategyQuarterContent({
+        socialPosts: ((strategyPostsResult.data || []) as PostRow[]).map((post) => ({
+          id: post.id,
+          scheduled_date: post.scheduled_date,
+          platforms: Array.isArray(post.platforms) ? post.platforms : [],
+          content_type: post.content_type,
+          subject: post.subject,
+          caption: post.caption,
+          image_url: post.image_url || post.image_asset_url || post.media_urls?.[0]?.url || null,
+          workflow_status: post.workflow_status,
+          post_type: post.post_type,
+        })),
+        emailCampaigns: (campaignsResult.data || []) as StrategyEmailCampaign[],
+        blogArticles: (blogsResult.data || []) as StrategyBlogArticle[],
+      });
+    } else {
+      setStrategyQuarterContent(null);
+    }
 
     setReport({
       ...data,
@@ -383,6 +454,15 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
         />
 
         <SocialKpiPerformanceCards kpis={quarterKpis} />
+
+        {strategyQuarterContent && (
+          <StrategyQuarterContentSections
+            quarter={report.report_quarter}
+            socialPosts={strategyQuarterContent.socialPosts}
+            emailCampaigns={strategyQuarterContent.emailCampaigns}
+            blogArticles={strategyQuarterContent.blogArticles}
+          />
+        )}
 
         {/* Platform Filter */}
         <div className="print:hidden flex flex-wrap items-center gap-2">

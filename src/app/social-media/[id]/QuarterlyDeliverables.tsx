@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Deliverable = {
@@ -10,6 +10,19 @@ type Deliverable = {
   delivered_count: number;
   notes: string | null;
 };
+
+type StrategyKpiCounts = {
+  sm_reels: number | null;
+  sm_long_form_video: number | null;
+  sm_static_carousels: number | null;
+  sm_stories: number | null;
+  whatsapp_campaigns: number | null;
+  seo_website_blogs: number | null;
+  seo_linkedin_articles: number | null;
+  seo_pr_offpage: number | null;
+};
+
+type DeliverableRow = Deliverable;
 
 type Props = {
   projectId: string;
@@ -34,25 +47,44 @@ export default function QuarterlyDeliverables({ projectId, reportQuarter }: Prop
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState<Record<string, { planned: number; delivered: number; notes: string }>>({});
 
-  useEffect(() => {
-    loadDeliverables();
-  }, [projectId, reportQuarter]);
-
-  async function loadDeliverables() {
+  const loadDeliverables = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabaseClient
-      .from("social_quarterly_deliverables")
-      .select("*")
-      .eq("project_id", projectId)
-      .eq("report_quarter", reportQuarter);
+    const [deliverablesResult, strategyKpisResult] = await Promise.all([
+      supabaseClient
+        .from("social_quarterly_deliverables")
+        .select("*")
+        .eq("project_id", projectId)
+        .eq("report_quarter", reportQuarter),
+      supabaseClient
+        .from("social_kpis")
+        .select(`
+          sm_reels,
+          sm_long_form_video,
+          sm_static_carousels,
+          sm_stories,
+          whatsapp_campaigns,
+          seo_website_blogs,
+          seo_linkedin_articles,
+          seo_pr_offpage,
+          strategy:social_strategy_links!inner(quarter)
+        `)
+        .eq("project_id", projectId)
+        .eq("strategy.quarter", reportQuarter)
+        .order("report_period", { ascending: false })
+        .limit(1),
+    ]);
+
+    const data = (deliverablesResult.data || []) as DeliverableRow[];
+    const strategyKpi = (strategyKpisResult.data?.[0] || null) as StrategyKpiCounts | null;
+    const plannedDefaults = getPlannedDefaults(strategyKpi);
 
     if (data) {
-      setDeliverables(data as Deliverable[]);
+      setDeliverables(data);
       const initialEdit: Record<string, { planned: number; delivered: number; notes: string }> = {};
       ASSET_TYPES.forEach((type) => {
-        const existing = data.find((d: any) => d.asset_type === type.id);
+        const existing = data.find((d) => d.asset_type === type.id);
         initialEdit[type.id] = {
-          planned: existing?.planned_count || 0,
+          planned: existing?.planned_count || plannedDefaults[type.id] || 0,
           delivered: existing?.delivered_count || 0,
           notes: existing?.notes || "",
         };
@@ -60,7 +92,12 @@ export default function QuarterlyDeliverables({ projectId, reportQuarter }: Prop
       setEditData(initialEdit);
     }
     setLoading(false);
-  }
+  }, [projectId, reportQuarter]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadDeliverables();
+  }, [loadDeliverables]);
 
   async function handleSave() {
     setSaving(true);
@@ -236,4 +273,19 @@ export default function QuarterlyDeliverables({ projectId, reportQuarter }: Prop
       </div>
     </div>
   );
+}
+
+function getPlannedDefaults(kpi: StrategyKpiCounts | null): Record<string, number> {
+  if (!kpi) return {};
+
+  return {
+    reel: kpi.sm_reels || 0,
+    static_post: kpi.sm_static_carousels || 0,
+    story: kpi.sm_stories || 0,
+    carousel: 0,
+    long_form_video: kpi.sm_long_form_video || 0,
+    article: (kpi.seo_website_blogs || 0) + (kpi.seo_linkedin_articles || 0) + (kpi.seo_pr_offpage || 0),
+    whatsapp: kpi.whatsapp_campaigns || 0,
+    ad_creative: 0,
+  };
 }

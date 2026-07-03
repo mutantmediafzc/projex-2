@@ -546,41 +546,6 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
           </div>
         </section>
 
-        {/* Quarter Growth Charts */}
-        {report.monthly_data && report.monthly_data.length > 0 && (
-          <section className="rounded-2xl border border-slate-200 bg-white p-6 print:border print:shadow-none">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">Quarter Growth</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {(["reach", "views", "engagement", "followers"] as const).map((metric) => (
-                <div key={metric} className="rounded-xl border border-slate-100 p-4">
-                  <h3 className="text-sm font-semibold text-slate-600 capitalize mb-3">{metric}</h3>
-                  <div className="space-y-2">
-                    {report.monthly_data.map((m) => {
-                      const value = m[metric] || 0;
-                      const maxValue = Math.max(...report.monthly_data.map((d) => d[metric] || 0));
-                      const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0;
-                      return (
-                        <div key={m.month} className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500 w-12">{m.month.slice(0, 3)}</span>
-                          <div className="flex-1 h-6 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-pink-500 to-fuchsia-500 rounded-full transition-all"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-medium text-slate-700 w-16 text-right">
-                            {value.toLocaleString()}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Quarter Comparison */}
         {report.previous_quarter_comparison && Object.keys(report.previous_quarter_comparison).length > 0 && (
           <section className="rounded-2xl border border-slate-200 bg-white p-6 print:border print:shadow-none">

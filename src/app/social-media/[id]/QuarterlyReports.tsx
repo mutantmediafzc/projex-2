@@ -461,37 +461,6 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
             />
           )}
 
-          {/* Monthly Breakdown */}
-          {currentReport.monthly_data && currentReport.monthly_data.length > 0 && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h3 className="text-sm font-semibold text-slate-900 mb-4">Monthly Breakdown</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      <th className="px-4 py-3">Month</th>
-                      <th className="px-4 py-3 text-right">Reach</th>
-                      <th className="px-4 py-3 text-right">Views</th>
-                      <th className="px-4 py-3 text-right">Engagement</th>
-                      <th className="px-4 py-3 text-right">Followers</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentReport.monthly_data.map((month) => (
-                      <tr key={month.month} className="border-b border-slate-100">
-                        <td className="px-4 py-3 text-sm font-medium text-slate-900">{month.month}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600 text-right">{month.reach.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600 text-right">{month.views.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600 text-right">{month.engagement.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600 text-right">+{month.followers.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
           {/* Quarter Comparison */}
           {currentReport.previous_quarter_comparison && Object.keys(currentReport.previous_quarter_comparison).length > 0 && (
             <div className="rounded-2xl border border-slate-200 bg-white p-6">

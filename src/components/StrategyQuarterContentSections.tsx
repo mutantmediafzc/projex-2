@@ -61,9 +61,9 @@ function getBoostedSpendTotal(posts: StrategyContentPost[]) {
 
 function SummaryStat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm print:shadow-none">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-0.5 text-sm font-bold text-slate-900">{value}</p>
+    <div>
+      <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">{label}</p>
+      <p className="mt-0.5 text-sm font-bold">{value}</p>
     </div>
   );
 }
@@ -105,11 +105,6 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Content for <span className="font-semibold">{quarter}</span></p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <SummaryStat label="All Content" value={socialPosts.length} />
-                <SummaryStat label="Boosted Content" value={boostedPosts.length} />
-                <SummaryStat label="Boosted Spend" value={`AED ${boostedSpendTotal.toLocaleString()}`} />
-              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {socialPosts.map((post) => (
@@ -144,12 +139,13 @@ export default function StrategyQuarterContentSections({
                 </div>
               ))}
             </div>
-            {boostedSpendTotal > 0 && (
-              <div className="flex items-center justify-between bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 sm:px-6">
-                <span>Total ({boostedPosts.length} boosted {boostedPosts.length === 1 ? "post" : "posts"})</span>
-                <span>AED {boostedSpendTotal.toLocaleString()}</span>
+            <div className="grid gap-4 bg-amber-50 px-4 py-3 text-amber-800 sm:grid-cols-3 sm:px-6">
+              <SummaryStat label="All Content" value={socialPosts.length} />
+              <SummaryStat label="Boosted Content" value={boostedPosts.length} />
+              <div className="sm:text-right">
+                <SummaryStat label="Total Boost Spend" value={`AED ${boostedSpendTotal.toLocaleString()}`} />
               </div>
-            )}
+            </div>
           </div>
         ) : (
           <EmptyState label="No social media content for this quarter." />
@@ -171,11 +167,6 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Campaigns for <span className="font-semibold">{quarter}</span></p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <SummaryStat label="Total Campaigns" value={emailCampaigns.length} />
-                <SummaryStat label="Total Emails" value={emailCount} />
-                <SummaryStat label="Total WhatsApp" value={whatsappCount} />
-              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {emailCampaigns.map((campaign) => (
@@ -195,6 +186,11 @@ export default function StrategyQuarterContentSections({
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="grid gap-4 bg-emerald-50 px-4 py-3 text-emerald-800 sm:grid-cols-3 sm:px-6">
+              <SummaryStat label="Total Campaigns" value={emailCampaigns.length} />
+              <SummaryStat label="Total Emails" value={emailCount} />
+              <SummaryStat label="Total WhatsApp" value={whatsappCount} />
             </div>
           </div>
         ) : (
@@ -217,11 +213,6 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Articles for <span className="font-semibold">{quarter}</span></p>
-              <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                <SummaryStat label="Total Articles" value={blogArticles.length} />
-                <SummaryStat label="Website Blogs" value={websiteBlogCount} />
-                <SummaryStat label="LinkedIn Articles" value={linkedinArticleCount} />
-              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {blogArticles.map((blog) => (
@@ -241,6 +232,11 @@ export default function StrategyQuarterContentSections({
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="grid gap-4 bg-violet-50 px-4 py-3 text-violet-800 sm:grid-cols-3 sm:px-6">
+              <SummaryStat label="Total Articles" value={blogArticles.length} />
+              <SummaryStat label="Website Blogs" value={websiteBlogCount} />
+              <SummaryStat label="LinkedIn Articles" value={linkedinArticleCount} />
             </div>
           </div>
         ) : (

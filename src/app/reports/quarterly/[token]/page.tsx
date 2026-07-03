@@ -255,7 +255,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
       const [strategyPostsResult, campaignsResult, blogsResult] = await Promise.all([
         supabaseClient
           .from("social_posts")
-          .select("id, scheduled_date, platforms, content_type, subject, caption, image_asset_url, media_urls, workflow_status, post_type")
+          .select("id, scheduled_date, platforms, content_type, subject, caption, image_asset_url, media_urls, workflow_status, post_type, platform_budgets")
           .eq("project_id", data.project.id)
           .gte("scheduled_date", data.quarter_start_date)
           .lte("scheduled_date", data.quarter_end_date)
@@ -295,6 +295,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
           image_url: post.image_url || post.image_asset_url || post.media_urls?.[0]?.url || null,
           workflow_status: post.workflow_status,
           post_type: post.post_type,
+          platform_budgets: post.platform_budgets || null,
         })),
         emailCampaigns: (campaignsResult.data || []) as StrategyEmailCampaign[],
         blogArticles: (blogsResult.data || []) as StrategyBlogArticle[],

@@ -10,6 +10,7 @@ export type StrategyContentPost = {
   image_url: string | null;
   workflow_status: string | null;
   post_type: string | null;
+  platform_budgets?: Record<string, number> | null;
 };
 
 export type StrategyEmailCampaign = {
@@ -51,6 +52,13 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+function getBoostedSpendTotal(posts: StrategyContentPost[]) {
+  return posts.reduce((total, post) => {
+    if (post.post_type !== "boosted") return total;
+    return total + Object.values(post.platform_budgets || {}).reduce((sum, amount) => sum + amount, 0);
+  }, 0);
+}
+
 export default function StrategyQuarterContentSections({
   quarter,
   socialPosts,
@@ -62,6 +70,9 @@ export default function StrategyQuarterContentSections({
   emailCampaigns: StrategyEmailCampaign[];
   blogArticles: StrategyBlogArticle[];
 }) {
+  const boostedPosts = socialPosts.filter((post) => post.post_type === "boosted");
+  const boostedSpendTotal = getBoostedSpendTotal(socialPosts);
+
   return (
     <>
       <section>
@@ -115,6 +126,12 @@ export default function StrategyQuarterContentSections({
                 </div>
               ))}
             </div>
+            {boostedSpendTotal > 0 && (
+              <div className="flex items-center justify-between bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 sm:px-6">
+                <span>Total ({boostedPosts.length} boosted {boostedPosts.length === 1 ? "post" : "posts"})</span>
+                <span>AED {boostedSpendTotal.toLocaleString()}</span>
+              </div>
+            )}
           </div>
         ) : (
           <EmptyState label="No social media content for this quarter." />

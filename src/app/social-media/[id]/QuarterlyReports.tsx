@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import SocialKpiPerformanceCards, { type SocialKpiPerformance } from "@/components/SocialKpiPerformanceCards";
 import QuarterlyDeliverables from "./QuarterlyDeliverables";
 
 type QuarterlyReport = {
@@ -37,6 +38,10 @@ type PlatformMetric = {
   views: number;
   engagement: number;
   followers: number;
+};
+
+type SocialKpiRow = SocialKpiPerformance & {
+  strategy: { id: string; quarter: string } | { id: string; quarter: string }[] | null;
 };
 
 type Props = {
@@ -157,6 +162,7 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
   });
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [quarterKpis, setQuarterKpis] = useState<SocialKpiPerformance[]>([]);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -176,6 +182,34 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
 
   const currentQuarterKey = `${selectedYear}-${selectedQuarter}`;
   const currentReport = reports.find((r) => r.report_quarter === currentQuarterKey);
+
+  const loadQuarterKpis = useCallback(async () => {
+    const { data } = await supabaseClient
+      .from("social_kpis")
+      .select(`
+        id,
+        sm_impressions_kpi,
+        sm_reach_kpi,
+        sm_engagement_kpi,
+        sm_followers_kpi,
+        sm_clicks_kpi,
+        strategy:social_strategy_links(id, quarter)
+      `)
+      .eq("project_id", projectId)
+      .order("report_period", { ascending: false });
+
+    const matchingKpis = ((data || []) as SocialKpiRow[]).filter((kpi) => {
+      const strategy = Array.isArray(kpi.strategy) ? kpi.strategy[0] : kpi.strategy;
+      return strategy?.quarter === currentQuarterKey;
+    });
+
+    setQuarterKpis(matchingKpis as SocialKpiPerformance[]);
+  }, [currentQuarterKey, projectId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (currentReport) void loadQuarterKpis();
+  }, [currentReport, loadQuarterKpis]);
 
   async function togglePublish(report: QuarterlyReport) {
     setGenerating(true);
@@ -334,6 +368,8 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
             coreGoals={currentReport.core_goals}
             theme={currentReport.theme_text}
           />
+
+          <SocialKpiPerformanceCards kpis={quarterKpis} />
 
           {/* Monthly Breakdown */}
           {currentReport.monthly_data && currentReport.monthly_data.length > 0 && (

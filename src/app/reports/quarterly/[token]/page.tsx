@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useCallback } from "react";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
+import SocialKpiPerformanceCards, { type SocialKpiPerformance } from "@/components/SocialKpiPerformanceCards";
 
 type QuarterlyReport = {
   id: string;
@@ -38,6 +39,10 @@ type Post = {
   platform_budgets: Record<string, number>;
   scheduled_date: string | null;
   media_urls: { url: string; type: string }[];
+};
+
+type SocialKpiRow = SocialKpiPerformance & {
+  strategy: { id: string; quarter: string } | { id: string; quarter: string }[] | null;
 };
 
 const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string }> = {
@@ -169,6 +174,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [boostedPlatformFilter, setBoostedPlatformFilter] = useState<string>("all");
   const [downloading, setDownloading] = useState(false);
+  const [quarterKpis, setQuarterKpis] = useState<SocialKpiPerformance[]>([]);
 
   const loadReport = useCallback(async () => {
     setLoading(true);
@@ -207,6 +213,25 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
       .lte("scheduled_date", data.quarter_end_date)
       .order("scheduled_date", { ascending: true });
 
+    const { data: kpiData } = await supabaseClient
+      .from("social_kpis")
+      .select(`
+        id,
+        sm_impressions_kpi,
+        sm_reach_kpi,
+        sm_engagement_kpi,
+        sm_followers_kpi,
+        sm_clicks_kpi,
+        strategy:social_strategy_links(id, quarter)
+      `)
+      .eq("project_id", data.project.id)
+      .order("report_period", { ascending: false });
+
+    const matchingKpis = ((kpiData || []) as SocialKpiRow[]).filter((kpi) => {
+      const strategy = Array.isArray(kpi.strategy) ? kpi.strategy[0] : kpi.strategy;
+      return strategy?.quarter === data.report_quarter;
+    });
+
     setReport({
       ...data,
       content_data: posts || [],
@@ -215,6 +240,7 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
         company: Array.isArray(data.project.company) ? data.project.company[0] : data.project.company,
       },
     } as QuarterlyReport);
+    setQuarterKpis(matchingKpis as SocialKpiPerformance[]);
     setLoading(false);
   }, [resolvedParams.token]);
 
@@ -355,6 +381,8 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
           coreGoals={report.core_goals}
           theme={report.theme_text}
         />
+
+        <SocialKpiPerformanceCards kpis={quarterKpis} />
 
         {/* Platform Filter */}
         <div className="print:hidden flex flex-wrap items-center gap-2">

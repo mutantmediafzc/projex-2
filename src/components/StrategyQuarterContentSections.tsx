@@ -59,6 +59,15 @@ function getBoostedSpendTotal(posts: StrategyContentPost[]) {
   }, 0);
 }
 
+function SummaryStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-white px-3 py-2 shadow-sm print:shadow-none">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-0.5 text-sm font-bold text-slate-900">{value}</p>
+    </div>
+  );
+}
+
 export default function StrategyQuarterContentSections({
   quarter,
   socialPosts,
@@ -72,6 +81,10 @@ export default function StrategyQuarterContentSections({
 }) {
   const boostedPosts = socialPosts.filter((post) => post.post_type === "boosted");
   const boostedSpendTotal = getBoostedSpendTotal(socialPosts);
+  const emailCount = emailCampaigns.filter((campaign) => campaign.campaign_type === "email").length;
+  const whatsappCount = emailCampaigns.filter((campaign) => campaign.campaign_type === "whatsapp").length;
+  const websiteBlogCount = blogArticles.filter((blog) => blog.publication_type === "website_blog").length;
+  const linkedinArticleCount = blogArticles.filter((blog) => blog.publication_type !== "website_blog").length;
 
   return (
     <>
@@ -92,6 +105,11 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-pink-50 to-rose-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Content for <span className="font-semibold">{quarter}</span></p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <SummaryStat label="All Content" value={socialPosts.length} />
+                <SummaryStat label="Boosted Content" value={boostedPosts.length} />
+                <SummaryStat label="Boosted Spend" value={`AED ${boostedSpendTotal.toLocaleString()}`} />
+              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {socialPosts.map((post) => (
@@ -153,6 +171,11 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-emerald-50 to-green-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Campaigns for <span className="font-semibold">{quarter}</span></p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <SummaryStat label="Total Campaigns" value={emailCampaigns.length} />
+                <SummaryStat label="Total Emails" value={emailCount} />
+                <SummaryStat label="Total WhatsApp" value={whatsappCount} />
+              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {emailCampaigns.map((campaign) => (
@@ -194,6 +217,11 @@ export default function StrategyQuarterContentSections({
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm print:shadow-none">
             <div className="border-b border-slate-100 bg-gradient-to-r from-violet-50 to-purple-50 p-4 sm:p-6">
               <p className="text-sm text-slate-600">Articles for <span className="font-semibold">{quarter}</span></p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <SummaryStat label="Total Articles" value={blogArticles.length} />
+                <SummaryStat label="Website Blogs" value={websiteBlogCount} />
+                <SummaryStat label="LinkedIn Articles" value={linkedinArticleCount} />
+              </div>
             </div>
             <div className="divide-y divide-slate-100">
               {blogArticles.map((blog) => (

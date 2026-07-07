@@ -158,6 +158,28 @@ function ReportStrategyCards({
   );
 }
 
+function ReportNotesSection({ notes }: { notes: string | null }) {
+  if (!notes?.trim()) return null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+      <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600">
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M16 13H8" />
+            <path d="M16 17H8" />
+            <path d="M10 9H8" />
+          </svg>
+        </span>
+        Notes
+      </h3>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{notes}</p>
+    </section>
+  );
+}
+
 export default function QuarterlyReports({ projectId, projectName, platforms }: Props) {
   const [reports, setReports] = useState<QuarterlyReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -461,6 +483,8 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
               blogArticles={strategyQuarterContent.blogArticles}
             />
           )}
+
+          <ReportNotesSection notes={currentReport.notes} />
 
           {/* Quarter Comparison */}
           {currentReport.previous_quarter_comparison && Object.keys(currentReport.previous_quarter_comparison).length > 0 && (

@@ -176,6 +176,28 @@ function ReportStrategyCards({
   );
 }
 
+function ReportNotesSection({ notes }: { notes: string | null }) {
+  if (!notes?.trim()) return null;
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:border print:shadow-none sm:p-6">
+      <h2 className="mb-3 flex items-center gap-2 text-base font-bold text-slate-900 sm:text-lg">
+        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600">
+          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <path d="M14 2v6h6" />
+            <path d="M16 13H8" />
+            <path d="M16 17H8" />
+            <path d="M10 9H8" />
+          </svg>
+        </span>
+        Notes
+      </h2>
+      <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{notes}</p>
+    </section>
+  );
+}
+
 export default function PublicQuarterlyReportPage({ params }: { params: Promise<{ token: string }> }) {
   const resolvedParams = use(params);
   const [report, setReport] = useState<QuarterlyReport | null>(null);
@@ -464,6 +486,8 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
             blogArticles={strategyQuarterContent.blogArticles}
           />
         )}
+
+        <ReportNotesSection notes={report.notes} />
 
         {/* Platform Filter */}
         <div className="print:hidden flex flex-wrap items-center gap-2">

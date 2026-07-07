@@ -59,6 +59,55 @@ type Company = {
   name: string;
 };
 
+type FinancialExpenseStatus = "pending" | "requested" | "paid" | "rejected";
+
+type FinancialExpense = {
+  id: string;
+  title: string;
+  type: string;
+  other_type: string | null;
+  price: number;
+  includes_vat: boolean;
+  vat_amount: number;
+  total: number;
+  expense_date: string;
+  status: FinancialExpenseStatus;
+  created_at: string;
+};
+
+type FinancialRecord =
+  | { kind: "invoice"; data: Invoice }
+  | { kind: "expense"; data: FinancialExpense };
+
+const expenseTypes = [
+  "Visa Expenses",
+  "Office Grocery",
+  "Office Equipment",
+  "Commission",
+  "DEWA",
+  "DU",
+  "Office Internet",
+  "Others",
+] as const;
+
+const expenseStatuses: FinancialExpenseStatus[] = ["pending", "requested", "paid", "rejected"];
+const invoiceStatusOptions = [
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "paid", label: "Paid" },
+  { value: "unpaid", label: "Unpaid" },
+  { value: "overdue", label: "Overdue" },
+  { value: "accepted", label: "Accepted" },
+  { value: "rejected", label: "Rejected" },
+  { value: "cancelled", label: "Cancelled" },
+];
+const expenseStatusOptions = [
+  { value: "pending", label: "Pending" },
+  { value: "requested", label: "Requested" },
+  { value: "paid", label: "Paid" },
+  { value: "rejected", label: "Rejected" },
+];
+
 function formatMoney(amount: number, currency = "AED"): string {
   return new Intl.NumberFormat("en-AE", { style: "currency", currency, minimumFractionDigits: 0 }).format(amount);
 }
@@ -79,7 +128,156 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-slate-100 text-slate-500",
   accepted: "bg-emerald-100 text-emerald-700",
   rejected: "bg-red-100 text-red-700",
+  pending: "bg-amber-100 text-amber-700",
+  requested: "bg-blue-100 text-blue-700",
 };
+
+function ExpenseCreateModal({
+  expense,
+  onClose,
+  onCreated,
+}: {
+  expense?: FinancialExpense | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const today = new Date().toISOString().split("T")[0];
+  const [title, setTitle] = useState(expense?.title ?? "");
+  const [type, setType] = useState<(typeof expenseTypes)[number]>((expense?.type as (typeof expenseTypes)[number]) ?? "Visa Expenses");
+  const [otherType, setOtherType] = useState(expense?.other_type ?? "");
+  const [price, setPrice] = useState(expense ? String(Number(expense.price) || "") : "");
+  const [includesVat, setIncludesVat] = useState(expense?.includes_vat ?? false);
+  const [date, setDate] = useState(expense?.expense_date?.slice(0, 10) ?? today);
+  const [status, setStatus] = useState<FinancialExpenseStatus>(expense?.status ?? "pending");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const isEditing = Boolean(expense);
+
+  const numericPrice = Number(price) || 0;
+  const vatAmount = includesVat ? numericPrice * 0.05 : 0;
+  const total = numericPrice + vatAmount;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+    if (!price || numericPrice <= 0) {
+      setError("Price must be greater than zero.");
+      return;
+    }
+    if (type === "Others" && !otherType.trim()) {
+      setError("Please specify the expense type.");
+      return;
+    }
+
+    setSaving(true);
+    const payload = {
+      title: title.trim(),
+      type,
+      other_type: type === "Others" ? otherType.trim() : null,
+      price: numericPrice,
+      includes_vat: includesVat,
+      vat_amount: vatAmount,
+      total,
+      expense_date: date,
+      status,
+    };
+
+    const { data: authData } = await supabaseClient.auth.getUser();
+    const { error: saveError } = isEditing && expense
+      ? await supabaseClient.from("financial_expenses").update(payload).eq("id", expense.id)
+      : await supabaseClient.from("financial_expenses").insert({
+          ...payload,
+          created_by: authData.user?.id ?? null,
+        });
+    setSaving(false);
+
+    if (saveError) {
+      setError(saveError.message);
+      return;
+    }
+
+    onCreated();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
+      <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <form onSubmit={handleSubmit} className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">{isEditing ? "Edit Expense" : "New Expense"}</h3>
+            <p className="text-[12px] text-slate-500">{isEditing ? "Update this operational expense" : "Add an operational expense to financials"}</p>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200">x</button>
+        </div>
+
+        <div className="space-y-4 p-6">
+          {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[12px] font-medium text-red-600">{error}</div>}
+
+          <div>
+            <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">Title</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-black focus:border-indigo-400 focus:outline-none" />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">Type</label>
+              <select value={type} onChange={e => setType(e.target.value as (typeof expenseTypes)[number])} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-black focus:border-indigo-400 focus:outline-none">
+                {expenseTypes.map(option => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">Status</label>
+              <select value={status} onChange={e => setStatus(e.target.value as FinancialExpenseStatus)} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-black focus:border-indigo-400 focus:outline-none">
+                {expenseStatuses.map(option => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {type === "Others" && (
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">What type?</label>
+              <input value={otherType} onChange={e => setOtherType(e.target.value)} className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-black focus:border-indigo-400 focus:outline-none" />
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">Price</label>
+              <input type="number" min="0" step="0.01" value={price} onChange={e => setPrice(e.target.value)} className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-black focus:border-indigo-400 focus:outline-none" />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[12px] font-semibold text-slate-700">Date</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} className="h-10 w-full rounded-xl border border-slate-200 px-3 text-sm text-black focus:border-indigo-400 focus:outline-none" />
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-[13px] font-semibold text-slate-700">
+            <input type="checkbox" checked={includesVat} onChange={e => setIncludesVat(e.target.checked)} className="h-4 w-4 rounded border-slate-300 text-indigo-600" />
+            Include VAT 5%
+          </label>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between text-[12px] text-slate-500"><span>VAT</span><span>{formatMoney(vatAmount)}</span></div>
+            <div className="mt-1 flex items-center justify-between text-sm font-bold text-slate-900"><span>Total</span><span>{formatMoney(total)}</span></div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-slate-100 px-6 py-4">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+          <button type="submit" disabled={saving} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-emerald-700 disabled:opacity-60">
+            {saving ? "Saving..." : isEditing ? "Save Changes" : "Add Expense"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 // ── Searchable dropdown ──────────────────────────────────────────────────────
 function SearchableDropdown({
@@ -260,6 +458,7 @@ function ProjectPickerModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancialsPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [expenses, setExpenses] = useState<FinancialExpense[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -269,11 +468,13 @@ export default function FinancialsPage() {
   // Modals
   const [createType, setCreateType] = useState<InvoiceType>("invoice");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
+  const [expenseEditTarget, setExpenseEditTarget] = useState<FinancialExpense | null>(null);
 
   // Payments & Receipts
   const [paymentsMap, setPaymentsMap] = useState<Record<string, Payment[]>>({});
@@ -286,7 +487,7 @@ export default function FinancialsPage() {
   // Filters
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | "quote" | "invoice">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "quote" | "invoice" | "expense">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
@@ -295,14 +496,16 @@ export default function FinancialsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [invoicesRes, projectsRes, companiesRes] = await Promise.all([
+      const [invoicesRes, expensesRes, projectsRes, companiesRes] = await Promise.all([
         supabaseClient.from("invoices").select("*, project:projects(id, name, company_id)").order("created_at", { ascending: false }),
+        supabaseClient.from("financial_expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false }),
         supabaseClient.from("projects").select("id, company_id, name, value, status, company:companies(id, name)").eq("is_archived", false),
         supabaseClient.from("companies").select("id, name").order("name"),
       ]);
       if (invoicesRes.error) { setError(invoicesRes.error.message); setLoading(false); return; }
       const invoiceList = (invoicesRes.data as unknown as Invoice[]) || [];
       setInvoices(invoiceList);
+      setExpenses((expensesRes.data as unknown as FinancialExpense[]) || []);
       setProjects((projectsRes.data as unknown as Project[]) || []);
       setCompanies((companiesRes.data as Company[]) || []);
 
@@ -337,9 +540,9 @@ export default function FinancialsPage() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAll();
     void loadSettings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleViewPdf(inv: Invoice) {
@@ -420,8 +623,33 @@ export default function FinancialsPage() {
     });
   }, [invoices, typeFilter, statusFilter, projectFilter, companyFilter, dateFromFilter, dateToFilter, projects]);
 
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((expense) => {
+      if (typeFilter !== "all" && typeFilter !== "expense") return false;
+      if (statusFilter !== "all" && expense.status !== statusFilter) return false;
+      if (companyFilter !== "all" || projectFilter !== "all") return false;
+      if (dateFromFilter || dateToFilter) {
+        const ymd = expense.expense_date?.slice(0, 10);
+        if (dateFromFilter && ymd && ymd < dateFromFilter) return false;
+        if (dateToFilter && ymd && ymd > dateToFilter) return false;
+      }
+      return true;
+    });
+  }, [expenses, typeFilter, statusFilter, companyFilter, projectFilter, dateFromFilter, dateToFilter]);
+
+  const filteredRecords = useMemo<FinancialRecord[]>(() => {
+    return [
+      ...filteredInvoices.map((inv) => ({ kind: "invoice" as const, data: inv })),
+      ...filteredExpenses.map((expense) => ({ kind: "expense" as const, data: expense })),
+    ].sort((a, b) => {
+      const aDate = a.kind === "invoice" ? a.data.issue_date : a.data.expense_date;
+      const bDate = b.kind === "invoice" ? b.data.issue_date : b.data.expense_date;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
+  }, [filteredInvoices, filteredExpenses]);
+
   const summary = useMemo(() => {
-    let totalQuoted = 0, totalInvoiced = 0, totalPaid = 0, totalOverdue = 0;
+    let totalQuoted = 0, totalInvoiced = 0, totalPaid = 0, totalOverdue = 0, totalExpenses = 0;
     for (const inv of filteredInvoices) {
       if (inv.invoice_type === "quote" && inv.status !== "cancelled") totalQuoted += inv.total;
       if (inv.invoice_type === "invoice" && inv.status !== "cancelled") {
@@ -430,8 +658,11 @@ export default function FinancialsPage() {
         if (inv.status === "overdue") totalOverdue += inv.total;
       }
     }
-    return { totalQuoted, totalInvoiced, totalPaid, totalOverdue };
-  }, [filteredInvoices]);
+    for (const expense of filteredExpenses) {
+      if (expense.status !== "rejected") totalExpenses += Number(expense.total) || 0;
+    }
+    return { totalQuoted, totalInvoiced, totalPaid, totalOverdue, totalExpenses };
+  }, [filteredInvoices, filteredExpenses]);
 
   const projectSummary = useMemo(() => {
     let totalValue = 0;
@@ -446,6 +677,14 @@ export default function FinancialsPage() {
   const hasActiveFilters = dateFromFilter || dateToFilter || typeFilter !== "all" || statusFilter !== "all" || companyFilter !== "all" || projectFilter !== "all";
 
   const companyOptions = companies.map(c => ({ id: c.id, label: c.name }));
+  const statusOptions = typeFilter === "expense" ? expenseStatusOptions : invoiceStatusOptions;
+  function handleTypeFilterChange(nextType: typeof typeFilter) {
+    const nextStatusOptions = nextType === "expense" ? expenseStatusOptions : invoiceStatusOptions;
+    if (statusFilter !== "all" && !nextStatusOptions.some(option => option.value === statusFilter)) {
+      setStatusFilter("all");
+    }
+    setTypeFilter(nextType);
+  }
   const projectOptions = projects
     .filter(p => companyFilter === "all" || p.company_id === companyFilter)
     .map(p => {
@@ -465,6 +704,14 @@ export default function FinancialsPage() {
           <p className="mt-0.5 text-sm text-slate-500">Overview of all projects, companies, quotes, and invoices</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowExpenseModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-emerald-700 transition-colors"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14m-7-7h14"/></svg>
+            New Expense
+          </button>
           <button
             type="button"
             onClick={() => { setCreateType("quote"); setShowCreateModal(true); }}
@@ -517,7 +764,7 @@ export default function FinancialsPage() {
       </div>
 
       {/* Secondary Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600">
@@ -543,6 +790,15 @@ export default function FinancialsPage() {
             <div><p className="text-[11px] font-medium text-slate-500">Collection Rate</p><p className="text-lg font-bold text-slate-900">{summary.totalInvoiced > 0 ? Math.round((summary.totalPaid / summary.totalInvoiced) * 100) : 0}%</p></div>
           </div>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-100 to-red-100 text-rose-600">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div><p className="text-[11px] font-medium text-slate-500">Expenses</p><p className="text-lg font-bold text-slate-900">{formatMoney(summary.totalExpenses)}</p></div>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-500">{expenses.length} expense records</p>
+        </div>
       </div>
 
       {/* Filters */}
@@ -550,20 +806,21 @@ export default function FinancialsPage() {
 
         {/* Type toggle pills */}
         <div className="flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
-          {(["all", "quote", "invoice"] as const).map(t => (
+          {(["all", "quote", "invoice", "expense"] as const).map(t => (
             <button
               key={t}
               type="button"
-              onClick={() => setTypeFilter(t)}
+              onClick={() => handleTypeFilterChange(t)}
               className={`rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition-all ${
                 typeFilter === t
                   ? t === "quote" ? "bg-blue-600 text-white shadow-sm"
                     : t === "invoice" ? "bg-violet-600 text-white shadow-sm"
+                    : t === "expense" ? "bg-emerald-600 text-white shadow-sm"
                     : "bg-slate-800 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
-              {t === "all" ? "All" : t === "quote" ? "Quotes" : "Invoices"}
+              {t === "all" ? "All" : t === "quote" ? "Quotes" : t === "invoice" ? "Invoices" : "Expenses"}
             </button>
           ))}
         </div>
@@ -575,14 +832,9 @@ export default function FinancialsPage() {
           className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-[12px] text-black shadow-sm focus:border-indigo-400 focus:outline-none"
         >
           <option value="all">All Status</option>
-          <option value="draft">Draft</option>
-          <option value="sent">Sent</option>
-          <option value="paid">Paid</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="overdue">Overdue</option>
-          <option value="accepted">Accepted</option>
-          <option value="rejected">Rejected</option>
-          <option value="cancelled">Cancelled</option>
+          {statusOptions.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
 
         {/* Searchable company dropdown */}
@@ -614,7 +866,7 @@ export default function FinancialsPage() {
             Clear
           </button>
         )}
-        <div className="ml-auto text-[11px] text-slate-400">{filteredInvoices.length} records</div>
+        <div className="ml-auto text-[11px] text-slate-400">{filteredRecords.length} records</div>
       </div>
 
       {/* Content */}
@@ -622,15 +874,57 @@ export default function FinancialsPage() {
         <div className="flex items-center justify-center py-16"><div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-200 border-t-indigo-500" /></div>
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">{error}</div>
-      ) : filteredInvoices.length === 0 ? (
+      ) : filteredRecords.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/50 to-violet-50/30 py-16">
           <p className="text-sm font-semibold text-slate-700">No records found</p>
-          <p className="mt-1 text-xs text-slate-400">Try adjusting your filters or create a new quote/invoice</p>
+          <p className="mt-1 text-xs text-slate-400">Try adjusting your filters or create a new financial record</p>
         </div>
       ) : (
         <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-xl overflow-hidden">
           <div className="divide-y divide-slate-100">
-            {filteredInvoices.map((inv) => (
+            {filteredRecords.map((record) => {
+              if (record.kind === "expense") {
+                const expense = record.data;
+                const displayType = expense.type === "Others" && expense.other_type ? expense.other_type : expense.type;
+                return (
+                  <div key={`expense-${expense.id}`} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[13px] font-semibold text-slate-900">{expense.title}</p>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${statusColors[expense.status] || "bg-slate-100 text-slate-600"}`}>{expense.status}</span>
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-600">Expense</span>
+                        </div>
+                        <p className="text-[12px] text-slate-500">{displayType}</p>
+                        <div className="mt-0.5 flex items-center gap-3 text-[10px] text-slate-400">
+                          <span>{formatDate(expense.expense_date)}</span>
+                          {expense.includes_vat && <span>VAT: {formatMoney(Number(expense.vat_amount) || 0)}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <p className="text-[15px] font-bold text-slate-900">{formatMoney(Number(expense.total) || 0)}</p>
+                        <p className="mt-0.5 text-[10px] font-medium text-slate-400">Base: {formatMoney(Number(expense.price) || 0)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setExpenseEditTarget(expense)}
+                        title="Edit"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                      >
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              const inv = record.data;
+              return (
               <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-slate-50/80 transition-colors">
                 <div className="flex items-center gap-4">
                   <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${inv.invoice_type === "quote" ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"}`}>
@@ -737,7 +1031,8 @@ export default function FinancialsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -751,6 +1046,19 @@ export default function FinancialsPage() {
         settings={settings}
         onClose={() => setShowCreateModal(false)}
         onCreated={() => { void loadAll(); setShowCreateModal(false); }}
+      />
+    )}
+    {showExpenseModal && (
+      <ExpenseCreateModal
+        onClose={() => setShowExpenseModal(false)}
+        onCreated={() => { void loadAll(); setShowExpenseModal(false); }}
+      />
+    )}
+    {expenseEditTarget && (
+      <ExpenseCreateModal
+        expense={expenseEditTarget}
+        onClose={() => setExpenseEditTarget(null)}
+        onCreated={() => { void loadAll(); setExpenseEditTarget(null); }}
       />
     )}
     {showSettingsModal && (

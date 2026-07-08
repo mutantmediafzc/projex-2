@@ -74,8 +74,29 @@ const PLATFORM_ICONS: Record<string, { icon: string; color: string; bg: string }
   linkedin: { icon: "💼", color: "text-blue-700", bg: "bg-blue-100" },
   tiktok: { icon: "🎵", color: "text-gray-900", bg: "bg-gray-100" },
   x: { icon: "✖️", color: "text-gray-900", bg: "bg-gray-100" },
+  pinterest: { icon: "P", color: "text-red-700", bg: "bg-red-100" },
   youtube: { icon: "▶️", color: "text-red-600", bg: "bg-red-100" },
 };
+
+const REQUIRED_REPORT_PLATFORMS = ["pinterest"];
+const EMPTY_PLATFORM_METRIC: PlatformMetric = { reach: 0, views: 0, engagement: 0, followers: 0 };
+
+function getReportPlatforms(platforms: string[], metrics: Record<string, PlatformMetric> = {}) {
+  return Array.from(
+    new Set([
+      ...platforms.map((platform) => platform.toLowerCase()),
+      ...Object.keys(metrics).map((platform) => platform.toLowerCase()),
+      ...REQUIRED_REPORT_PLATFORMS,
+    ].filter(Boolean))
+  );
+}
+
+function normalizePlatformMetrics(platforms: string[], metrics: Record<string, PlatformMetric> = {}) {
+  return getReportPlatforms(platforms, metrics).reduce<Record<string, PlatformMetric>>((acc, platform) => {
+    acc[platform] = metrics[platform] || { ...EMPTY_PLATFORM_METRIC };
+    return acc;
+  }, {});
+}
 
 function ReportStrategyCards({
   objectives,
@@ -447,7 +468,8 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
 
             {/* Platform Metrics Summary */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {Object.entries(currentReport.platform_metrics || {}).map(([platform, metrics]) => {
+              {getReportPlatforms(platforms, currentReport.platform_metrics).map((platform) => {
+                const metrics = currentReport.platform_metrics?.[platform] || EMPTY_PLATFORM_METRIC;
                 const pConfig = PLATFORM_ICONS[platform.toLowerCase()] || { icon: "📊", color: "text-slate-600", bg: "bg-slate-100" };
                 return (
                   <div key={platform} className={`rounded-xl ${pConfig.bg} p-4`}>
@@ -456,10 +478,10 @@ export default function QuarterlyReports({ projectId, projectName, platforms }: 
                       <span className={`text-sm font-semibold capitalize ${pConfig.color}`}>{platform}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div><span className="text-slate-500">Reach:</span> <span className="font-medium">{(metrics as PlatformMetric).reach?.toLocaleString() || 0}</span></div>
-                      <div><span className="text-slate-500">Views:</span> <span className="font-medium">{(metrics as PlatformMetric).views?.toLocaleString() || 0}</span></div>
-                      <div><span className="text-slate-500">Engagement:</span> <span className="font-medium">{(metrics as PlatformMetric).engagement?.toLocaleString() || 0}</span></div>
-                      <div><span className="text-slate-500">Followers:</span> <span className="font-medium">+{(metrics as PlatformMetric).followers?.toLocaleString() || 0}</span></div>
+                      <div><span className="text-slate-500">Reach:</span> <span className="font-medium">{metrics.reach?.toLocaleString() || 0}</span></div>
+                      <div><span className="text-slate-500">Views:</span> <span className="font-medium">{metrics.views?.toLocaleString() || 0}</span></div>
+                      <div><span className="text-slate-500">Engagement:</span> <span className="font-medium">{metrics.engagement?.toLocaleString() || 0}</span></div>
+                      <div><span className="text-slate-500">Followers:</span> <span className="font-medium">+{metrics.followers?.toLocaleString() || 0}</span></div>
                     </div>
                   </div>
                 );
@@ -583,7 +605,7 @@ function QuarterlyReportModal({
     report?.monthly_data || quarterConfig.months.map((m) => ({ month: m, reach: 0, views: 0, engagement: 0, followers: 0 }))
   );
   const [platformMetrics, setPlatformMetrics] = useState<Record<string, PlatformMetric>>(
-    report?.platform_metrics || platforms.reduce((acc, p) => ({ ...acc, [p]: { reach: 0, views: 0, engagement: 0, followers: 0 } }), {})
+    normalizePlatformMetrics(platforms, report?.platform_metrics)
   );
   const [objectives, setObjectives] = useState(report?.objectives_text || "");
   const [coreGoals, setCoreGoals] = useState(report?.core_goals || "");
@@ -608,7 +630,7 @@ function QuarterlyReportModal({
       quarter_start_date: quarterStartDate,
       quarter_end_date: quarterEndDate,
       monthly_data: monthlyData,
-      platform_metrics: platformMetrics,
+      platform_metrics: normalizePlatformMetrics(platforms, platformMetrics),
       objectives_text: objectives || null,
       core_goals: coreGoals || null,
       theme_text: theme || null,
@@ -763,7 +785,7 @@ function QuarterlyReportModal({
           <div>
             <h3 className="mb-3 text-sm font-semibold text-slate-900">Platform Metrics</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              {platforms.map((platform) => (
+              {getReportPlatforms(platforms, platformMetrics).map((platform) => (
                 <div key={platform} className="rounded-xl border border-slate-200 p-4">
                   <h4 className="mb-3 text-sm font-semibold text-slate-900 capitalize">{platform}</h4>
                   <div className="grid grid-cols-2 gap-3">

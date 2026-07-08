@@ -81,6 +81,12 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string; col
     color: "text-gray-900",
     bg: "bg-gradient-to-br from-gray-900 to-gray-700",
   },
+  pinterest: {
+    icon: <span className="text-base font-bold">P</span>,
+    label: "Pinterest",
+    color: "text-red-700",
+    bg: "bg-gradient-to-br from-red-700 to-red-500",
+  },
   x: {
     icon: <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
     label: "X",
@@ -94,6 +100,18 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; label: string; col
     bg: "bg-gradient-to-br from-red-600 to-red-500",
   },
 };
+
+const REQUIRED_REPORT_PLATFORMS = ["pinterest"];
+
+function getReportPlatforms(platforms: string[], metrics: QuarterlyReport["platform_metrics"] = {}) {
+  return Array.from(
+    new Set([
+      ...platforms.map((platform) => platform.toLowerCase()),
+      ...Object.keys(metrics).map((platform) => platform.toLowerCase()),
+      ...REQUIRED_REPORT_PLATFORMS,
+    ].filter(Boolean))
+  );
+}
 
 function ReportStrategyCards({
   objectives,
@@ -374,10 +392,14 @@ export default function PublicQuarterlyReportPage({ params }: { params: Promise<
     );
   }
 
-  const displayPlatforms = report.project?.platforms || [];
+  const displayPlatforms = getReportPlatforms(report.project?.platforms || [], report.platform_metrics);
+  const displayPlatformMetrics = displayPlatforms.reduce<QuarterlyReport["platform_metrics"]>((acc, platform) => {
+    acc[platform] = report.platform_metrics[platform] || { reach: 0, views: 0, engagement: 0, followers: 0 };
+    return acc;
+  }, {});
   const filteredPlatformMetrics = platformFilter === "all"
-    ? report.platform_metrics
-    : { [platformFilter]: report.platform_metrics[platformFilter] };
+    ? displayPlatformMetrics
+    : { [platformFilter]: report.platform_metrics[platformFilter] || { reach: 0, views: 0, engagement: 0, followers: 0 } };
 
   const filteredContent = platformFilter === "all"
     ? report.content_data

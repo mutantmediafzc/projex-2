@@ -79,6 +79,16 @@ type FinancialRecord =
   | { kind: "invoice"; data: Invoice }
   | { kind: "expense"; data: FinancialExpense };
 
+type ImportStats = {
+  invoices: { total: number; created: number; skipped: number; failed: number; unmatchedProjects: number };
+  items: { total: number; created: number; skipped: number; failed: number };
+  payments: { total: number; created: number; skipped: number; failed: number };
+  reviewRows: Array<{ section: string; rowId: string; reference: string; reason: string }>;
+  unmatchedProjectRows: Array<{ invoiceNumber: string; clientName: string; total: number; issueDate: string; search: string; reason: string }>;
+  warnings: string[];
+  errors: string[];
+};
+
 const expenseTypes = [
   "Visa Expenses",
   "Office Grocery",
@@ -128,9 +138,122 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-slate-100 text-slate-500",
   accepted: "bg-emerald-100 text-emerald-700",
   rejected: "bg-red-100 text-red-700",
+  partially_paid: "bg-blue-100 text-blue-700",
   pending: "bg-amber-100 text-amber-700",
   requested: "bg-blue-100 text-blue-700",
 };
+
+function InvoiceImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [itemFile, setItemFile] = useState<File | null>(null);
+  const [paymentFile, setPaymentFile] = useState<File | null>(null);
+  const [projectFile, setProjectFile] = useState<File | null>(null);
+  const [stats, setStats] = useState<ImportStats | null>(null);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canSubmit = Boolean(invoiceFile && itemFile && paymentFile) && !running;
+  const statRows = stats ? [
+    ["Invoices", stats.invoices.total, stats.invoices.created, stats.invoices.skipped, stats.invoices.failed],
+    ["Items", stats.items.total, stats.items.created, stats.items.skipped, stats.items.failed],
+    ["Payments", stats.payments.total, stats.payments.created, stats.payments.skipped, stats.payments.failed],
+  ] : [];
+
+  async function runImport(mode: "dry-run" | "import") {
+    if (!invoiceFile || !itemFile || !paymentFile) return;
+    setRunning(true);
+    setError(null);
+    try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("You need to be signed in to import invoices.");
+
+      const body = new FormData();
+      body.append("mode", mode);
+      body.append("invoices", invoiceFile);
+      body.append("items", itemFile);
+      body.append("payments", paymentFile);
+      if (projectFile) body.append("projects", projectFile);
+
+      const response = await fetch("/api/financials/import-invoices", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      const result = (await response.json()) as { error?: string; stats?: ImportStats };
+      if (!response.ok) throw new Error(result.error || "Invoice import failed.");
+      setStats(result.stats || null);
+      if (mode === "import") onImported();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invoice import failed.");
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const fileFields: Array<[string, File | null, (file: File | null) => void]> = [
+    ["Invoices CSV", invoiceFile, setInvoiceFile],
+    ["Invoice Items CSV", itemFile, setItemFile],
+    ["Payments CSV", paymentFile, setPaymentFile],
+    ["Wix Projects CSV (Optional)", projectFile, setProjectFile],
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">
+      <button type="button" className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div>
+            <h3 className="text-base font-bold text-slate-900">Import Invoices</h3>
+            <p className="text-xs text-slate-500">Upload invoices, invoice items, payments, and optionally Wix projects for better matching.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600">x</button>
+        </div>
+        <div className="space-y-4 p-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {fileFields.map(([label, file, setter]) => (
+              <label key={label} className="block rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <span className="text-[12px] font-bold uppercase tracking-wide text-slate-500">{label}</span>
+                <input type="file" accept=".csv,text/csv" onChange={(event) => setter(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-violet-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-violet-700" />
+                {file && <span className="mt-2 block text-xs text-slate-500">{file.name}</span>}
+              </label>
+            ))}
+          </div>
+          {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>}
+          {stats && (
+            <div className="rounded-xl border border-slate-200">
+              <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+                <p className="text-[12px] font-bold uppercase tracking-wide text-slate-600">Dry Run Summary</p>
+                <p className="mt-1 text-xs text-slate-500">No data has been saved yet. These counts show what will happen when you click Import.</p>
+              </div>
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">CSV Section</th><th>Total Rows</th><th>Will Create</th><th>Already Exists</th><th>Needs Review</th></tr></thead>
+                <tbody>{statRows.map(([label, total, created, skipped, failed]) => <tr key={label as string} className="border-t border-slate-100"><td className="px-4 py-3 font-semibold text-slate-900">{label}</td><td>{total}</td><td>{created}</td><td>{skipped}</td><td>{failed}</td></tr>)}</tbody>
+              </table>
+            </div>
+          )}
+          {stats && stats.reviewRows.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/40">
+              <div className="border-b border-amber-100 px-4 py-3"><p className="text-[12px] font-bold uppercase tracking-wide text-amber-800">Needs Review Rows</p><p className="mt-1 text-xs text-amber-700">These rows will be skipped by Import until the source CSV issue is fixed.</p></div>
+              <div className="max-h-64 overflow-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="sticky top-0 bg-amber-50 text-xs uppercase tracking-wide text-amber-800"><tr><th className="px-4 py-3">Section</th><th>Row ID</th><th>Reference</th><th>Reason</th></tr></thead><tbody className="bg-white">{stats.reviewRows.map((row, index) => <tr key={`${row.section}-${row.rowId}-${index}`} className="border-t border-amber-100"><td className="px-4 py-3 font-semibold text-slate-900">{row.section}</td><td className="font-mono text-xs text-slate-600">{row.rowId}</td><td className="font-mono text-xs text-slate-600">{row.reference}</td><td className="text-slate-700">{row.reason}</td></tr>)}</tbody></table></div>
+            </div>
+          )}
+          {stats && stats.unmatchedProjectRows.length > 0 && (
+            <div className="rounded-xl border border-blue-200 bg-blue-50/40">
+              <div className="border-b border-blue-100 px-4 py-3"><p className="text-[12px] font-bold uppercase tracking-wide text-blue-800">Invoices Without Project Match</p><p className="mt-1 text-xs text-blue-700">These invoices will be skipped until their project match issue is resolved.</p></div>
+              <div className="max-h-72 overflow-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="sticky top-0 bg-blue-50 text-xs uppercase tracking-wide text-blue-800"><tr><th className="px-4 py-3">Invoice</th><th>Client</th><th>Date</th><th>Total</th><th>Reason</th><th>CSV Search Text</th></tr></thead><tbody className="bg-white">{stats.unmatchedProjectRows.map((row, index) => <tr key={`${row.invoiceNumber}-${index}`} className="border-t border-blue-100"><td className="px-4 py-3 font-semibold text-slate-900">{row.invoiceNumber}</td><td className="text-slate-700">{row.clientName}</td><td className="text-slate-600">{formatDate(row.issueDate)}</td><td className="font-semibold text-slate-900">{formatMoney(row.total)}</td><td className="max-w-xs text-xs text-slate-700">{row.reason}</td><td className="max-w-md truncate text-xs text-slate-500" title={row.search}>{row.search || "No search text"}</td></tr>)}</tbody></table></div>
+              {stats.invoices.unmatchedProjects > stats.unmatchedProjectRows.length && <div className="border-t border-blue-100 px-4 py-3 text-xs text-blue-700">Showing first {stats.unmatchedProjectRows.length} of {stats.invoices.unmatchedProjects} unmatched invoices.</div>}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Close</button>
+          <button type="button" disabled={!canSubmit} onClick={() => void runImport("dry-run")} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{running ? "Checking..." : "Dry Run"}</button>
+          <button type="button" disabled={!canSubmit || !stats} onClick={() => void runImport("import")} className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{running ? "Importing..." : "Import"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ExpenseCreateModal({
   expense,
@@ -469,6 +592,7 @@ export default function FinancialsPage() {
   const [createType, setCreateType] = useState<InvoiceType>("invoice");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -704,6 +828,14 @@ export default function FinancialsPage() {
           <p className="mt-0.5 text-sm text-slate-500">Overview of all projects, companies, quotes, and invoices</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[12px] font-semibold text-violet-700 shadow-sm hover:bg-violet-50 transition-colors"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Import
+          </button>
           <button
             type="button"
             onClick={() => setShowExpenseModal(true)}
@@ -1052,6 +1184,12 @@ export default function FinancialsPage() {
       <ExpenseCreateModal
         onClose={() => setShowExpenseModal(false)}
         onCreated={() => { void loadAll(); setShowExpenseModal(false); }}
+      />
+    )}
+    {showImportModal && (
+      <InvoiceImportModal
+        onClose={() => setShowImportModal(false)}
+        onImported={() => { void loadAll(); setShowImportModal(false); }}
       />
     )}
     {expenseEditTarget && (

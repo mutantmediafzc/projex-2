@@ -95,9 +95,7 @@ const expenseTypes = [
   "Office Grocery",
   "Office Equipment",
   "Commission",
-  "DEWA",
-  "DU",
-  "Office Internet",
+  "Office Utilities",
   "Others",
 ] as const;
 

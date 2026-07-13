@@ -581,8 +581,8 @@ function ProjectPickerModal({
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancialsPage() {
-  const { role, loading: roleLoading } = useUserRole();
-  const isExpenseOnly = role === "expense";
+  const { role, hasExpenseAccess, loading: roleLoading } = useUserRole();
+  const isExpenseOnly = hasExpenseAccess;
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<FinancialExpense[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -667,11 +667,11 @@ export default function FinancialsPage() {
   }
 
   useEffect(() => {
-    if (roleLoading || (role !== "admin" && role !== "expense")) return;
+    if (roleLoading || role !== "admin") return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadAll(role === "expense");
-    if (role === "admin") void loadSettings();
-  }, [role, roleLoading]);
+    void loadAll(hasExpenseAccess);
+    if (!hasExpenseAccess) void loadSettings();
+  }, [hasExpenseAccess, role, roleLoading]);
 
   async function handleViewPdf(inv: Invoice) {
     const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order");

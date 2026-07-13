@@ -877,7 +877,7 @@ export default function FinancialsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className={`grid grid-cols-2 gap-4 ${hasExpenseAccess ? "lg:grid-cols-3 xl:grid-cols-5" : "lg:grid-cols-4"}`}>
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-5 text-white shadow-xl">
           <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">Total Quoted</p>
           <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalQuoted)}</p>
@@ -898,6 +898,11 @@ export default function FinancialsPage() {
           <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalOverdue)}</p>
           <p className="mt-1 text-[11px] text-white/60">{filteredInvoices.filter(i => i.status === "overdue").length} overdue</p>
         </div>
+        {hasExpenseAccess && <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-amber-600 p-5 text-white shadow-xl">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">Total Expense</p>
+          <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalExpenses)}</p>
+          <p className="mt-1 text-[11px] text-white/60">{filteredExpenses.length} expenses</p>
+        </div>}
       </div>
 
       {/* Secondary Stats */}

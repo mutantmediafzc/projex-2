@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 const APP_LINKS = [
   { href: "/", label: "Dashboard" },
@@ -16,7 +15,6 @@ const APP_LINKS = [
 ];
 
 export default function AppMenuLauncher() {
-  const { role } = useUserRole();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -65,7 +63,7 @@ export default function AppMenuLauncher() {
       {open ? (
         <div className="absolute right-0 z-40 mt-2 w-64 rounded-2xl border border-slate-200/80 bg-white/95 p-3 text-xs text-slate-800 shadow-[0_18px_40px_rgba(15,23,42,0.45)]">
           <div className="grid grid-cols-3 gap-3">
-            {(role === "expense" ? APP_LINKS.filter(app => app.href === "/financials") : APP_LINKS).map((app) => (
+            {APP_LINKS.map((app) => (
               <Link
                 key={app.href}
                 href={app.href}

@@ -227,12 +227,11 @@ const NAV_ITEMS: NavItem[] = [
 export default function SidebarNav() {
   const { role, loading } = useUserRole();
   const isAdmin = role === "admin";
-  const isExpenseOnly = role === "expense";
+  const hasExpenseAccess = role === "expense";
 
   // Filter nav items based on role
   const visibleItems = NAV_ITEMS.filter(item => {
-    if (isExpenseOnly) return item.href === "/financials";
-    if (item.adminOnly && !isAdmin) return false;
+    if (item.adminOnly && !isAdmin && !(hasExpenseAccess && item.href === "/financials")) return false;
     return true;
   });
 

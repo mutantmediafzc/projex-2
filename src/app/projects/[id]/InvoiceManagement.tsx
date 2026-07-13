@@ -11,7 +11,7 @@ import SOAModal from "./SOAModal";
 import InvoiceEditModal from "./InvoiceEditModal";
 import type { SOAInvoice } from "./ReceiptPDF";
 
-export type InvoiceStatus = "draft" | "sent" | "paid" | "unpaid" | "overdue" | "cancelled" | "accepted" | "rejected" | "partially_paid";
+export type InvoiceStatus = "draft" | "active" | "sent" | "paid" | "unpaid" | "overdue" | "cancelled" | "accepted" | "rejected" | "partially_paid";
 export type InvoiceType = "quote" | "invoice";
 
 export type InvoiceItem = {
@@ -90,6 +90,7 @@ function formatDate(date: string | null): string {
 
 const statusColors: Record<InvoiceStatus, string> = {
   draft: "bg-slate-100 text-slate-700",
+  active: "bg-violet-100 text-violet-700",
   sent: "bg-blue-100 text-blue-700",
   paid: "bg-emerald-100 text-emerald-700",
   unpaid: "bg-amber-100 text-amber-700",
@@ -363,7 +364,7 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
                         </button>
 
                         {/* Draft actions */}
-                        {inv.status === "draft" && <button type="button" onClick={() => handleUpdateStatus(inv, "sent")} className="h-9 rounded-lg bg-blue-50 px-3 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Send</button>}
+                        {(inv.status === "draft" || inv.status === "active") && <button type="button" onClick={() => handleUpdateStatus(inv, "sent")} className="h-9 rounded-lg bg-blue-50 px-3 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Send</button>}
 
                         {/* Quote actions */}
                         {inv.invoice_type === "quote" && inv.status === "sent" && (

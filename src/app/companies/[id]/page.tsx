@@ -1305,6 +1305,7 @@ function SocialField({
 // ── Invoice status colors ────────────────────────────────────────────────────
 const INV_STATUS_COLORS: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700",
+  active: "bg-violet-100 text-violet-700",
   sent: "bg-blue-100 text-blue-700",
   paid: "bg-emerald-100 text-emerald-700",
   unpaid: "bg-amber-100 text-amber-700",
@@ -1398,6 +1399,7 @@ function InvoicesDisplay({ invoices, loading }: { invoices: CompanyInvoice[]; lo
         >
           <option value="all">All Status</option>
           <option value="draft">Draft</option>
+          <option value="active">Active</option>
           <option value="sent">Sent</option>
           <option value="paid">Paid</option>
           <option value="unpaid">Unpaid</option>

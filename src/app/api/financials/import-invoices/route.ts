@@ -592,6 +592,7 @@ function mapInvoiceStatus(status: string, dueDate: string | null): string {
   if (normalized === "paid") return "paid";
   if (normalized === "cancelled" || normalized === "canceled") return "cancelled";
   if (normalized === "draft") return "draft";
+  if (normalized === "active") return "active";
   if (normalized === "sent") return "sent";
   if (normalized === "overdue") return "overdue";
   if (dueDate && new Date(dueDate) < new Date()) return "overdue";

@@ -213,7 +213,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
 
   const statusOptions = invoice.invoice_type === "quote"
     ? ["draft", "sent", "accepted", "rejected", "cancelled"]
-    : ["draft", "sent", "unpaid", "paid", "overdue", "cancelled", "partially_paid"];
+    : ["active", "sent", "unpaid", "paid", "overdue", "cancelled", "partially_paid"];
 
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center px-4 py-6">

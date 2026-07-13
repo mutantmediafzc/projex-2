@@ -102,6 +102,7 @@ const expenseTypes = [
 const expenseStatuses: FinancialExpenseStatus[] = ["pending", "requested", "paid", "rejected"];
 const invoiceStatusOptions = [
   { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
   { value: "sent", label: "Sent" },
   { value: "paid", label: "Paid" },
   { value: "unpaid", label: "Unpaid" },
@@ -130,6 +131,7 @@ function formatDate(iso: string | null | undefined): string {
 
 const statusColors: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700",
+  active: "bg-violet-100 text-violet-700",
   sent: "bg-blue-100 text-blue-700",
   paid: "bg-emerald-100 text-emerald-700",
   unpaid: "bg-amber-100 text-amber-700",
@@ -1183,7 +1185,7 @@ export default function FinancialsPage() {
                     >
                       <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
-                    {inv.status === "draft" && (
+                    {(inv.status === "draft" || inv.status === "active") && (
                       <button type="button" onClick={() => handleUpdateStatus(inv, "sent")} className="h-8 rounded-lg bg-blue-50 px-2.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Send</button>
                     )}
                     {inv.invoice_type === "quote" && inv.status === "sent" && (

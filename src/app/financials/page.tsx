@@ -582,7 +582,6 @@ function ProjectPickerModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function FinancialsPage() {
   const { role, hasExpenseAccess, loading: roleLoading } = useUserRole();
-  const isExpenseOnly = hasExpenseAccess;
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<FinancialExpense[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -619,15 +618,17 @@ export default function FinancialsPage() {
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
 
-  async function loadAll(expenseOnly = isExpenseOnly) {
+  async function loadAll() {
     try {
       setLoading(true);
       setError(null);
       const [invoicesRes, expensesRes, projectsRes, companiesRes] = await Promise.all([
-        expenseOnly ? Promise.resolve({ data: [], error: null }) : supabaseClient.from("invoices").select("*, project:projects(id, name, company_id)").order("created_at", { ascending: false }),
-        supabaseClient.from("financial_expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false }),
-        expenseOnly ? Promise.resolve({ data: [], error: null }) : supabaseClient.from("projects").select("id, company_id, name, value, status, company:companies(id, name)").eq("is_archived", false),
-        expenseOnly ? Promise.resolve({ data: [], error: null }) : supabaseClient.from("companies").select("id, name").order("name"),
+        supabaseClient.from("invoices").select("*, project:projects(id, name, company_id)").order("created_at", { ascending: false }),
+        hasExpenseAccess
+          ? supabaseClient.from("financial_expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+        supabaseClient.from("projects").select("id, company_id, name, value, status, company:companies(id, name)").eq("is_archived", false),
+        supabaseClient.from("companies").select("id, name").order("name"),
       ]);
       if (invoicesRes.error) { setError(invoicesRes.error.message); setLoading(false); return; }
       const invoiceList = (invoicesRes.data as unknown as Invoice[]) || [];
@@ -669,9 +670,9 @@ export default function FinancialsPage() {
   useEffect(() => {
     if (roleLoading || role !== "admin") return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadAll(hasExpenseAccess);
-    if (!hasExpenseAccess) void loadSettings();
-  }, [hasExpenseAccess, role, roleLoading]);
+    void loadAll();
+    void loadSettings();
+  }, [role, roleLoading]);
 
   async function handleViewPdf(inv: Invoice) {
     const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order");
@@ -828,55 +829,55 @@ export default function FinancialsPage() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">{isExpenseOnly ? "Expenses" : "Financial Summary"}</h1>
-          <p className="mt-0.5 text-sm text-slate-500">{isExpenseOnly ? "View, create, and edit expense records" : "Overview of all projects, companies, quotes, and invoices"}</p>
+          <h1 className="text-xl font-bold text-slate-900">Financial Summary</h1>
+          <p className="mt-0.5 text-sm text-slate-500">Overview of all projects, companies, quotes, invoices, and expenses</p>
         </div>
         <div className="flex items-center gap-2">
-          {!isExpenseOnly && <button
+          <button
             type="button"
             onClick={() => setShowImportModal(true)}
             className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-white px-4 py-2.5 text-[12px] font-semibold text-violet-700 shadow-sm hover:bg-violet-50 transition-colors"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
             Import
-          </button>}
-          <button
+          </button>
+          {hasExpenseAccess && <button
             type="button"
             onClick={() => setShowExpenseModal(true)}
             className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-emerald-700 transition-colors"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14m-7-7h14"/></svg>
             New Expense
-          </button>
-          {!isExpenseOnly && <button
+          </button>}
+          <button
             type="button"
             onClick={() => { setCreateType("quote"); setShowCreateModal(true); }}
             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-blue-700 transition-colors"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14m-7-7h14"/></svg>
             New Quote
-          </button>}
-          {!isExpenseOnly && <button
+          </button>
+          <button
             type="button"
             onClick={() => { setCreateType("invoice"); setShowCreateModal(true); }}
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-violet-700 transition-colors"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14m-7-7h14"/></svg>
             New Invoice
-          </button>}
-          {!isExpenseOnly && <button
+          </button>
+          <button
             type="button"
             onClick={() => setShowSettingsModal(true)}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[12px] font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             Settings
-          </button>}
+          </button>
         </div>
       </div>
 
       {/* Summary Cards */}
-      {!isExpenseOnly && <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-5 text-white shadow-xl">
           <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">Total Quoted</p>
           <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalQuoted)}</p>
@@ -897,11 +898,11 @@ export default function FinancialsPage() {
           <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalOverdue)}</p>
           <p className="mt-1 text-[11px] text-white/60">{filteredInvoices.filter(i => i.status === "overdue").length} overdue</p>
         </div>
-      </div>}
+      </div>
 
       {/* Secondary Stats */}
-      <div className={`grid gap-4 ${isExpenseOnly ? "md:grid-cols-1" : "md:grid-cols-2 xl:grid-cols-4"}`}>
-        {!isExpenseOnly && <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className={`grid gap-4 md:grid-cols-2 ${hasExpenseAccess ? "xl:grid-cols-4" : "xl:grid-cols-3"}`}>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -909,24 +910,24 @@ export default function FinancialsPage() {
             <div><p className="text-[11px] font-medium text-slate-500">Projects</p><p className="text-lg font-bold text-slate-900">{projectSummary.totalCount}</p></div>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">Total value: {formatMoney(projectSummary.totalValue)}</p>
-        </div>}
-        {!isExpenseOnly && <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 text-sky-600">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4z"/></svg>
             </div>
             <div><p className="text-[11px] font-medium text-slate-500">Companies</p><p className="text-lg font-bold text-slate-900">{companies.length}</p></div>
           </div>
-        </div>}
-        {!isExpenseOnly && <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 text-emerald-600">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
             <div><p className="text-[11px] font-medium text-slate-500">Collection Rate</p><p className="text-lg font-bold text-slate-900">{summary.totalInvoiced > 0 ? Math.round((summary.totalPaid / summary.totalInvoiced) * 100) : 0}%</p></div>
           </div>
-        </div>}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        </div>
+        {hasExpenseAccess && <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-100 to-red-100 text-rose-600">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -934,15 +935,15 @@ export default function FinancialsPage() {
             <div><p className="text-[11px] font-medium text-slate-500">Expenses</p><p className="text-lg font-bold text-slate-900">{formatMoney(summary.totalExpenses)}</p></div>
           </div>
           <p className="mt-2 text-[11px] text-slate-500">{expenses.length} expense records</p>
-        </div>
+        </div>}
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/60 bg-gradient-to-r from-slate-50/80 to-white/80 p-3 shadow-sm">
 
         {/* Type toggle pills */}
-        {!isExpenseOnly && <div className="flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
-          {(["all", "quote", "invoice", "expense"] as const).map(t => (
+        <div className="flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-sm">
+          {(["all", "quote", "invoice", ...(hasExpenseAccess ? ["expense" as const] : [])] as const).map(t => (
             <button
               key={t}
               type="button"
@@ -959,7 +960,7 @@ export default function FinancialsPage() {
               {t === "all" ? "All" : t === "quote" ? "Quotes" : t === "invoice" ? "Invoices" : "Expenses"}
             </button>
           ))}
-        </div>}
+        </div>
 
         {/* Status */}
         <select
@@ -974,22 +975,22 @@ export default function FinancialsPage() {
         </select>
 
         {/* Searchable company dropdown */}
-        {!isExpenseOnly && <SearchableDropdown
+        <SearchableDropdown
           value={companyFilter}
           onChange={v => { setCompanyFilter(v); setProjectFilter("all"); }}
           options={companyOptions}
           placeholder="Companies"
           label="All Companies"
-        />}
+        />
 
         {/* Searchable project dropdown */}
-        {!isExpenseOnly && <SearchableDropdown
+        <SearchableDropdown
           value={projectFilter}
           onChange={setProjectFilter}
           options={projectOptions}
           placeholder="Projects"
           label="All Projects"
-        />}
+        />
 
         {/* Date range */}
         <input type="date" value={dateFromFilter} onChange={e => setDateFromFilter(e.target.value)} className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-[11px] shadow-sm focus:border-indigo-400 focus:outline-none" />
@@ -1046,14 +1047,14 @@ export default function FinancialsPage() {
                         <p className="text-[15px] font-bold text-slate-900">{formatMoney(Number(expense.total) || 0)}</p>
                         <p className="mt-0.5 text-[10px] font-medium text-slate-400">Base: {formatMoney(Number(expense.price) || 0)}</p>
                       </div>
-                      <button
+                      {hasExpenseAccess && <button
                         type="button"
                         onClick={() => setExpenseEditTarget(expense)}
                         title="Edit"
                         className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
                       >
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 );
@@ -1184,7 +1185,7 @@ export default function FinancialsPage() {
         onCreated={() => { void loadAll(); setShowCreateModal(false); }}
       />
     )}
-    {showExpenseModal && (
+    {hasExpenseAccess && showExpenseModal && (
       <ExpenseCreateModal
         onClose={() => setShowExpenseModal(false)}
         onCreated={() => { void loadAll(); setShowExpenseModal(false); }}
@@ -1196,7 +1197,7 @@ export default function FinancialsPage() {
         onImported={() => { void loadAll(); setShowImportModal(false); }}
       />
     )}
-    {expenseEditTarget && (
+    {hasExpenseAccess && expenseEditTarget && (
       <ExpenseCreateModal
         expense={expenseEditTarget}
         onClose={() => setExpenseEditTarget(null)}

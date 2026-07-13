@@ -801,6 +801,59 @@ export default function FinancialsPage() {
     setDateFromFilter(""); setDateToFilter(""); setTypeFilter("all"); setStatusFilter("all"); setCompanyFilter("all"); setProjectFilter("all");
   }
 
+  async function exportFilteredRecords() {
+    if (filteredRecords.length === 0) return;
+
+    const XLSX = await import("xlsx");
+    const rows = filteredRecords.map((record) => {
+      if (record.kind === "expense") {
+        const expense = record.data;
+        return {
+          "Record Type": "Expense",
+          Reference: expense.title,
+          Date: expense.expense_date,
+          Status: expense.status,
+          Company: "",
+          Project: "",
+          "Expense Type": expense.type === "Others" && expense.other_type ? expense.other_type : expense.type,
+          Currency: "AED",
+          Subtotal: Number(expense.price) || 0,
+          VAT: Number(expense.vat_amount) || 0,
+          Discount: 0,
+          Total: Number(expense.total) || 0,
+        };
+      }
+
+      const invoice = record.data;
+      const project = projects.find((item) => item.id === invoice.project_id);
+      const company = companies.find((item) => item.id === project?.company_id);
+      return {
+        "Record Type": invoice.invoice_type === "quote" ? "Quote" : "Invoice",
+        Reference: invoice.invoice_number,
+        Date: invoice.issue_date,
+        Status: invoice.status,
+        Company: company?.name ?? invoice.client_name ?? "",
+        Project: project?.name ?? "",
+        "Expense Type": "",
+        Currency: invoice.currency || "AED",
+        Subtotal: Number(invoice.subtotal) || 0,
+        VAT: Number(invoice.tax_amount) || 0,
+        Discount: Number(invoice.discount_amount) || 0,
+        Total: Number(invoice.total) || 0,
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 14 }, { wch: 22 }, { wch: 12 }, { wch: 13 }, { wch: 28 }, { wch: 32 },
+      { wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 },
+    ];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Financials");
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `financials-export-${today}.xlsx`);
+  }
+
   const hasActiveFilters = dateFromFilter || dateToFilter || typeFilter !== "all" || statusFilter !== "all" || companyFilter !== "all" || projectFilter !== "all";
 
   const companyOptions = companies.map(c => ({ id: c.id, label: c.name }));
@@ -1006,7 +1059,18 @@ export default function FinancialsPage() {
             Clear
           </button>
         )}
-        <div className="ml-auto text-[11px] text-slate-400">{filteredRecords.length} records</div>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-[11px] text-slate-400">{filteredRecords.length} records</span>
+          <button
+            type="button"
+            onClick={() => void exportFilteredRecords()}
+            disabled={filteredRecords.length === 0}
+            className="inline-flex h-9 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-3 text-[11px] font-semibold text-emerald-700 shadow-sm transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M5 21h14a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2"/></svg>
+            Export to Excel
+          </button>
+        </div>
       </div>
 
       {/* Content */}

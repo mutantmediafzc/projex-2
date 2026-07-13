@@ -686,6 +686,7 @@ function NewCompanyForm({
     const country = (formData.get("country") as string | null)?.trim();
     const streetAddress = (formData.get("street_address") as string | null)?.trim();
     const postalCode = (formData.get("postal_code") as string | null)?.trim();
+    const trn = (formData.get("trn") as string | null)?.trim();
     const notes = (formData.get("notes") as string | null)?.trim();
 
     if (!name) {
@@ -726,6 +727,7 @@ function NewCompanyForm({
           country: country || null,
           street_address: streetAddress || null,
           postal_code: postalCode || null,
+          trn: trn || null,
           notes: notes || null,
           created_by_user_id: createdByUserId,
           created_by: createdBy,
@@ -932,6 +934,19 @@ function NewCompanyForm({
               name="street_address"
               type="text"
               placeholder="123 Business Bay"
+              className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 shadow-sm transition-all focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+            />
+          </div>
+
+          <div className="sm:col-span-2 space-y-1.5">
+            <label htmlFor="trn" className="block text-[12px] font-semibold text-slate-700 uppercase tracking-wide">
+              TRN
+            </label>
+            <input
+              id="trn"
+              name="trn"
+              type="text"
+              placeholder="Enter tax registration number"
               className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-black placeholder:text-slate-400 shadow-sm transition-all focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
             />
           </div>

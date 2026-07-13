@@ -17,6 +17,7 @@ type Company = {
   size: string | null;
   street_address: string | null;
   postal_code: string | null;
+  trn: string | null;
   town: string | null;
   country: string | null;
   notes: string | null;
@@ -79,7 +80,7 @@ type CompanyInvoice = {
 };
 
 const COMPANY_SELECT =
-  "id, name, legal_name, website, email, phone, industry, size, street_address, postal_code, town, country, notes, social_facebook, social_instagram, social_twitter, social_linkedin, social_youtube, social_tiktok, logo_url, brand_color_1, brand_color_2";
+  "id, name, legal_name, website, email, phone, industry, size, street_address, postal_code, trn, town, country, notes, social_facebook, social_instagram, social_twitter, social_linkedin, social_youtube, social_tiktok, logo_url, brand_color_1, brand_color_2";
 
 // Default brand colors (gradient from violet to purple)
 const DEFAULT_BRAND_COLOR_1 = "#8b5cf6";
@@ -316,6 +317,7 @@ export default function CompanyDetailPage() {
       (formData.get("street_address") as string | null)?.trim() || null;
     const postalCode =
       (formData.get("postal_code") as string | null)?.trim() || null;
+    const trn = (formData.get("trn") as string | null)?.trim() || null;
     const town = (formData.get("town") as string | null)?.trim() || null;
     const country =
       (formData.get("country") as string | null)?.trim() || null;
@@ -335,6 +337,7 @@ export default function CompanyDetailPage() {
           size,
           street_address: streetAddress,
           postal_code: postalCode,
+          trn,
           town,
           country,
           notes,
@@ -742,6 +745,7 @@ export default function CompanyDetailPage() {
                     <DetailField label="Phone" value={company.phone} icon={<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>} />
                     <DetailField label="Industry" value={company.industry} icon={<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>} />
                     <DetailField label="Company Size" value={company.size} icon={<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>} />
+                    <DetailField label="TRN" value={company.trn} icon={<svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6M9 13h8M9 17h8"/></svg>} />
                   </div>
                   <div className="border-t border-slate-100 pt-3">
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-2">Address</p>
@@ -832,6 +836,22 @@ export default function CompanyDetailPage() {
                         name="size"
                         type="text"
                         defaultValue={company.size ?? ""}
+                        className="block w-full rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="trn"
+                        className="block text-[11px] font-medium text-slate-700"
+                      >
+                        TRN
+                      </label>
+                      <input
+                        id="trn"
+                        name="trn"
+                        type="text"
+                        defaultValue={company.trn ?? ""}
+                        placeholder="Tax registration number"
                         className="block w-full rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
                       />
                     </div>

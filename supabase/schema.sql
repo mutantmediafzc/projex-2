@@ -22,6 +22,7 @@ create table if not exists companies (
   size text,
   street_address text,
   postal_code text,
+  trn text,
   town text,
   country text,
   notes text,
@@ -32,6 +33,7 @@ create table if not exists companies (
 );
 
 alter table if exists companies
+  add column if not exists trn text,
   add column if not exists social_facebook text,
   add column if not exists social_instagram text,
   add column if not exists social_twitter text,

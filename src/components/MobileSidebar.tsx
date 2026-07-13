@@ -4,6 +4,7 @@ import { useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -225,6 +226,8 @@ const navItems = [
 
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+  const { role } = useUserRole();
+  const visibleItems = role === "expense" ? navItems.filter(item => item.href === "/financials") : navItems;
 
   // Close on escape key
   useEffect(() => {
@@ -309,7 +312,7 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
         {/* Navigation */}
         <nav className="relative flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
             return (
               <Link

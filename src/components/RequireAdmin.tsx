@@ -6,18 +6,19 @@ import { useEffect } from "react";
 
 interface RequireAdminProps {
   children: React.ReactNode;
+  allowExpenseRole?: boolean;
 }
 
-export default function RequireAdmin({ children }: RequireAdminProps) {
+export default function RequireAdmin({ children, allowExpenseRole = false }: RequireAdminProps) {
   const { role, loading } = useUserRole();
   const router = useRouter();
-  const isAdmin = role === "admin";
+  const isAllowed = role === "admin" || (allowExpenseRole && role === "expense");
 
   useEffect(() => {
-    if (!loading && !isAdmin) {
+    if (!loading && !isAllowed) {
       router.push("/");
     }
-  }, [loading, isAdmin, router]);
+  }, [loading, isAllowed, router]);
 
   if (loading) {
     return (
@@ -27,7 +28,7 @@ export default function RequireAdmin({ children }: RequireAdminProps) {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAllowed) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100">

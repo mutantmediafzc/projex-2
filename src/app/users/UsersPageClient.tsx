@@ -23,6 +23,7 @@ type UserRow = {
 
 const ROLE_COLORS: Record<string, string> = {
   admin: "from-violet-500 to-purple-500",
+  expense: "from-emerald-500 to-teal-500",
   staff: "from-slate-500 to-gray-500",
 };
 

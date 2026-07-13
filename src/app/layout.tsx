@@ -15,6 +15,7 @@ import SupportChat from "@/components/SupportChat";
 import { MobileSidebarProvider, MobileMenuButton } from "@/components/MobileSidebarContext";
 import StatusPromptModal from "@/components/StatusPromptModal";
 import SidebarNav from "@/components/SidebarNav";
+import ExpenseOnlyRouteGuard from "@/components/ExpenseOnlyRouteGuard";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -157,7 +158,9 @@ export default function RootLayout({
                       </div>
                     </header>
                   </ShellHeader>
-                  <div className="relative z-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 md:px-6 lg:px-8">{children}</div>
+                  <div className="relative z-0 flex-1 px-3 py-3 sm:px-4 sm:py-4 md:px-6 lg:px-8">
+                    <ExpenseOnlyRouteGuard>{children}</ExpenseOnlyRouteGuard>
+                  </div>
                 </div>
               </RequireAuth>
             </main>

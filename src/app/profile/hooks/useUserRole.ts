@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-export type UserRole = "employee" | "admin" | "hr" | "staff" | null;
+export type UserRole = "employee" | "admin" | "hr" | "staff" | "expense" | null;
 
 interface UseUserRoleResult {
   role: UserRole;
@@ -38,7 +38,7 @@ export function useUserRole(): UseUserRoleResult {
         const meta = (user.user_metadata || {}) as Record<string, unknown>;
         const metaRole = (meta["role"] as string)?.toLowerCase();
 
-        if (metaRole === "admin" || metaRole === "hr") {
+        if (metaRole === "admin" || metaRole === "hr" || metaRole === "expense") {
           setRole(metaRole as UserRole);
         } else {
           // Fallback: check users table for role
@@ -49,7 +49,7 @@ export function useUserRole(): UseUserRoleResult {
             .single();
 
           const dbRole = (dbUser?.role as string)?.toLowerCase();
-          if (dbRole === "admin" || dbRole === "hr") {
+          if (dbRole === "admin" || dbRole === "hr" || dbRole === "expense") {
             setRole(dbRole as UserRole);
           } else {
             // Default to employee

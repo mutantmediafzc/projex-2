@@ -39,5 +39,5 @@ begin
 
   alter table invoices
     add constraint invoices_status_check
-    check (status in ('draft', 'sent', 'paid', 'unpaid', 'overdue', 'cancelled', 'accepted', 'rejected', 'partially_paid'));
+    check (status in ('draft', 'active', 'sent', 'paid', 'unpaid', 'overdue', 'cancelled', 'accepted', 'rejected', 'partially_paid'));
 end $$;

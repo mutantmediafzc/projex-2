@@ -403,12 +403,18 @@ function addUnmatchedProjectRow(stats: ImportStats, row: CsvRow, reason: string)
 }
 
 async function getExistingExternalIds(table: "invoices" | "invoice_items" | "invoice_payments"): Promise<Set<string>> {
-  const { data } = await supabaseAdmin.from(table).select("import_external_id").eq("import_source", IMPORT_SOURCE);
+  const { data, error } = await supabaseAdmin.from(table).select("import_external_id").eq("import_source", IMPORT_SOURCE);
+  if (error) {
+    throw new Error(`Unable to check existing ${table} imports: ${error.message}`);
+  }
   return new Set((data || []).map((row) => row.import_external_id).filter(Boolean) as string[]);
 }
 
 async function getExistingImportIdMap(table: "invoices"): Promise<Map<string, string>> {
-  const { data } = await supabaseAdmin.from(table).select("id, import_external_id").eq("import_source", IMPORT_SOURCE);
+  const { data, error } = await supabaseAdmin.from(table).select("id, import_external_id").eq("import_source", IMPORT_SOURCE);
+  if (error) {
+    throw new Error(`Unable to check existing ${table} imports: ${error.message}`);
+  }
   return new Map((data || []).filter((row) => row.import_external_id).map((row) => [row.import_external_id as string, row.id as string]));
 }
 

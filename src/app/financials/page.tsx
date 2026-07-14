@@ -163,6 +163,7 @@ function InvoiceImportModal({ onClose, onImported }: { onClose: () => void; onIm
     if (!invoiceFile || !itemFile || !paymentFile) return;
     setRunning(true);
     setError(null);
+    if (mode === "import") setStats(null);
     try {
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const token = sessionData.session?.access_token;

@@ -779,20 +779,23 @@ export default function FinancialsPage() {
   }, [filteredInvoices, filteredExpenses]);
 
   const summary = useMemo(() => {
-    let totalQuoted = 0, totalInvoiced = 0, totalPaid = 0, totalOverdue = 0, totalExpenses = 0;
+    let totalQuoted = 0, totalInvoiced = 0, totalOverdue = 0, totalExpenses = 0;
+    let totalPaid = 0, paymentCount = 0;
     for (const inv of filteredInvoices) {
       if (inv.invoice_type === "quote" && inv.status !== "cancelled") totalQuoted += inv.total;
       if (inv.invoice_type === "invoice" && inv.status !== "cancelled") {
         totalInvoiced += inv.total;
-        if (inv.status === "paid") totalPaid += inv.total;
+        const invoicePayments = paymentsMap[inv.id] || [];
+        totalPaid += invoicePayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+        paymentCount += invoicePayments.length;
         if (inv.status === "overdue") totalOverdue += inv.total;
       }
     }
     for (const expense of filteredExpenses) {
       if (expense.status !== "rejected") totalExpenses += Number(expense.total) || 0;
     }
-    return { totalQuoted, totalInvoiced, totalPaid, totalOverdue, totalExpenses };
-  }, [filteredInvoices, filteredExpenses]);
+    return { totalQuoted, totalInvoiced, totalPaid, totalOverdue, totalExpenses, paymentCount };
+  }, [filteredInvoices, filteredExpenses, paymentsMap]);
 
   const projectSummary = useMemo(() => {
     let totalValue = 0;
@@ -945,7 +948,7 @@ export default function FinancialsPage() {
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 p-5 text-white shadow-xl">
           <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">Paid</p>
           <p className="mt-2 text-2xl font-bold">{formatMoney(summary.totalPaid)}</p>
-          <p className="mt-1 text-[11px] text-white/60">{filteredInvoices.filter(i => i.status === "paid").length} paid</p>
+          <p className="mt-1 text-[11px] text-white/60">{summary.paymentCount} payments</p>
         </div>
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 p-5 text-white shadow-xl">
           <p className="text-[11px] font-bold uppercase tracking-wider text-white/70">Overdue</p>

@@ -60,6 +60,24 @@ type AdhocRequirement = {
   created_at: string;
 };
 
+type AccountInvoice = {
+  id: string;
+  project_id: string;
+  project_name: string;
+  invoice_number: string;
+  status: string | null;
+  issue_date: string;
+  due_date: string | null;
+  total: number;
+  currency: string;
+};
+
+type AccountInvoicePayment = {
+  invoice_id: string;
+  amount: number;
+  payment_date: string;
+};
+
 const CONTRACT_LABELS: Record<string, string> = {
   service_based: "Service Based",
   "3_month": "3 Mos",
@@ -996,10 +1014,101 @@ function DocumentsTab({ clientId, documents, associatedProjects, onRefresh }: { 
 function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string; client: AccountClient; adhocItems: AdhocRequirement[]; onRefresh: () => void }) {
   const [showAddAdhoc, setShowAddAdhoc] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [invoices, setInvoices] = useState<AccountInvoice[]>([]);
+  const [invoicePayments, setInvoicePayments] = useState<AccountInvoicePayment[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(true);
+  const [invoicesError, setInvoicesError] = useState<string | null>(null);
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const currentMonth = new Date().getMonth();
   const displayMonths = months.slice(Math.max(0, currentMonth - 2), currentMonth + 1);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadInvoices() {
+      setInvoicesLoading(true);
+      setInvoicesError(null);
+
+      if (!client.company_id) {
+        setInvoices([]);
+        setInvoicePayments([]);
+        setInvoicesLoading(false);
+        return;
+      }
+
+      try {
+        const { data: projects, error: projectsError } = await supabaseClient
+          .from("projects")
+          .select("id, name")
+          .eq("company_id", client.company_id);
+
+        if (projectsError) throw projectsError;
+
+        const projectRows = projects || [];
+        const projectIds = projectRows.map((project) => project.id);
+        if (projectIds.length === 0) {
+          if (active) {
+            setInvoices([]);
+            setInvoicePayments([]);
+          }
+          return;
+        }
+
+        const projectNames = new Map(projectRows.map((project) => [project.id, project.name]));
+        const { data: invoiceData, error: invoiceError } = await supabaseClient
+          .from("invoices")
+          .select("id, project_id, invoice_number, status, issue_date, due_date, total, currency")
+          .eq("invoice_type", "invoice")
+          .in("project_id", projectIds)
+          .order("issue_date", { ascending: false });
+
+        if (invoiceError) throw invoiceError;
+
+        const normalizedInvoices = (invoiceData || []).map((invoice) => ({
+          ...invoice,
+          project_id: invoice.project_id as string,
+          project_name: projectNames.get(invoice.project_id as string) || "Unknown project",
+          total: Number(invoice.total) || 0,
+          currency: invoice.currency || client.currency || "AED",
+        }));
+
+        const invoiceIds = normalizedInvoices.map((invoice) => invoice.id);
+        let payments: AccountInvoicePayment[] = [];
+        if (invoiceIds.length > 0) {
+          const { data: paymentData, error: paymentError } = await supabaseClient
+            .from("invoice_payments")
+            .select("invoice_id, amount, payment_date")
+            .in("invoice_id", invoiceIds);
+
+          if (paymentError) throw paymentError;
+          payments = (paymentData || []).map((payment) => ({
+            ...payment,
+            amount: Number(payment.amount) || 0,
+          }));
+        }
+
+        if (active) {
+          setInvoices(normalizedInvoices);
+          setInvoicePayments(payments);
+        }
+      } catch (error) {
+        console.error("Failed to load account invoices:", error);
+        if (active) {
+          setInvoices([]);
+          setInvoicePayments([]);
+          setInvoicesError("Failed to load invoices for this company.");
+        }
+      } finally {
+        if (active) setInvoicesLoading(false);
+      }
+    }
+
+    loadInvoices();
+    return () => {
+      active = false;
+    };
+  }, [client.company_id, client.currency]);
 
   async function handleAddAdhoc(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -1028,6 +1137,10 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
   }
 
   async function handleExport(format: "pdf" | "excel") {
+    const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
+      totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
+      return totals;
+    }, {});
     const data = {
       client: client.client_name,
       period: `${displayMonths[0]} - ${displayMonths[displayMonths.length - 1]} ${new Date().getFullYear()}`,
@@ -1035,12 +1148,20 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
       serviceBased: client.service_based_fee,
       adhoc: adhocItems.reduce((sum, a) => sum + a.amount, 0),
       adhocItems,
+      invoices,
     };
 
     if (format === "excel") {
       const csvContent = [
         ["Statement of Account", client.client_name],
         ["Period", data.period],
+        [""],
+        ["Invoices"],
+        ["Invoice Number", "Project", "Issue Date", "Due Date", "Status", "Total", "Paid", "Balance"],
+        ...invoices.map((invoice) => {
+          const paid = paidByInvoice[invoice.id] || 0;
+          return [invoice.invoice_number, invoice.project_name, invoice.issue_date, invoice.due_date || "", invoice.status || "", invoice.total, paid, Math.max(0, invoice.total - paid)];
+        }),
         [""],
         ["Service", "Amount"],
         ["Retainer Fee", client.retainer_fee],
@@ -1050,7 +1171,7 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
         ["Ad-Hoc Requirements"],
         ["Date", "Description", "Amount", "Status"],
         ...adhocItems.map((a) => [a.date_requested, a.description, a.amount, a.status]),
-      ].map((row) => row.join(",")).join("\n");
+      ].map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
@@ -1063,6 +1184,13 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
 
   const adhocTotal = adhocItems.reduce((sum, a) => sum + a.amount, 0);
   const grandTotal = client.retainer_fee + client.service_based_fee + adhocTotal;
+  const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
+    totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
+    return totals;
+  }, {});
+  const invoicedTotal = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const paidTotal = invoices.reduce((sum, invoice) => sum + Math.min(invoice.total, paidByInvoice[invoice.id] || 0), 0);
+  const outstandingTotal = Math.max(0, invoicedTotal - paidTotal);
 
   return (
     <div className="space-y-6">
@@ -1077,6 +1205,84 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
             </svg>
             Export Excel
           </button>
+        </div>
+      </div>
+
+      {/* Invoice Ledger */}
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Invoices</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{invoices.length}</p>
+          </div>
+          <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-violet-600">Total Invoiced</p>
+            <p className="mt-1 text-xl font-bold text-violet-700">{formatCurrency(invoicedTotal, client.currency)}</p>
+          </div>
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-emerald-600">Paid</p>
+            <p className="mt-1 text-xl font-bold text-emerald-700">{formatCurrency(paidTotal, client.currency)}</p>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-amber-600">Outstanding</p>
+            <p className="mt-1 text-xl font-bold text-amber-700">{formatCurrency(outstandingTotal, client.currency)}</p>
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
+            <h4 className="text-[13px] font-semibold text-slate-700">Company Invoice Ledger</h4>
+          </div>
+          {invoicesLoading ? (
+            <p className="px-4 py-8 text-center text-[13px] text-slate-400">Loading company invoices...</p>
+          ) : invoicesError ? (
+            <p className="px-4 py-8 text-center text-[13px] text-red-600">{invoicesError}</p>
+          ) : invoices.length === 0 ? (
+            <p className="px-4 py-8 text-center text-[13px] text-slate-400">No invoices found for this company.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Invoice</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Project</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Issued</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Due</th>
+                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Total</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Paid</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {invoices.map((invoice) => {
+                    const paid = Math.min(invoice.total, paidByInvoice[invoice.id] || 0);
+                    const balance = Math.max(0, invoice.total - paid);
+                    return (
+                      <tr key={invoice.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-slate-900">{invoice.invoice_number}</td>
+                        <td className="px-4 py-3 text-slate-600">{invoice.project_name}</td>
+                        <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issue_date)}</td>
+                        <td className="px-4 py-3 text-slate-600">{formatDate(invoice.due_date)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            invoice.status === "paid" ? "bg-emerald-100 text-emerald-700" :
+                            invoice.status === "cancelled" ? "bg-red-100 text-red-700" :
+                            "bg-slate-100 text-slate-700"
+                          }`}>
+                            {(invoice.status || "unknown").replace(/_/g, " ")}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(invoice.total, invoice.currency)}</td>
+                        <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(paid, invoice.currency)}</td>
+                        <td className="px-4 py-3 text-right font-semibold text-amber-700">{formatCurrency(balance, invoice.currency)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
 

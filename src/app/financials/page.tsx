@@ -23,6 +23,7 @@ type Invoice = {
   client_email: string | null;
   client_phone: string | null;
   client_address: string | null;
+  client_trn?: string | null;
   issue_date: string;
   due_date: string | null;
   paid_date: string | null;
@@ -43,7 +44,7 @@ type Invoice = {
   bank_iban: string | null;
   created_at: string;
   items?: InvoiceItem[];
-  project?: { id: string; name: string; company_id: string } | null;
+  project?: { id: string; name: string; company_id: string; company?: { trn: string | null } | null } | null;
 };
 
 type Project = {
@@ -58,6 +59,7 @@ type Project = {
 type Company = {
   id: string;
   name: string;
+  trn: string | null;
 };
 
 type FinancialExpenseStatus = "pending" | "requested" | "paid" | "rejected";
@@ -627,12 +629,12 @@ export default function FinancialsPage() {
       setLoading(true);
       setError(null);
       const [invoicesRes, expensesRes, projectsRes, companiesRes] = await Promise.all([
-        supabaseClient.from("invoices").select("*, project:projects(id, name, company_id)").order("created_at", { ascending: false }),
+        supabaseClient.from("invoices").select("*, project:projects(id, name, company_id, company:companies(trn))").order("created_at", { ascending: false }),
         hasExpenseAccess
           ? supabaseClient.from("financial_expenses").select("*").order("expense_date", { ascending: false }).order("created_at", { ascending: false })
           : Promise.resolve({ data: [], error: null }),
         supabaseClient.from("projects").select("id, company_id, name, value, status, company:companies(id, name)").eq("is_archived", false),
-        supabaseClient.from("companies").select("id, name").order("name"),
+        supabaseClient.from("companies").select("id, name, trn").order("name"),
       ]);
       if (invoicesRes.error) { setError(invoicesRes.error.message); setLoading(false); return; }
       const invoiceList = (invoicesRes.data as unknown as Invoice[]) || [];
@@ -691,7 +693,7 @@ export default function FinancialsPage() {
 
   async function handleViewPdf(inv: Invoice) {
     const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order");
-    setSelectedInvoice({ ...inv, items: (data as InvoiceItem[]) || [] });
+    setSelectedInvoice({ ...inv, client_trn: inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [] });
     setShowPdfModal(true);
   }
 

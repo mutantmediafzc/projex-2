@@ -25,6 +25,7 @@ export type InvoiceItem = {
 
 export type Invoice = {
   id: string;
+  project_id?: string | null;
   invoice_number: string;
   invoice_type: InvoiceType;
   status: InvoiceStatus;
@@ -32,6 +33,7 @@ export type Invoice = {
   client_email: string | null;
   client_phone: string | null;
   client_address: string | null;
+  client_trn?: string | null;
   issue_date: string;
   due_date: string | null;
   paid_date: string | null;
@@ -174,8 +176,12 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
   }
 
   async function handleViewPdf(invoice: Invoice) {
-    const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("sort_order");
-    setSelectedInvoice({ ...invoice, items: (data as InvoiceItem[]) || [] });
+    const [{ data: items }, { data: project }] = await Promise.all([
+      supabaseClient.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("sort_order"),
+      supabaseClient.from("projects").select("company:companies(trn)").eq("id", projectId).single(),
+    ]);
+    const company = project?.company as unknown as { trn: string | null } | null;
+    setSelectedInvoice({ ...invoice, client_trn: company?.trn ?? null, items: (items as InvoiceItem[]) || [] });
     setShowPdfModal(true);
   }
 

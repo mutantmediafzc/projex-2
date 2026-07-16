@@ -168,6 +168,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           <View style={styles.col}>
             <Text style={styles.label}>Bill To</Text>
             <Text style={[styles.value, { fontWeight: "bold" }]}>{invoice.client_name}</Text>
+            {invoice.client_trn && <Text style={styles.value}>TRN: {invoice.client_trn}</Text>}
             {invoice.client_address && <Text style={styles.value}>{invoice.client_address}</Text>}
             {invoice.client_email && <Text style={styles.value}>{invoice.client_email}</Text>}
             {invoice.client_phone && <Text style={styles.value}>{invoice.client_phone}</Text>}
@@ -186,8 +187,8 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             <View key={index} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.descCol]}>{item.description}</Text>
               <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
-              <Text style={[styles.tableCell, styles.priceCol]}>{formatMoney(item.unit_price, invoice.currency)}</Text>
-              <Text style={[styles.tableCell, styles.amountCol]}>{formatMoney(item.amount, invoice.currency)}</Text>
+              <Text style={[styles.tableCell, styles.priceCol, { alignSelf: "flex-end" }]}>{formatMoney(item.unit_price, invoice.currency)}</Text>
+              <Text style={[styles.tableCell, styles.amountCol, { alignSelf: "flex-end" }]}>{formatMoney(item.amount, invoice.currency)}</Text>
             </View>
           ))}
         </View>

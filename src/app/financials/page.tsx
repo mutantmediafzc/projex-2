@@ -117,6 +117,8 @@ const expenseStatusOptions = [
   { value: "paid", label: "Paid" },
   { value: "rejected", label: "Rejected" },
 ];
+const RECORDS_PER_PAGE = 25;
+const PAYMENT_QUERY_BATCH_SIZE = 200;
 
 function formatMoney(amount: number, currency = "AED"): string {
   return new Intl.NumberFormat("en-AE", { style: "currency", currency, minimumFractionDigits: 0 }).format(amount);
@@ -618,6 +620,7 @@ export default function FinancialsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [companyFilter, setCompanyFilter] = useState<string>("all");
   const [projectFilter, setProjectFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function loadAll() {
     try {
@@ -641,13 +644,24 @@ export default function FinancialsPage() {
       // Load payments for all invoices
       if (invoiceList.length > 0) {
         const invoiceIds = invoiceList.map(i => i.id);
-        const { data: pData } = await supabaseClient
-          .from("invoice_payments")
-          .select("*")
-          .in("invoice_id", invoiceIds)
-          .order("payment_date", { ascending: true });
+        const paymentBatches = [];
+        for (let index = 0; index < invoiceIds.length; index += PAYMENT_QUERY_BATCH_SIZE) {
+          paymentBatches.push(invoiceIds.slice(index, index + PAYMENT_QUERY_BATCH_SIZE));
+        }
+        const paymentResults = await Promise.all(
+          paymentBatches.map((batch) =>
+            supabaseClient
+              .from("invoice_payments")
+              .select("*")
+              .in("invoice_id", batch)
+              .order("payment_date", { ascending: true })
+          )
+        );
+        const paymentError = paymentResults.find((result) => result.error)?.error;
+        if (paymentError) throw paymentError;
+        const pData = paymentResults.flatMap((result) => result.data || []);
         const map: Record<string, Payment[]> = {};
-        for (const p of (pData || []) as Payment[]) {
+        for (const p of pData as Payment[]) {
           if (!map[p.invoice_id]) map[p.invoice_id] = [];
           map[p.invoice_id].push(p);
         }
@@ -777,6 +791,20 @@ export default function FinancialsPage() {
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
   }, [filteredInvoices, filteredExpenses]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / RECORDS_PER_PAGE));
+  const paginatedRecords = useMemo(() => {
+    const start = (currentPage - 1) * RECORDS_PER_PAGE;
+    return filteredRecords.slice(start, start + RECORDS_PER_PAGE);
+  }, [filteredRecords, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFromFilter, dateToFilter, typeFilter, statusFilter, companyFilter, projectFilter]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   const summary = useMemo(() => {
     let totalQuoted = 0, totalInvoiced = 0, totalOverdue = 0, totalExpenses = 0;
@@ -1092,7 +1120,7 @@ export default function FinancialsPage() {
       ) : (
         <div className="rounded-2xl border border-slate-200/80 bg-white/90 shadow-xl overflow-hidden">
           <div className="divide-y divide-slate-100">
-            {filteredRecords.map((record) => {
+            {paginatedRecords.map((record) => {
               if (record.kind === "expense") {
                 const expense = record.data;
                 const displayType = expense.type === "Others" && expense.other_type ? expense.other_type : expense.type;
@@ -1244,6 +1272,34 @@ export default function FinancialsPage() {
               );
             })}
           </div>
+          {totalPages > 1 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-slate-50/70 px-4 py-3">
+              <p className="text-[11px] text-slate-500">
+                Showing {(currentPage - 1) * RECORDS_PER_PAGE + 1}–{Math.min(currentPage * RECORDS_PER_PAGE, filteredRecords.length)} of {filteredRecords.length}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span className="min-w-20 text-center text-[11px] font-medium text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 rounded-lg border border-slate-200 bg-white px-3 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

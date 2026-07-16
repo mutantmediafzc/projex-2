@@ -693,7 +693,8 @@ export default function FinancialsPage() {
 
   async function handleViewPdf(inv: Invoice) {
     const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order");
-    setSelectedInvoice({ ...inv, client_trn: inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [] });
+    const billedCompany = companies.find((company) => company.name.localeCompare(inv.client_name, undefined, { sensitivity: "accent" }) === 0);
+    setSelectedInvoice({ ...inv, client_trn: billedCompany?.trn ?? inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [] });
     setShowPdfModal(true);
   }
 

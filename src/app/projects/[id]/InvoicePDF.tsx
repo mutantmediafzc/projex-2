@@ -184,7 +184,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             <Text style={[styles.tableHeaderCell, styles.amountCol]}>Amount</Text>
           </View>
           {items.map((item, index) => (
-            <View key={index} style={styles.tableRow}>
+            <View key={index} style={styles.tableRow} wrap={false}>
               <Text style={[styles.tableCell, styles.descCol]}>{item.description}</Text>
               <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
               <Text style={[styles.tableCell, styles.priceCol]}>{formatMoney(item.unit_price, invoice.currency)}</Text>

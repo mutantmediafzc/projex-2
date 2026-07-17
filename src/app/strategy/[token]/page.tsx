@@ -239,6 +239,7 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
   const [blogArticles, setBlogArticles] = useState<BlogArticle[]>([]);
   const [viewingContent, setViewingContent] = useState<{ type: string; item: ContentPost | EmailCampaign | BlogArticle } | null>(null);
   const [activeSection, setActiveSection] = useState('strategy');
+  const [downloading, setDownloading] = useState(false);
 
   // Scroll to section
   function scrollToSection(sectionId: string) {
@@ -246,6 +247,17 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
     const element = document.getElementById(`section-${sectionId}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function downloadPDF() {
+    setDownloading(true);
+    try {
+      window.print();
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -461,8 +473,25 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
         
         {/* Title section */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{data.title || `${data.project?.name} Strategy`}</h1>
+              <p className="text-xs sm:text-sm text-slate-500 mt-1">Integrated Marketing Strategy & KPI Report</p>
+            </div>
+            <button
+              type="button"
+              onClick={downloadPDF}
+              disabled={downloading}
+              className="print:hidden inline-flex w-fit flex-shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg transition-shadow hover:shadow-xl disabled:opacity-50"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              {downloading ? "Preparing..." : "Download PDF"}
+            </button>
+          </div>
         </div>
 
         {/* Section Navigation Tabs */}

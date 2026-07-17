@@ -186,7 +186,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           {items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={[styles.tableCell, styles.descCol]}>{item.description}</Text>
-              <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
+              <Text style={[styles.tableCell, styles.qtyCol, { alignSelf: "flex-end" }]}>{item.quantity}</Text>
               <Text style={[styles.tableCell, styles.priceCol, { alignSelf: "flex-end" }]}>{formatMoney(item.unit_price, invoice.currency)}</Text>
               <Text style={[styles.tableCell, styles.amountCol, { alignSelf: "flex-end" }]}>{formatMoney(item.amount, invoice.currency)}</Text>
             </View>

@@ -126,7 +126,6 @@ export default function ContentCalendar2026() {
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | "all">("all");
   const [shootFilter, setShootFilter] = useState<"all" | "pending" | "scheduled" | "completed">("all");
-  const [projectStatusFilter, setProjectStatusFilter] = useState<"all" | "active" | "paused">("all");
   
   // Drag and drop
   const [draggedPost, setDraggedPost] = useState<Post | null>(null);
@@ -697,15 +696,6 @@ export default function ContentCalendar2026() {
                   <span className="text-pink-500">📅</span>
                   Calendars
                 </h3>
-                <select
-                  value={projectStatusFilter}
-                  onChange={(e) => setProjectStatusFilter(e.target.value as "all" | "active" | "paused")}
-                  className="text-[10px] px-2 py-1 rounded border border-slate-200 bg-white text-slate-600 focus:outline-none focus:border-pink-300"
-                >
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="paused">Paused</option>
-                </select>
               </div>
             </div>
             
@@ -719,10 +709,10 @@ export default function ContentCalendar2026() {
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  All Calendars ({projects.filter(p => projectStatusFilter === "all" || p.status === projectStatusFilter).length})
+                  All Calendars ({projects.filter((project) => project.status !== "paused").length})
                 </button>
                 {[...projects]
-                  .filter(p => projectStatusFilter === "all" || p.status === projectStatusFilter)
+                  .filter((project) => project.status !== "paused")
                   .sort((a, b) => {
                     const nameA = a.name.toLowerCase();
                     const nameB = b.name.toLowerCase();

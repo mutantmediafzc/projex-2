@@ -459,15 +459,15 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
               
               {/* Dropdown Menu */}
               {showPlatforms && (
-                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl border border-slate-200 bg-white p-3 shadow-xl min-w-[200px]">
+                <div className="absolute right-0 top-full mt-2 z-50 rounded-xl border border-slate-200 bg-white p-3 shadow-xl min-w-[270px]">
                   {/* Status Section */}
                   <div className="mb-3 pb-3 border-b border-slate-100">
                     <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">Status</p>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => updateProjectStatus('active')}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                          project.status !== 'paused' 
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          project.status === 'active'
                             ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm' 
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
@@ -476,13 +476,23 @@ export default function SocialProjectPage({ params }: { params: Promise<{ id: st
                       </button>
                       <button
                         onClick={() => updateProjectStatus('paused')}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
                           project.status === 'paused' 
                             ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm' 
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
                         Paused
+                      </button>
+                      <button
+                        onClick={() => updateProjectStatus('completed')}
+                        className={`px-2 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          project.status === 'completed'
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Completed
                       </button>
                     </div>
                   </div>

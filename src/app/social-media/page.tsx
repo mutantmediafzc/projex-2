@@ -84,8 +84,7 @@ const PLATFORM_ICONS: Record<string, { icon: React.ReactNode; color: string }> =
 const STATUS_COLORS: Record<string, string> = {
   active: "from-emerald-500 to-teal-500",
   paused: "from-amber-500 to-orange-500",
-  completed: "from-blue-500 to-indigo-500",
-  archived: "from-slate-400 to-gray-500",
+  completed: "from-green-500 to-emerald-500",
 };
 
 export default function SocialMediaPage() {
@@ -446,7 +445,6 @@ export default function SocialMediaPage() {
           <option value="active">Active</option>
           <option value="paused">Paused</option>
           <option value="completed">Completed</option>
-          <option value="archived">Archived</option>
         </select>
       </div>
 
@@ -570,15 +568,13 @@ export default function SocialMediaPage() {
                         updateProjectStatus(project.id, e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className={`appearance-none cursor-pointer rounded-full px-3 py-1 text-xs font-medium text-white border-0 outline-none ${
-                        project.status === 'paused' 
-                          ? 'bg-gradient-to-r from-amber-500 to-orange-500' 
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                      className={`appearance-none cursor-pointer rounded-full bg-gradient-to-r px-3 py-1 text-xs font-medium text-white border-0 outline-none ${
+                        STATUS_COLORS[project.status || "active"] || STATUS_COLORS.active
                       }`}
-                      style={{ backgroundImage: project.status === 'paused' ? 'linear-gradient(to right, #f59e0b, #f97316)' : 'linear-gradient(to right, #10b981, #14b8a6)' }}
                     >
                       <option value="active">Active</option>
                       <option value="paused">Paused</option>
+                      <option value="completed">Completed</option>
                     </select>
                   </div>
                   {/* Arrow */}
@@ -631,11 +627,13 @@ export default function SocialMediaPage() {
                         updateProjectStatus(project.id, e.target.value);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className={`appearance-none cursor-pointer rounded-full px-3 py-1 text-xs font-medium text-white border-0 outline-none`}
-                      style={{ backgroundImage: project.status === 'paused' ? 'linear-gradient(to right, #f59e0b, #f97316)' : 'linear-gradient(to right, #10b981, #14b8a6)' }}
+                      className={`appearance-none cursor-pointer rounded-full bg-gradient-to-r px-3 py-1 text-xs font-medium text-white border-0 outline-none ${
+                        STATUS_COLORS[project.status || "active"] || STATUS_COLORS.active
+                      }`}
                     >
                       <option value="active">Active</option>
                       <option value="paused">Paused</option>
+                      <option value="completed">Completed</option>
                     </select>
                   </div>
 

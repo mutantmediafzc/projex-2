@@ -59,7 +59,11 @@ export default function SupportAdminPage() {
 
   async function checkAuth() {
     const { data: { user } } = await supabaseClient.auth.getUser();
-    const authorizedEmails = ["wilson@mutant.ae", "john@mutant.ae"];
+    const authorizedEmails = [
+      "wilson@mutant.ae",
+      "john@mutant.ae",
+      "ralf@mutant.ae",
+    ];
     if (user?.email && authorizedEmails.includes(user.email)) {
       setCurrentUserEmail(user.email);
       setIsAuthorized(true);

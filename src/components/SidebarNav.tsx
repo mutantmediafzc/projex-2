@@ -135,6 +135,17 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/leaves",
+    label: "Leaves",
+    gradient: { from: "from-emerald-100 to-teal-100", to: "from-emerald-500 to-teal-500", hover: "from-emerald-50 to-teal-50", shadow: "shadow-emerald-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18 2 18 2c1 5-1 10-5 12" />
+        <path d="M2 21c0-3 1.85-5.36 5.08-6.94C9.4 12.92 12.5 12 16 12" />
+      </svg>
+    ),
+  },
+  {
     href: "/motion",
     label: "Motion",
     gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },

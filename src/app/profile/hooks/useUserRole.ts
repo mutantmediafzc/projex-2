@@ -8,6 +8,7 @@ export type UserRole = "employee" | "admin" | "hr" | "staff" | "expense" | null;
 interface UseUserRoleResult {
   role: UserRole;
   hasExpenseAccess: boolean;
+  hasHrAccess: boolean;
   userId: string | null;
   loading: boolean;
 }
@@ -15,6 +16,7 @@ interface UseUserRoleResult {
 export function useUserRole(): UseUserRoleResult {
   const [role, setRole] = useState<UserRole>(null);
   const [hasExpenseAccess, setHasExpenseAccess] = useState(false);
+  const [hasHrAccess, setHasHrAccess] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +42,9 @@ export function useUserRole(): UseUserRoleResult {
         const meta = (user.user_metadata || {}) as Record<string, unknown>;
         const metaRole = (meta["role"] as string)?.toLowerCase();
         const expenseAccess = meta["expense_access"] === true || metaRole === "expense";
+        const hrAccess = user.app_metadata?.["hr_access"] === true || metaRole === "hr";
         setHasExpenseAccess(expenseAccess);
+        setHasHrAccess(hrAccess);
 
         if (metaRole === "admin" || metaRole === "hr" || metaRole === "expense") {
           // Legacy expense roles were created by replacing admin. Treat them as
@@ -50,11 +54,12 @@ export function useUserRole(): UseUserRoleResult {
           // Fallback: check users table for role
           const { data: dbUser } = await supabaseClient
             .from("users")
-            .select("role")
+            .select("role, hr_access")
             .eq("id", user.id)
             .single();
 
           const dbRole = (dbUser?.role as string)?.toLowerCase();
+          if (dbUser?.hr_access === true) setHasHrAccess(true);
           if (dbRole === "admin" || dbRole === "hr" || dbRole === "expense") {
             setRole(dbRole === "expense" ? "admin" : dbRole as UserRole);
             if (dbRole === "expense") setHasExpenseAccess(true);
@@ -80,5 +85,5 @@ export function useUserRole(): UseUserRoleResult {
     };
   }, []);
 
-  return { role, hasExpenseAccess, userId, loading };
+  return { role, hasExpenseAccess, hasHrAccess, userId, loading };
 }

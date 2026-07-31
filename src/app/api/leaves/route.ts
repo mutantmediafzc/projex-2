@@ -36,6 +36,32 @@ async function isHR(userId: string) {
   return data.user?.app_metadata?.hr_access === true || data.user?.user_metadata?.role === "hr";
 }
 
+async function createLeaveNotifications(
+  recipients: Array<{ id: string; full_name?: string | null }>,
+  notification: { name: string; content: string; createdById?: string; createdByName?: string | null },
+) {
+  if (recipients.length === 0) return;
+
+  const { error } = await supabaseAdmin.from("tasks").insert(
+    recipients.map((recipient) => ({
+      name: notification.name,
+      content: notification.content,
+      status: "not_started",
+      priority: "medium",
+      type: "other",
+      activity_date: new Date().toISOString(),
+      assigned_user_id: recipient.id,
+      assigned_user_name: recipient.full_name ?? null,
+      created_by_user_id: notification.createdById ?? null,
+      created_by_name: notification.createdByName ?? "Leave Management",
+      source: "leave",
+    })),
+  );
+
+  // A notification failure must not roll back an otherwise valid leave action.
+  if (error) console.error("Failed to create leave notifications:", error.message);
+}
+
 // GET - Fetch leave requests
 export async function GET(request: NextRequest) {
   try {
@@ -172,6 +198,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    const [{ data: applicant }, { data: approvers, error: approversError }] = await Promise.all([
+      supabaseAdmin.from("users").select("id, full_name").eq("id", userId).single(),
+      supabaseAdmin.from("users").select("id, full_name").or("hr_access.eq.true,role.eq.hr"),
+    ]);
+
+    if (approversError) {
+      console.error("Failed to load leave approvers for notification:", approversError.message);
+    } else {
+      await createLeaveNotifications(approvers ?? [], {
+        name: `New ${leaveType} leave request`,
+        content: `${applicant?.full_name ?? "An employee"} requested ${daysCount} day${daysCount === 1 ? "" : "s"} of ${leaveType} leave (${startDate} to ${endDate}).`,
+        createdById: userId,
+        createdByName: applicant?.full_name,
+      });
+    }
+
     return NextResponse.json({ leave: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Failed to create leave request" }, { status: 500 });
@@ -251,35 +293,20 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    // If approved, update user's leave balance
-    if (status === "approved") {
-      // Fetch current user balance first
-      const { data: currentUser } = await supabaseAdmin
-        .from("users")
-        .select("annual_leave_used, sick_leave_used, maternity_leave_used")
-        .eq("id", leaveData.user_id)
-        .single();
+    const [{ data: applicant }, { data: reviewer }] = await Promise.all([
+      supabaseAdmin.from("users").select("id, full_name").eq("id", leaveData.user_id).single(),
+      supabaseAdmin.from("users").select("id, full_name").eq("id", reviewedBy).single(),
+    ]);
 
-      if (leaveData.leave_type === "annual") {
-        const currentUsed = currentUser?.annual_leave_used || 0;
-        await supabaseAdmin
-          .from("users")
-          .update({ annual_leave_used: currentUsed + leaveData.days_count })
-          .eq("id", leaveData.user_id);
-      } else if (leaveData.leave_type === "sick") {
-        const currentUsed = currentUser?.sick_leave_used || 0;
-        await supabaseAdmin
-          .from("users")
-          .update({ sick_leave_used: currentUsed + leaveData.days_count })
-          .eq("id", leaveData.user_id);
-      } else if (leaveData.leave_type === "maternity") {
-        const currentUsed = currentUser?.maternity_leave_used || 0;
-        await supabaseAdmin
-          .from("users")
-          .update({ maternity_leave_used: currentUsed + leaveData.days_count })
-          .eq("id", leaveData.user_id);
-      }
-    }
+    await createLeaveNotifications(
+      [{ id: leaveData.user_id, full_name: applicant?.full_name }],
+      {
+        name: `Leave request ${status}`,
+        content: `Your ${leaveData.leave_type} leave request for ${leaveData.start_date} to ${leaveData.end_date} was ${status}.${status === "rejected" && reviewNotes ? ` Reason: ${String(reviewNotes).trim()}` : ""}`,
+        createdById: reviewedBy,
+        createdByName: reviewer?.full_name,
+      },
+    );
 
     return NextResponse.json({ leave: data });
   } catch {

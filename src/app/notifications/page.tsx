@@ -29,12 +29,17 @@ type NotificationTask = {
   created_at: string;
   assigned_read_at: string | null;
   created_by_name: string | null;
-  source: "operations" | "admin" | null;
+  source: "operations" | "admin" | "social_workflow" | "leave" | null;
 };
 
 type TaskNotificationRow = {
   id: string;
   task: NotificationTask | null;
+  patient: NotificationPatient | null;
+  project: NotificationProject | null;
+};
+
+type NotificationQueryRow = NotificationTask & {
   patient: NotificationPatient | null;
   project: NotificationProject | null;
 };
@@ -105,7 +110,7 @@ export default function NotificationsPage() {
           return;
         }
 
-        const mapped: TaskNotificationRow[] = (data as any[]).map((row) => ({
+        const mapped: TaskNotificationRow[] = (data as unknown as NotificationQueryRow[]).map((row) => ({
           id: row.id as string,
           task: {
             id: row.id as string,
@@ -273,6 +278,11 @@ export default function NotificationsPage() {
   }, [toastMessage]);
 
   function getTaskHref(row: TaskNotificationRow): string {
+    if (row.task?.source === "leave") {
+      return row.task.name.startsWith("New ")
+        ? "/leaves?tab=approvals"
+        : "/leaves?tab=overview";
+    }
     const mode = row.task?.source || "operations";
     if (row.project) {
       const tab = mode === "admin" ? "cockpit" : "tasks";

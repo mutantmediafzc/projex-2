@@ -63,17 +63,34 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json() as Record<string, unknown>;
   const userId = String(body.userId || "");
-  const values = {
+  const values: Record<string, number> = {
     annual_leave_used: Number(body.annualLeaveUsed),
     sick_leave_used: Number(body.sickLeaveUsed),
     lieu_leave_used: Number(body.lieuLeaveUsed),
-    maternity_leave_used: Number(body.maternityLeaveUsed),
     ticket_price: Number(body.ticketPrice),
     ticket_price_claimed: Number(body.ticketPriceClaimed),
   };
 
   if (!userId || Object.values(values).some((value) => !Number.isFinite(value) || value < 0)) {
     return NextResponse.json({ error: "All values must be valid non-negative numbers." }, { status: 400 });
+  }
+
+  const { data: employee, error: employeeError } = await supabaseAdmin
+    .from("users")
+    .select("maternity_leave_eligible")
+    .eq("id", userId)
+    .single();
+
+  if (employeeError || !employee) {
+    return NextResponse.json({ error: employeeError?.message || "Employee not found." }, { status: 404 });
+  }
+
+  if (employee.maternity_leave_eligible) {
+    const maternityLeaveUsed = Number(body.maternityLeaveUsed);
+    if (!Number.isFinite(maternityLeaveUsed) || maternityLeaveUsed < 0) {
+      return NextResponse.json({ error: "Maternity leave used must be a valid non-negative number." }, { status: 400 });
+    }
+    values.maternity_leave_used = maternityLeaveUsed;
   }
 
   const { error } = await supabaseAdmin.from("users").update(values).eq("id", userId);

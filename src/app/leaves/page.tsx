@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import LeaveManagement from "@/app/profile/LeaveManagement";
 import { supabaseClient } from "@/lib/supabaseClient";
 import ExcaliburSettings from "./ExcaliburSettings";
@@ -154,8 +155,15 @@ function LeaveSettings() {
   );
 }
 
-export default function LeavesPage() {
-  const [activeTab, setActiveTab] = useState<LeaveTab>("file");
+function LeavesPageContent() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<LeaveTab>(() => {
+    const requestedTab = searchParams.get("tab");
+    const validTabs: LeaveTab[] = ["overview", "file", "calendar", "employees", "settings", "approvals"];
+    return requestedTab && validTabs.includes(requestedTab as LeaveTab)
+      ? requestedTab as LeaveTab
+      : "file";
+  });
   const { hasHrAccess } = useUserRole();
   const canManageLeaves = hasHrAccess;
 
@@ -283,5 +291,13 @@ export default function LeavesPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function LeavesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[30vh]" />}>
+      <LeavesPageContent />
+    </Suspense>
   );
 }

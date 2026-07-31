@@ -85,7 +85,9 @@ export default function EmployeeLeaveTable() {
           annualLeaveUsed: employee.annual_leave_used,
           sickLeaveUsed: employee.sick_leave_used,
           lieuLeaveUsed: employee.lieu_leave_used,
-          maternityLeaveUsed: employee.maternity_leave_used,
+          ...(employee.maternity_leave_eligible
+            ? { maternityLeaveUsed: employee.maternity_leave_used }
+            : {}),
           ticketPrice: employee.ticket_price,
           ticketPriceClaimed: employee.ticket_price_claimed,
         }),
@@ -149,10 +151,14 @@ export default function EmployeeLeaveTable() {
                 </td>
                 {editableColumns.map((column) => (
                   <td key={column.key} className="px-3 py-3">
-                    <div className="flex items-center gap-2">
-                      <input type="number" min="0" step="0.5" value={employee[column.key]} onChange={(event) => updateValue(employee.id, column.key, Number(event.target.value))} className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm" />
-                      <span className="text-xs text-slate-400">/ {employee[column.total]}</span>
-                    </div>
+                    {column.key === "maternity_leave_used" && !employee.maternity_leave_eligible ? (
+                      <span className="text-xs text-slate-400">Not applicable</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input type="number" min="0" step="0.5" value={employee[column.key]} onChange={(event) => updateValue(employee.id, column.key, Number(event.target.value))} className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm" />
+                        <span className="text-xs text-slate-400">/ {employee[column.total]}</span>
+                      </div>
+                    )}
                   </td>
                 ))}
                 <td className="px-3 py-3">

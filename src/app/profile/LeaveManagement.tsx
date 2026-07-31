@@ -140,8 +140,11 @@ export default function LeaveManagement({
     }
   };
 
-  const approvedLeaves = leaves.filter((leave) => leave.status === "approved");
-  const approvedLeaveDays = approvedLeaves.reduce((total, leave) => total + Number(leave.days_count), 0);
+  const approvedAnnualLeaves = leaves.filter(
+    (leave) => leave.status === "approved" && leave.leave_type === "annual",
+  );
+  const usedLeaveDays = (balance?.annualLeaveUsed ?? 0) + (balance?.lieuLeaveUsed ?? 0);
+  const usedLeaveAllowance = (balance?.annualLeaveTotal ?? 0) + (balance?.lieuLeaveTotal ?? 0);
 
   if (loading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-sm text-slate-500">Loading leave data...</div></div>;
 
@@ -217,20 +220,20 @@ export default function LeaveManagement({
             <div>
               <p className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">Used Leave</p>
               <p className="text-xl font-bold text-emerald-900">
-                {approvedLeaveDays} <span className="text-sm font-normal text-emerald-600">days used</span>
+                {usedLeaveDays} <span className="text-sm font-normal text-emerald-600">days used</span>
               </p>
             </div>
           </div>
           <div className="mt-4">
             <div className="flex justify-between text-xs text-emerald-700">
-              <span>Approved: {approvedLeaves.length}</span>
-              <span>Lieu: {balance?.lieuLeaveRemaining ?? 0} days</span>
+              <span>Approved annual: {approvedAnnualLeaves.length}</span>
+              <span>Lieu used: {balance?.lieuLeaveUsed ?? 0} days</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-200/50">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
                 style={{
-                  width: `${Math.min(100, approvedLeaveDays > 0 ? (approvedLeaveDays / Math.max(approvedLeaveDays + (balance?.lieuLeaveRemaining ?? 0), 1)) * 100 : 0)}%`,
+                  width: `${Math.min(100, usedLeaveAllowance > 0 ? (usedLeaveDays / usedLeaveAllowance) * 100 : 0)}%`,
                 }}
               />
             </div>

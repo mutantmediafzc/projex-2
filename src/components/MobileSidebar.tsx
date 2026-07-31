@@ -142,6 +142,20 @@ const navItems = [
     activeGradient: "from-lime-500 to-green-500",
   },
   {
+    href: "/leaves",
+    label: "Leaves",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18 2 18 2c1 5-1 10-5 12" />
+        <path d="M2 21c0-3 1.85-5.36 5.08-6.94C9.4 12.92 12.5 12 16 12" />
+      </svg>
+    ),
+    gradient: "from-emerald-100 to-teal-100",
+    iconColor: "text-emerald-600",
+    hoverGradient: "hover:from-emerald-50 hover:to-teal-50",
+    activeGradient: "from-emerald-500 to-teal-500",
+  },
+  {
     href: "/motion",
     label: "Motion",
     icon: (

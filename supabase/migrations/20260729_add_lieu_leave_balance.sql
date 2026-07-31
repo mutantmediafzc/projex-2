@@ -1,0 +1,3 @@
+ALTER TABLE IF EXISTS users
+  ADD COLUMN IF NOT EXISTS lieu_leave_used numeric(5,1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS lieu_leave_total numeric(5,1) NOT NULL DEFAULT 0;

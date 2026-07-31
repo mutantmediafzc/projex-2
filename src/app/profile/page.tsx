@@ -11,9 +11,9 @@ type TabId = "dashboard" | "leave" | "profile" | "admin";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
-  const { role, loading: roleLoading } = useUserRole();
+  const { hasHrAccess } = useUserRole();
 
-  const isAdmin = role === "admin" || role === "hr";
+  const isAdmin = hasHrAccess;
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode; adminOnly?: boolean }[] = [
     {

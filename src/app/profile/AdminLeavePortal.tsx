@@ -7,13 +7,14 @@ import { supabaseClient } from "@/lib/supabaseClient";
 interface LeaveRequest {
   id: string;
   user_id: string;
-  leave_type: "annual" | "sick" | "unpaid";
+  leave_type: "annual" | "sick" | "unpaid" | "maternity";
   start_date: string;
   end_date: string;
   days_count: number;
   reason: string | null;
   status: "pending" | "approved" | "rejected";
   created_at: string;
+  review_notes?: string | null;
   user?: { id: string; full_name: string; email: string; avatar_url: string | null };
 }
 
@@ -25,6 +26,8 @@ export default function AdminLeavePortal() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [rejectingLeave, setRejectingLeave] = useState<LeaveRequest | null>(null);
+  const [denialReason, setDenialReason] = useState("");
 
   useEffect(() => {
     async function loadUser() {
@@ -43,9 +46,17 @@ export default function AdminLeavePortal() {
     try {
       setLoading(true);
       const statusParam = filter === "all" ? "" : `&status=${filter}`;
-      const response = await fetch(`/api/leaves?all=true${statusParam}`);
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const response = await fetch(`/api/leaves?all=true${statusParam}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       const data = await response.json();
-      if (data.leaves) setLeaves(data.leaves);
+      if (!response.ok) {
+        setError(data.error || "Failed to fetch leave requests");
+      } else if (data.leaves) {
+        setLeaves(data.leaves);
+      }
     } catch (err) {
       console.error("Error fetching leaves:", err);
     } finally {
@@ -53,20 +64,27 @@ export default function AdminLeavePortal() {
     }
   };
 
-  const handleAction = async (leaveId: string, action: "approved" | "rejected") => {
+  const handleAction = async (leaveId: string, action: "approved" | "rejected", reviewNotes?: string) => {
     if (!userId) return;
     setProcessing(leaveId);
     setError(null);
     setSuccess(null);
     try {
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
       const response = await fetch("/api/leaves", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leaveId, status: action, reviewedBy: userId }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify({ leaveId, status: action, reviewedBy: userId, reviewNotes }),
       });
       const data = await response.json();
       if (!response.ok) { setError(data.error || "Failed to process request"); return; }
       setSuccess(`Leave request ${action}!`);
+      setRejectingLeave(null);
+      setDenialReason("");
       fetchLeaves();
     } catch (err) {
       setError("An unexpected error occurred");
@@ -156,6 +174,11 @@ export default function AdminLeavePortal() {
                         <span className="font-medium">{leave.days_count} day(s)</span>
                       </p>
                       {leave.reason && <p className="mt-1 text-xs text-slate-600 italic">&ldquo;{leave.reason}&rdquo;</p>}
+                      {leave.status === "rejected" && leave.review_notes && (
+                        <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                          <span className="font-semibold">Reason for denial:</span> {leave.review_notes}
+                        </p>
+                      )}
                       <p className="mt-1 text-[10px] text-slate-400">Submitted: {new Date(leave.created_at).toLocaleDateString("en-AE", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                   </div>
@@ -165,7 +188,7 @@ export default function AdminLeavePortal() {
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
                         Approve
                       </button>
-                      <button onClick={() => handleAction(leave.id, "rejected")} disabled={processing === leave.id} className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:from-red-600 hover:to-rose-600 disabled:opacity-50">
+                      <button onClick={() => { setRejectingLeave(leave); setDenialReason(""); setError(null); }} disabled={processing === leave.id} className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-red-500 to-rose-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:from-red-600 hover:to-rose-600 disabled:opacity-50">
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                         Reject
                       </button>
@@ -177,6 +200,40 @@ export default function AdminLeavePortal() {
           </div>
         )}
       </div>
+
+      {rejectingLeave && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="deny-leave-title" className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 id="deny-leave-title" className="text-base font-semibold text-slate-900">Deny leave request</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Explain why {rejectingLeave.user?.full_name || "this user"}&apos;s request is being denied.
+            </p>
+            <label className="mt-5 block">
+              <span className="text-xs font-medium text-slate-700">Reason for denial</span>
+              <textarea
+                autoFocus
+                required
+                rows={4}
+                value={denialReason}
+                onChange={(event) => setDenialReason(event.target.value)}
+                placeholder="Enter a clear reason for denying this request..."
+                className="mt-1 block w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
+              />
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => { setRejectingLeave(null); setDenialReason(""); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button
+                type="button"
+                disabled={!denialReason.trim() || processing === rejectingLeave.id}
+                onClick={() => void handleAction(rejectingLeave.id, "rejected", denialReason)}
+                className="rounded-lg bg-gradient-to-r from-red-500 to-rose-500 px-4 py-2 text-sm font-medium text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {processing === rejectingLeave.id ? "Denying..." : "Deny Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Team Calendar Summary */}
       <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">

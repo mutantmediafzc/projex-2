@@ -8,7 +8,11 @@ ALTER TABLE IF EXISTS users
   ADD COLUMN IF NOT EXISTS annual_leave_used numeric(5,1) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS sick_leave_used numeric(5,1) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS annual_leave_total numeric(5,1) NOT NULL DEFAULT 30,
-  ADD COLUMN IF NOT EXISTS sick_leave_total numeric(5,1) NOT NULL DEFAULT 90;
+  ADD COLUMN IF NOT EXISTS sick_leave_total numeric(5,1) NOT NULL DEFAULT 90,
+  ADD COLUMN IF NOT EXISTS lieu_leave_used numeric(5,1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS lieu_leave_total numeric(5,1) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS maternity_leave_eligible boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS maternity_leave_used numeric(5,1) NOT NULL DEFAULT 0;
 
 -- Create leave status enum
 DO $$
@@ -32,7 +36,7 @@ $$;
 CREATE TABLE IF NOT EXISTS leaves (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  leave_type text NOT NULL CHECK (leave_type IN ('annual', 'sick', 'unpaid')),
+  leave_type text NOT NULL CHECK (leave_type IN ('annual', 'sick', 'unpaid', 'maternity')),
   start_date date NOT NULL,
   end_date date NOT NULL,
   days_count numeric(5,1) NOT NULL,
@@ -114,6 +118,10 @@ BEGIN
     ELSIF NEW.leave_type = 'sick' THEN
       UPDATE users 
       SET sick_leave_used = sick_leave_used + NEW.days_count
+      WHERE id = NEW.user_id;
+    ELSIF NEW.leave_type = 'maternity' THEN
+      UPDATE users
+      SET maternity_leave_used = maternity_leave_used + NEW.days_count
       WHERE id = NEW.user_id;
     END IF;
     NEW.reviewed_at = NOW();

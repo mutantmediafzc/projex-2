@@ -10,11 +10,18 @@ interface LeaveBalance {
   sickLeaveUsed: number;
   sickLeaveTotal: number;
   sickLeaveRemaining: number;
+  lieuLeaveUsed: number;
+  lieuLeaveTotal: number;
+  lieuLeaveRemaining: number;
+  maternityLeaveEligible: boolean;
+  maternityLeaveUsed: number;
+  maternityLeaveTotal: number;
+  maternityLeaveRemaining: number;
 }
 
 interface LeaveRequest {
   id: string;
-  leave_type: "annual" | "sick" | "unpaid";
+  leave_type: "annual" | "sick" | "unpaid" | "maternity";
   start_date: string;
   end_date: string;
   days_count: number;
@@ -30,18 +37,26 @@ interface AIRecommendation {
   annualLeaveRemaining: number;
 }
 
-export default function LeaveManagement() {
+interface LeaveManagementProps {
+  includeRecommendation?: boolean;
+  view?: "overview" | "file";
+}
+
+export default function LeaveManagement({
+  includeRecommendation = true,
+  view = "file",
+}: LeaveManagementProps) {
   const [userId, setUserId] = useState<string | null>(null);
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(view === "file");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    leaveType: "annual" as "annual" | "sick" | "unpaid",
+    leaveType: "annual" as "annual" | "sick" | "unpaid" | "maternity",
     startDate: "",
     endDate: "",
     reason: "",
@@ -63,16 +78,18 @@ export default function LeaveManagement() {
         const [balanceRes, leavesRes, recRes] = await Promise.all([
           fetch(`/api/leaves/balance?userId=${userId}`),
           fetch(`/api/leaves?userId=${userId}`),
-          fetch(`/api/ai/leave-recommendation?userId=${userId}`),
+          includeRecommendation
+            ? fetch(`/api/ai/leave-recommendation?userId=${userId}`)
+            : Promise.resolve(null),
         ]);
         const [balanceData, leavesData, recData] = await Promise.all([
           balanceRes.json(),
           leavesRes.json(),
-          recRes.json(),
+          recRes ? recRes.json() : Promise.resolve(null),
         ]);
         if (balanceData.balance) setBalance(balanceData.balance);
         if (leavesData.leaves) setLeaves(leavesData.leaves);
-        setRecommendation(recData);
+        if (recData) setRecommendation(recData);
       } catch (err) {
         console.error("Error fetching leave data:", err);
       } finally {
@@ -80,7 +97,7 @@ export default function LeaveManagement() {
       }
     }
     fetchData();
-  }, [userId]);
+  }, [includeRecommendation, userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +125,7 @@ export default function LeaveManagement() {
       const leavesRes = await fetch(`/api/leaves?userId=${userId}`);
       const leavesData = await leavesRes.json();
       if (leavesData.leaves) setLeaves(leavesData.leaves);
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
     } finally {
       setSubmitting(false);
@@ -123,12 +140,15 @@ export default function LeaveManagement() {
     }
   };
 
+  const approvedLeaves = leaves.filter((leave) => leave.status === "approved");
+  const approvedLeaveDays = approvedLeaves.reduce((total, leave) => total + Number(leave.days_count), 0);
+
   if (loading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-sm text-slate-500">Loading leave data...</div></div>;
 
   return (
     <div className="space-y-6">
       {/* Leave Balances */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-blue-50 p-5 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-lg">
@@ -163,10 +183,63 @@ export default function LeaveManagement() {
             </div>
           </div>
         </div>
+        {balance?.maternityLeaveEligible && (
+          <div className="rounded-2xl border border-fuchsia-200/50 bg-gradient-to-br from-fuchsia-50 to-pink-50 p-5 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-400 to-pink-500 text-white shadow-lg">
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M6 21v-2a6 6 0 0 1 12 0v2" />
+                  <path d="M12 12v9" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wider text-fuchsia-600">Maternity Leave</p>
+                <p className="text-xl font-bold text-fuchsia-900">{balance.maternityLeaveRemaining} <span className="text-sm font-normal text-fuchsia-600">days left</span></p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-fuchsia-600"><span>Used: {balance.maternityLeaveUsed}</span><span>Total: 90</span></div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-fuchsia-200/50">
+                <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-pink-500" style={{ width: `${Math.min(100, (balance.maternityLeaveUsed / 90) * 100)}%` }} />
+              </div>
+            </div>
+          </div>
+        )}
+        <div className="rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50 to-teal-50 p-5 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg">
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 11l3 3L22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-emerald-600">Used Leave</p>
+              <p className="text-xl font-bold text-emerald-900">
+                {approvedLeaveDays} <span className="text-sm font-normal text-emerald-600">days used</span>
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-emerald-700">
+              <span>Approved: {approvedLeaves.length}</span>
+              <span>Lieu: {balance?.lieuLeaveRemaining ?? 0} days</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-200/50">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500"
+                style={{
+                  width: `${Math.min(100, approvedLeaveDays > 0 ? (approvedLeaveDays / Math.max(approvedLeaveDays + (balance?.lieuLeaveRemaining ?? 0), 1)) * 100 : 0)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* AI Recommendation */}
-      {recommendation && (
+      {includeRecommendation && recommendation && (
         <div className={`rounded-2xl border p-5 shadow-lg ${recommendation.workloadLevel === "low" ? "border-emerald-200/50 bg-gradient-to-br from-emerald-50 to-green-50" : recommendation.workloadLevel === "high" ? "border-amber-200/50 bg-gradient-to-br from-amber-50 to-orange-50" : "border-slate-200/50 bg-gradient-to-br from-slate-50 to-gray-50"}`}>
           <div className="flex items-start gap-3">
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg ${recommendation.workloadLevel === "low" ? "bg-gradient-to-br from-emerald-400 to-green-500" : recommendation.workloadLevel === "high" ? "bg-gradient-to-br from-amber-400 to-orange-500" : "bg-gradient-to-br from-slate-400 to-gray-500"}`}>
@@ -187,7 +260,7 @@ export default function LeaveManagement() {
       )}
 
       {/* Request Leave Button & Form */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
+      {view === "file" && <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-900">Request Leave</h3>
           <button onClick={() => setShowForm(!showForm)} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-violet-500/25 hover:from-violet-600 hover:to-purple-600">
@@ -202,10 +275,11 @@ export default function LeaveManagement() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-slate-700">Leave Type</label>
-                <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value as "annual" | "sick" | "unpaid" })} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
+                <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value as "annual" | "sick" | "unpaid" | "maternity" })} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
                   <option value="annual">Annual Leave</option>
                   <option value="sick">Sick Leave</option>
                   <option value="unpaid">Unpaid Leave</option>
+                  {balance?.maternityLeaveEligible && <option value="maternity">Maternity Leave (90 days)</option>}
                 </select>
               </div>
               <div />
@@ -227,7 +301,7 @@ export default function LeaveManagement() {
             </button>
           </form>
         )}
-      </div>
+      </div>}
 
       {/* Leave History */}
       <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-5 shadow-lg backdrop-blur">

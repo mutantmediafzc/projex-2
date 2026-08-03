@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     // Validate against available balance
     const { data: userData, error: userError } = await supabaseAdmin
       .from("users")
-      .select("annual_leave_used, annual_leave_total, sick_leave_used, sick_leave_total, maternity_leave_eligible, maternity_leave_used")
+      .select("annual_leave_used, annual_leave_total, sick_leave_used, sick_leave_total, lieu_leave_used, lieu_leave_total, maternity_leave_eligible, maternity_leave_used")
       .eq("id", userId)
       .single();
 
@@ -151,15 +151,17 @@ export async function POST(request: NextRequest) {
       supabaseAdmin.from("leave_policy_settings").select("*").eq("id", "default").maybeSingle(),
     ]);
 
-    const annualLeaveTotal = policy
+    const baseAnnualLeaveTotal = policy
       ? (excalibur ? policy.excalibur_annual_total : policy.standard_annual_total)
       : (userData.annual_leave_total ?? 30);
+    const annualLeaveTotal = baseAnnualLeaveTotal + (userData.lieu_leave_total || 0);
+    const annualLeaveUsed = (userData.annual_leave_used || 0) + (userData.lieu_leave_used || 0);
     const sickLeaveTotal = policy
       ? (excalibur ? policy.excalibur_sick_total : policy.standard_sick_total)
       : (userData.sick_leave_total ?? 90);
 
     if (leaveType === "annual") {
-      const available = annualLeaveTotal - (userData.annual_leave_used || 0);
+      const available = annualLeaveTotal - annualLeaveUsed;
       if (daysCount > available) {
         return NextResponse.json(
           { error: `Insufficient annual leave balance. Available: ${available} days` },

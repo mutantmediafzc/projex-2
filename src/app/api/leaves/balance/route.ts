@@ -48,12 +48,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const annualLeaveUsed = data.annual_leave_used || 0;
+    const baseAnnualLeaveUsed = data.annual_leave_used || 0;
     const sickLeaveUsed = data.sick_leave_used || 0;
     let sickLeaveTotal = data.sick_leave_total || 90;
     const lieuLeaveUsed = data.lieu_leave_used || 0;
     const lieuLeaveTotal = data.lieu_leave_total || 0;
-    let annualLeaveTotal = data.annual_leave_total || 30;
+    let baseAnnualLeaveTotal = data.annual_leave_total || 30;
 
     const [{ data: excalibur }, { data: policy }] = await Promise.all([
       supabaseAdmin
@@ -65,15 +65,18 @@ export async function GET(request: NextRequest) {
     ]);
 
     if (policy) {
-      annualLeaveTotal = excalibur ? policy.excalibur_annual_total : policy.standard_annual_total;
+      baseAnnualLeaveTotal = excalibur ? policy.excalibur_annual_total : policy.standard_annual_total;
       sickLeaveTotal = excalibur ? policy.excalibur_sick_total : policy.standard_sick_total;
     }
+
+    const annualLeaveUsed = baseAnnualLeaveUsed + lieuLeaveUsed;
+    const annualLeaveTotal = baseAnnualLeaveTotal + lieuLeaveTotal;
 
     return NextResponse.json({
       balance: {
         annualLeaveUsed,
         annualLeaveTotal,
-        annualLeaveRemaining: annualLeaveTotal - annualLeaveUsed,
+        annualLeaveRemaining: Math.max(0, annualLeaveTotal - annualLeaveUsed),
         sickLeaveUsed,
         sickLeaveTotal,
         sickLeaveRemaining: sickLeaveTotal - sickLeaveUsed,

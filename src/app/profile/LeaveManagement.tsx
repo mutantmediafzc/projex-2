@@ -179,8 +179,8 @@ export default function LeaveManagement({
   const approvedAnnualLeaves = leaves.filter(
     (leave) => leave.status === "approved" && leave.leave_type === "annual",
   );
-  const usedLeaveDays = (balance?.annualLeaveUsed ?? 0) + (balance?.lieuLeaveUsed ?? 0);
-  const usedLeaveAllowance = (balance?.annualLeaveTotal ?? 0) + (balance?.lieuLeaveTotal ?? 0);
+  const usedLeaveDays = balance?.annualLeaveUsed ?? 0;
+  const usedLeaveAllowance = balance?.annualLeaveTotal ?? 0;
   const selectedEmployee = employees.find((employee) => employee.id === requestUserId);
   const canRequestMaternityLeave = requestUserId
     ? selectedEmployee?.maternity_leave_eligible === true
@@ -203,7 +203,7 @@ export default function LeaveManagement({
             </div>
           </div>
           <div className="mt-4">
-            <div className="flex justify-between text-xs text-sky-600"><span>Used: {balance?.annualLeaveUsed ?? 0}</span><span>Total: {balance?.annualLeaveTotal ?? 30}</span></div>
+            <div className="flex justify-end text-xs text-sky-600"><span>Total: {balance?.annualLeaveTotal ?? 30}</span></div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-sky-200/50">
               <div className="h-full rounded-full bg-gradient-to-r from-sky-400 to-blue-500" style={{ width: `${((balance?.annualLeaveUsed ?? 0) / (balance?.annualLeaveTotal ?? 30)) * 100}%` }} />
             </div>
@@ -267,7 +267,7 @@ export default function LeaveManagement({
           <div className="mt-4">
             <div className="flex justify-between text-xs text-emerald-700">
               <span>Approved annual: {approvedAnnualLeaves.length}</span>
-              <span>Lieu used: {balance?.lieuLeaveUsed ?? 0} days</span>
+              <span>Lieu days: {balance?.lieuLeaveTotal ?? 0}</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-emerald-200/50">
               <div

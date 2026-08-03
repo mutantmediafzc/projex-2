@@ -1,5 +1,7 @@
 # Campaign Forms API
 
+Production requests must use `https://www.creamcrm.io` directly. The apex domain redirects to the `www` host, and clients may remove the `Authorization` header while following that cross-host redirect.
+
 The two campaigns have separate endpoints:
 
 - `GET|POST /api/campaign-forms/mm26-aeo`

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   CAMPAIGN_FORMS,
@@ -116,10 +117,20 @@ export async function POST(
     return json({ error: "A valid campaign authorization token is required" }, 401);
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) {
+    console.error("Campaign token verification is missing Supabase configuration");
+    return json({ error: "Authorization service is unavailable" }, 503);
+  }
+
+  const authClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   const {
     data: { user: authorizedUser },
     error: authorizationError,
-  } = await supabaseAdmin.auth.getUser(match[1]);
+  } = await authClient.auth.getUser(match[1]);
   if (authorizationError || !authorizedUser || !authorizedUser.email) {
     return json({ error: "A valid campaign authorization token is required" }, 401);
   }

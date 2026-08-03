@@ -85,6 +85,7 @@ export default function EmployeeLeaveTable() {
           annualLeaveUsed: employee.annual_leave_used,
           sickLeaveUsed: employee.sick_leave_used,
           lieuLeaveUsed: employee.lieu_leave_used,
+          lieuLeaveTotal: employee.lieu_leave_total,
           ...(employee.maternity_leave_eligible
             ? { maternityLeaveUsed: employee.maternity_leave_used }
             : {}),
@@ -156,7 +157,21 @@ export default function EmployeeLeaveTable() {
                     ) : (
                       <div className="flex items-center gap-2">
                         <input type="number" min="0" step="0.5" value={employee[column.key]} onChange={(event) => updateValue(employee.id, column.key, Number(event.target.value))} className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm" />
-                        <span className="text-xs text-slate-400">/ {employee[column.total]}</span>
+                        <span className="text-xs text-slate-400">/</span>
+                        {column.key === "lieu_leave_used" ? (
+                          <input
+                            aria-label={`${employee.full_name || employee.email || "Employee"} lieu total`}
+                            type="number"
+                            min="0"
+                            max="999"
+                            step="0.5"
+                            value={employee.lieu_leave_total}
+                            onChange={(event) => updateValue(employee.id, "lieu_leave_total", Number(event.target.value))}
+                            className="w-20 rounded-lg border border-slate-200 px-2 py-2 text-sm"
+                          />
+                        ) : (
+                          <span className="text-xs text-slate-400">{employee[column.total]}</span>
+                        )}
                       </div>
                     )}
                   </td>

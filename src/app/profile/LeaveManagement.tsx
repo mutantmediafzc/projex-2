@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 interface LeaveBalance {
   annualLeaveUsed: number;
@@ -17,6 +18,8 @@ interface LeaveBalance {
   maternityLeaveUsed: number;
   maternityLeaveTotal: number;
   maternityLeaveRemaining: number;
+  ticketPrice: number;
+  ticketPriceClaimed: number;
 }
 
 interface LeaveRequest {
@@ -42,11 +45,21 @@ interface LeaveManagementProps {
   view?: "overview" | "file";
 }
 
+interface EmployeeOption {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  maternity_leave_eligible: boolean;
+}
+
 export default function LeaveManagement({
   includeRecommendation = true,
   view = "file",
 }: LeaveManagementProps) {
+  const { hasHrAccess } = useUserRole();
   const [userId, setUserId] = useState<string | null>(null);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
+  const [requestUserId, setRequestUserId] = useState("");
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
   const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [recommendation, setRecommendation] = useState<AIRecommendation | null>(null);
@@ -99,9 +112,28 @@ export default function LeaveManagement({
     fetchData();
   }, [includeRecommendation, userId]);
 
+  useEffect(() => {
+    if (!hasHrAccess) return;
+
+    async function loadEmployees() {
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+
+      const response = await fetch("/api/leaves/employees", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (response.ok) setEmployees(result.employees || []);
+    }
+
+    void loadEmployees();
+  }, [hasHrAccess]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
+    const targetUserId = hasHrAccess && requestUserId ? requestUserId : userId;
     setError(null);
     setSuccess(null);
     setSubmitting(true);
@@ -112,15 +144,19 @@ export default function LeaveManagement({
       today.setHours(0, 0, 0, 0);
       if (start < today) { setError("Start date cannot be in the past"); setSubmitting(false); return; }
       if (end < start) { setError("End date must be after start date"); setSubmitting(false); return; }
+      const { data: sessionData } = await supabaseClient.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) { setError("You must be signed in to submit a leave request"); return; }
       const response = await fetch("/api/leaves", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, leaveType: formData.leaveType, startDate: formData.startDate, endDate: formData.endDate, reason: formData.reason }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ userId: targetUserId, leaveType: formData.leaveType, startDate: formData.startDate, endDate: formData.endDate, reason: formData.reason }),
       });
       const data = await response.json();
       if (!response.ok) { setError(data.error || "Failed to submit leave request"); return; }
       setSuccess("Leave request submitted successfully!");
       setShowForm(false);
+      setRequestUserId("");
       setFormData({ leaveType: "annual", startDate: "", endDate: "", reason: "" });
       const leavesRes = await fetch(`/api/leaves?userId=${userId}`);
       const leavesData = await leavesRes.json();
@@ -145,13 +181,17 @@ export default function LeaveManagement({
   );
   const usedLeaveDays = (balance?.annualLeaveUsed ?? 0) + (balance?.lieuLeaveUsed ?? 0);
   const usedLeaveAllowance = (balance?.annualLeaveTotal ?? 0) + (balance?.lieuLeaveTotal ?? 0);
+  const selectedEmployee = employees.find((employee) => employee.id === requestUserId);
+  const canRequestMaternityLeave = requestUserId
+    ? selectedEmployee?.maternity_leave_eligible === true
+    : balance?.maternityLeaveEligible === true;
 
   if (loading) return <div className="flex min-h-[40vh] items-center justify-center"><div className="text-sm text-slate-500">Loading leave data...</div></div>;
 
   return (
     <div className="space-y-6">
       {/* Leave Balances */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-sky-200/50 bg-gradient-to-br from-sky-50 to-blue-50 p-5 shadow-lg">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 text-white shadow-lg">
@@ -239,6 +279,36 @@ export default function LeaveManagement({
             </div>
           </div>
         </div>
+        <div className="rounded-2xl border border-amber-200/50 bg-gradient-to-br from-amber-50 to-orange-50 p-5 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg">
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 9a3 3 0 0 0 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 0 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+                <path d="M13 5v2M13 17v2M13 11v2" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-amber-600">Ticket Allowance</p>
+              <p className="text-xl font-bold text-amber-900">
+                AED {(balance?.ticketPrice ?? 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-amber-700">
+              <span>Ticket price</span>
+              <span>Claimed: AED {(balance?.ticketPriceClaimed ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-200/50">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                style={{
+                  width: `${Math.min(100, (balance?.ticketPrice ?? 0) > 0 ? ((balance?.ticketPriceClaimed ?? 0) / (balance?.ticketPrice ?? 1)) * 100 : 0)}%`,
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* AI Recommendation */}
@@ -276,13 +346,31 @@ export default function LeaveManagement({
         {showForm && (
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
+              {hasHrAccess && (
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-medium text-slate-700">File leave for</label>
+                  <select
+                    value={requestUserId}
+                    onChange={(event) => setRequestUserId(event.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                  >
+                    <option value="">Myself</option>
+                    {employees.filter((employee) => employee.id !== userId).map((employee) => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.full_name || employee.email || "Unnamed employee"}{employee.full_name && employee.email ? ` (${employee.email})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">Leave approvers can submit a request on behalf of another employee.</p>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-700">Leave Type</label>
                 <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value as "annual" | "sick" | "unpaid" | "maternity" })} className="mt-1 block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
                   <option value="annual">Annual Leave</option>
                   <option value="sick">Sick Leave</option>
                   <option value="unpaid">Unpaid Leave</option>
-                  {balance?.maternityLeaveEligible && <option value="maternity">Maternity Leave (90 days)</option>}
+                  {canRequestMaternityLeave && <option value="maternity">Maternity Leave (90 days)</option>}
                 </select>
               </div>
               <div />

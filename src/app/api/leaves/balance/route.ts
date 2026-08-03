@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from("users")
-      .select("annual_leave_used, annual_leave_total, sick_leave_used, sick_leave_total, lieu_leave_used, lieu_leave_total, maternity_leave_eligible, maternity_leave_used")
+      .select("annual_leave_used, annual_leave_total, sick_leave_used, sick_leave_total, lieu_leave_used, lieu_leave_total, maternity_leave_eligible, maternity_leave_used, ticket_price, ticket_price_claimed")
       .eq("id", userId)
       .single();
 
@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
             maternityLeaveUsed: 0,
             maternityLeaveTotal: 90,
             maternityLeaveRemaining: 0,
+            ticketPrice: 0,
+            ticketPriceClaimed: 0,
           },
         });
       }
@@ -50,7 +52,7 @@ export async function GET(request: NextRequest) {
     const sickLeaveUsed = data.sick_leave_used || 0;
     let sickLeaveTotal = data.sick_leave_total || 90;
     const lieuLeaveUsed = data.lieu_leave_used || 0;
-    let lieuLeaveTotal = data.lieu_leave_total || 0;
+    const lieuLeaveTotal = data.lieu_leave_total || 0;
     let annualLeaveTotal = data.annual_leave_total || 30;
 
     const [{ data: excalibur }, { data: policy }] = await Promise.all([
@@ -65,7 +67,6 @@ export async function GET(request: NextRequest) {
     if (policy) {
       annualLeaveTotal = excalibur ? policy.excalibur_annual_total : policy.standard_annual_total;
       sickLeaveTotal = excalibur ? policy.excalibur_sick_total : policy.standard_sick_total;
-      lieuLeaveTotal = excalibur ? policy.excalibur_lieu_total : policy.standard_lieu_total;
     }
 
     return NextResponse.json({
@@ -85,6 +86,8 @@ export async function GET(request: NextRequest) {
         maternityLeaveRemaining: data.maternity_leave_eligible
           ? Math.max(0, 90 - (data.maternity_leave_used || 0))
           : 0,
+        ticketPrice: data.ticket_price || 0,
+        ticketPriceClaimed: data.ticket_price_claimed || 0,
       },
     });
   } catch {

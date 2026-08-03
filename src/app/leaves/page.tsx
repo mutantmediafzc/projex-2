@@ -18,7 +18,6 @@ function LeaveSettings() {
   const [values, setValues] = useState({
     standardAnnualTotal: 30,
     standardSickTotal: 90,
-    standardLieuTotal: 0,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,7 +42,6 @@ function LeaveSettings() {
         setValues({
           standardAnnualTotal: data.settings.standard_annual_total,
           standardSickTotal: data.settings.standard_sick_total,
-          standardLieuTotal: data.settings.standard_lieu_total,
         });
       } catch (error) {
         setMessage({
@@ -92,7 +90,6 @@ function LeaveSettings() {
   const fields = [
     { key: "standardAnnualTotal" as const, label: "Annual leave", description: "Paid annual leave allowance" },
     { key: "standardSickTotal" as const, label: "Sick leave", description: "Yearly sick leave allowance" },
-    { key: "standardLieuTotal" as const, label: "Lieu days", description: "Time off earned in lieu" },
   ];
 
   if (loading) {
@@ -107,7 +104,7 @@ function LeaveSettings() {
         <p className="mt-1 text-sm text-slate-500">Default allowance for users who are not in Excalibur.</p>
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-2">
         {fields.map((field) => (
           <label key={field.key} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
             <span className="text-sm font-semibold text-slate-900">{field.label}</span>

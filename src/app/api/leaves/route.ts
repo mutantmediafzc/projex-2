@@ -118,6 +118,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const currentUser = await verifySession(request);
+    if (!currentUser) {
+      return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
+    }
+    if (currentUser.id !== userId && !(await isHR(currentUser.id))) {
+      return NextResponse.json(
+        { error: "Leave approval permission is required to file for another employee." },
+        { status: 403 },
+      );
+    }
+
     // Calculate days count
     const start = new Date(startDate);
     const end = new Date(endDate);

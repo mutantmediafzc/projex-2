@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   ] = await Promise.all([
     supabaseAdmin
       .from("users")
-      .select("id, full_name, email, annual_leave_used, sick_leave_used, lieu_leave_used, maternity_leave_eligible, maternity_leave_used, ticket_price, ticket_price_claimed")
+      .select("id, full_name, email, annual_leave_used, sick_leave_used, lieu_leave_used, lieu_leave_total, maternity_leave_eligible, maternity_leave_used, ticket_price, ticket_price_claimed")
       .order("full_name"),
     supabaseAdmin.from("excalibur_leave_members").select("user_id"),
     supabaseAdmin.from("leave_policy_settings").select("*").eq("id", "default").single(),
@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
       is_excalibur: isExcalibur,
       annual_leave_total: isExcalibur ? policy.excalibur_annual_total : policy.standard_annual_total,
       sick_leave_total: isExcalibur ? policy.excalibur_sick_total : policy.standard_sick_total,
-      lieu_leave_total: isExcalibur ? policy.excalibur_lieu_total : policy.standard_lieu_total,
       maternity_leave_total: user.maternity_leave_eligible ? 90 : 0,
     };
   });
@@ -67,6 +66,7 @@ export async function PATCH(request: NextRequest) {
     annual_leave_used: Number(body.annualLeaveUsed),
     sick_leave_used: Number(body.sickLeaveUsed),
     lieu_leave_used: Number(body.lieuLeaveUsed),
+    lieu_leave_total: Number(body.lieuLeaveTotal),
     ticket_price: Number(body.ticketPrice),
     ticket_price_claimed: Number(body.ticketPriceClaimed),
   };

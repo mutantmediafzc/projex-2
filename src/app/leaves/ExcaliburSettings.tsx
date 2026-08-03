@@ -8,7 +8,6 @@ type Member = { user_id: string; user: Person | null };
 type ExcaliburPolicy = {
   excaliburAnnualTotal: number;
   excaliburSickTotal: number;
-  excaliburLieuTotal: number;
 };
 
 async function token() {
@@ -23,7 +22,6 @@ export default function ExcaliburSettings() {
   const [policy, setPolicy] = useState<ExcaliburPolicy>({
     excaliburAnnualTotal: 25,
     excaliburSickTotal: 0,
-    excaliburLieuTotal: 0,
   });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -45,7 +43,6 @@ export default function ExcaliburSettings() {
       setPolicy({
         excaliburAnnualTotal: settingsData.settings.excalibur_annual_total,
         excaliburSickTotal: settingsData.settings.excalibur_sick_total,
-        excaliburLieuTotal: settingsData.settings.excalibur_lieu_total,
       });
     }
     setLoading(false);
@@ -110,7 +107,6 @@ export default function ExcaliburSettings() {
   const fields = [
     ["excaliburAnnualTotal", "Annual leave"],
     ["excaliburSickTotal", "Sick leave"],
-    ["excaliburLieuTotal", "Lieu days"],
   ] as const;
 
   return (
@@ -118,7 +114,7 @@ export default function ExcaliburSettings() {
       <h3 className="text-base font-semibold text-slate-900">Excalibur</h3>
       <p className="mt-1 text-sm text-slate-500">Every Excalibur member receives the same fixed leave allowance.</p>
 
-      <form onSubmit={savePolicy} className="mt-5 grid gap-4 rounded-xl border border-violet-200 bg-violet-50/50 p-4 lg:grid-cols-[repeat(3,1fr)_auto] lg:items-end">
+      <form onSubmit={savePolicy} className="mt-5 grid gap-4 rounded-xl border border-violet-200 bg-violet-50/50 p-4 lg:grid-cols-[repeat(2,1fr)_auto] lg:items-end">
         {fields.map(([key, label]) => (
           <label key={key}>
             <span className="text-xs font-medium text-slate-700">{label}</span>

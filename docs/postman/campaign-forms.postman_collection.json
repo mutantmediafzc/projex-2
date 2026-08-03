@@ -1,0 +1,257 @@
+{
+  "info": {
+    "_postman_id": "a4408562-4332-47ab-955c-08c9362e58fb",
+    "name": "Projex Campaign Forms API",
+    "description": "Authorization and questionnaire submission endpoints for the Mutant mm26-aeo and mm26-pm campaign forms. Run Authorize first; its test script automatically saves the returned access token for both submission requests.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authorization",
+      "item": [
+        {
+          "name": "Authorize",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Authorization succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campaign-forms/authorize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "campaign-forms",
+                "authorize"
+              ]
+            },
+            "description": "Validates a Supabase Auth email and password. The response token is valid for one hour and is automatically saved as the collection variable accessToken."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MM26 AEO",
+      "item": [
+        {
+          "name": "Get AEO Questionnaire",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/campaign-forms/mm26-aeo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "campaign-forms",
+                "mm26-aeo"
+              ]
+            },
+            "description": "Returns the canonical mm26-aeo questionnaire. This endpoint is public."
+          }
+        },
+        {
+          "name": "Submit AEO Answers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": {\n    \"website\": \"https://example.com\",\n    \"business\": \"Real Estate\",\n    \"ranking\": \"Page 2 or beyond\",\n    \"aiSearch\": \"Never tried it\",\n    \"traffic\": \"Mostly paid\",\n    \"frustration\": [\n      \"Competitors outrank us\",\n      \"We're invisible to AI search\"\n    ],\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Doe\",\n    \"email\": \"jane@example.com\",\n    \"phoneCountryCode\": \"+971\",\n    \"mobile\": \"501234567\"\n  },\n  \"metadata\": {\n    \"utm_source\": \"postman\",\n    \"utm_campaign\": \"mm26-aeo\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campaign-forms/mm26-aeo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "campaign-forms",
+                "mm26-aeo"
+              ]
+            },
+            "description": "Submits a validated AEO questionnaire using the access token saved by Authorize."
+          }
+        }
+      ]
+    },
+    {
+      "name": "MM26 PM",
+      "item": [
+        {
+          "name": "Get PM Questionnaire",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/campaign-forms/mm26-pm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "campaign-forms",
+                "mm26-pm"
+              ]
+            },
+            "description": "Returns the canonical mm26-pm questionnaire. This endpoint is public."
+          }
+        },
+        {
+          "name": "Submit PM Answers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"answers\": {\n    \"website\": \"https://example.com\",\n    \"business\": \"Real Estate\",\n    \"leadSource\": [\n      \"Property portals (Bayut, Property Finder, Airbnb, Booking.com)\",\n      \"Our own ads (Meta / Google / TikTok)\"\n    ],\n    \"costAwareness\": \"We know roughly\",\n    \"adSpend\": 10000,\n    \"monthlyLeads\": 75,\n    \"followUp\": \"The agent tries once or twice\",\n    \"frustration\": [\n      \"Cost per lead keeps rising\",\n      \"Leads are low quality or fake numbers\"\n    ],\n    \"fullName\": \"Jane Doe\",\n    \"email\": \"jane@example.com\",\n    \"phoneCountryCode\": \"+971\",\n    \"mobile\": \"501234567\"\n  },\n  \"metadata\": {\n    \"utm_source\": \"postman\",\n    \"utm_campaign\": \"mm26-pm\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/campaign-forms/mm26-pm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "campaign-forms",
+                "mm26-pm"
+              ]
+            },
+            "description": "Submits a validated PM questionnaire using the access token saved by Authorize."
+          }
+        }
+      ]
+    }
+  ]
+}

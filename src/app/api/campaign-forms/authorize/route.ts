@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import { createCampaignToken } from "@/lib/campaignFormAuth";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -43,18 +42,13 @@ export async function POST(request: NextRequest) {
   });
   const { data, error } = await authClient.auth.signInWithPassword({ email, password });
 
-  if (error || !data.user || !data.user.email) {
+  if (error || !data.user || !data.user.email || !data.session) {
     return json({ error: "Invalid email or password" }, 401);
   }
 
-  try {
-    const token = createCampaignToken({
-      userId: data.user.id,
-      email: data.user.email,
-    });
-    return json({ ...token, tokenType: "Bearer" });
-  } catch (error) {
-    console.error("Campaign token creation failed", error);
-    return json({ error: "Authorization service is unavailable" }, 503);
-  }
+  return json({
+    accessToken: data.session.access_token,
+    expiresIn: data.session.expires_in,
+    tokenType: "Bearer",
+  });
 }

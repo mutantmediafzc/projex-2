@@ -9,7 +9,7 @@ The two campaigns have separate endpoints:
 
 ## Authorization
 
-First exchange a valid Supabase email and password for a short-lived, campaign-scoped token:
+First exchange a valid Supabase email and password for a Supabase access token:
 
 ```http
 POST /api/campaign-forms/authorize
@@ -21,13 +21,13 @@ Content-Type: application/json
 }
 ```
 
-The returned token is valid for one hour and can be used to submit either campaign form. Include it when submitting:
+The returned token can be used to submit either campaign form. Its lifetime is controlled by the Supabase project's JWT expiry setting, which is normally one hour. Include it when submitting:
 
 ```http
 Authorization: Bearer <accessToken>
 ```
 
-Set `CAMPAIGN_FORMS_TOKEN_SECRET` to a cryptographically random value of at least 32 characters in every deployed environment. Do not expose this value to the browser; it is different from the short-lived access token returned by the authorization endpoint.
+The access token is verified through Supabase Auth on every submission. `CAMPAIGN_FORMS_TOKEN_SECRET` is no longer used and may be removed from the deployment environment.
 
 ## Recommended POST body
 

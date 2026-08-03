@@ -5,7 +5,6 @@ import {
   CampaignQuestion,
   isCampaignFormSlug,
 } from "@/lib/campaignForms";
-import { verifyCampaignToken } from "@/lib/campaignFormAuth";
 
 type Answer = string | number | string[] | null;
 type SubmittedQuestion = { id?: unknown; question?: unknown; answer?: unknown };
@@ -113,14 +112,15 @@ export async function POST(
 
   const authorization = request.headers.get("authorization") ?? "";
   const match = authorization.match(/^Bearer\s+(.+)$/i);
-  let authorizedUser: ReturnType<typeof verifyCampaignToken> = null;
-  try {
-    authorizedUser = match ? verifyCampaignToken(match[1]) : null;
-  } catch (error) {
-    console.error("Campaign token verification failed", error);
-    return json({ error: "Authorization service is unavailable" }, 503);
+  if (!match) {
+    return json({ error: "A valid campaign authorization token is required" }, 401);
   }
-  if (!authorizedUser) {
+
+  const {
+    data: { user: authorizedUser },
+    error: authorizationError,
+  } = await supabaseAdmin.auth.getUser(match[1]);
+  if (authorizationError || !authorizedUser || !authorizedUser.email) {
     return json({ error: "A valid campaign authorization token is required" }, 401);
   }
 
@@ -150,7 +150,7 @@ export async function POST(
       source_url: form.sourceUrl,
       website: String(answers.website),
       email: String(answers.email).trim().toLowerCase(),
-      authenticated_user_id: authorizedUser.sub,
+      authenticated_user_id: authorizedUser.id,
       authenticated_user_email: authorizedUser.email,
       questionnaire,
       metadata:

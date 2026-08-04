@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  hasExcaliburCalendarViewerAccess,
+  hasLeaveCalendarAccess,
+} from "@/lib/leaveCalendarAccess";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest) {
 
   const { data: profile, error: profileError } = await supabaseAdmin
     .from("users")
-    .select("role")
+    .select("role, hr_access")
     .eq("id", authData.user.id)
     .single();
 
@@ -30,7 +34,29 @@ export async function GET(request: NextRequest) {
   }
 
   const metadataRole = String(authData.user.user_metadata?.role || "").toLowerCase();
-  const isStaff = String(profile?.role || metadataRole).toLowerCase() === "staff";
+  const profileRole = String(profile?.role || metadataRole).toLowerCase();
+  const isExcaliburCalendarViewer = hasExcaliburCalendarViewerAccess(authData.user.id);
+  const canViewTeamCalendar = !isExcaliburCalendarViewer && (profileRole === "admin"
+    || profileRole === "hr"
+    || profile?.hr_access === true
+    || authData.user.app_metadata?.hr_access === true
+    || hasLeaveCalendarAccess(authData.user.id));
+
+  let scopedUserIds: string[] | null = null;
+  if (isExcaliburCalendarViewer) {
+    const { data: members, error: membersError } = await supabaseAdmin
+      .from("excalibur_leave_members")
+      .select("user_id");
+
+    if (membersError) {
+      return NextResponse.json({ error: membersError.message }, { status: 500 });
+    }
+
+    scopedUserIds = [...new Set([
+      authData.user.id,
+      ...(members || []).map((member) => member.user_id),
+    ])];
+  }
 
   let leavesQuery = supabaseAdmin
     .from("leaves")
@@ -43,7 +69,10 @@ export async function GET(request: NextRequest) {
     .from("users")
     .select("id, full_name, email");
 
-  if (isStaff) {
+  if (scopedUserIds) {
+    leavesQuery = leavesQuery.in("user_id", scopedUserIds);
+    usersQuery = usersQuery.in("id", scopedUserIds);
+  } else if (!canViewTeamCalendar) {
     leavesQuery = leavesQuery.eq("user_id", authData.user.id);
     usersQuery = usersQuery.eq("id", authData.user.id);
   }

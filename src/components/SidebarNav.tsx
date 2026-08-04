@@ -79,6 +79,16 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/lms",
+    label: "LMS",
+    gradient: { from: "from-sky-100 to-cyan-100", to: "from-sky-500 to-cyan-500", hover: "from-sky-50 to-cyan-50", shadow: "shadow-sky-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4v16M4 7h5v4H4M10 7h5v7h-5M16 7h4v10h-4" />
+      </svg>
+    ),
+  },
+  {
     href: "/social-media",
     label: "Integrated Marketing",
     gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },

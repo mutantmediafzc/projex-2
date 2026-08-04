@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Keep lead-card tasks as the final card section while preserving the existing card markup. */
+button:has(> div.border-t.border-slate-100) {
+  display: flex;
+  flex-direction: column;
+}
+
+button:has(> div.border-t.border-slate-100) > div.border-t.border-slate-100 {
+  order: 99;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

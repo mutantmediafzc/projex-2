@@ -10,6 +10,7 @@ import AdminLeavePortal from "@/app/profile/AdminLeavePortal";
 import LeaveCalendar from "./LeaveCalendar";
 import EmployeeLeaveTable from "./EmployeeLeaveTable";
 import MaternityEligibilitySettings from "./MaternityEligibilitySettings";
+import { hasLeaveCalendarAccess } from "@/lib/leaveCalendarAccess";
 
 type LeaveTab = "overview" | "file" | "calendar" | "employees" | "settings" | "approvals";
 
@@ -161,8 +162,10 @@ function LeavesPageContent() {
       ? requestedTab as LeaveTab
       : "file";
   });
-  const { hasHrAccess } = useUserRole();
+  const { hasHrAccess, role, userId } = useUserRole();
   const canManageLeaves = hasHrAccess;
+  const canViewCalendar = role === "admin" || hasHrAccess || hasLeaveCalendarAccess(userId);
+  const visibleTab = activeTab === "calendar" && !canViewCalendar ? "file" : activeTab;
 
   return (
     <div className="space-y-6">
@@ -178,7 +181,7 @@ function LeavesPageContent() {
           type="button"
           onClick={() => setActiveTab("overview")}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "overview"
+            visibleTab === "overview"
               ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
               : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
           }`}
@@ -193,7 +196,7 @@ function LeavesPageContent() {
           type="button"
           onClick={() => setActiveTab("file")}
           className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "file"
+            visibleTab === "file"
               ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
               : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
           }`}
@@ -203,27 +206,29 @@ function LeavesPageContent() {
           </svg>
           File a Leave
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("calendar")}
-          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-            activeTab === "calendar"
-              ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
-              : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
-          }`}
-        >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="3" y="4" width="18" height="17" rx="2" />
-            <path d="M8 2v4M16 2v4M3 10h18" />
-          </svg>
-          Calendar
-        </button>
+        {canViewCalendar && (
+          <button
+            type="button"
+            onClick={() => setActiveTab("calendar")}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+              visibleTab === "calendar"
+                ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
+                : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="17" rx="2" />
+              <path d="M8 2v4M16 2v4M3 10h18" />
+            </svg>
+            Calendar
+          </button>
+        )}
         {canManageLeaves && (
           <button
             type="button"
             onClick={() => setActiveTab("employees")}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === "employees"
+              visibleTab === "employees"
                 ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
                 : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             }`}
@@ -241,7 +246,7 @@ function LeavesPageContent() {
             type="button"
             onClick={() => setActiveTab("settings")}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === "settings"
+              visibleTab === "settings"
                 ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
                 : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             }`}
@@ -258,7 +263,7 @@ function LeavesPageContent() {
             type="button"
             onClick={() => setActiveTab("approvals")}
             className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-              activeTab === "approvals"
+              visibleTab === "approvals"
                 ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
                 : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             }`}
@@ -272,19 +277,19 @@ function LeavesPageContent() {
         )}
       </div>
 
-      {activeTab === "calendar" ? (
+      {visibleTab === "calendar" ? (
         <LeaveCalendar />
-      ) : activeTab === "employees" && canManageLeaves ? (
+      ) : visibleTab === "employees" && canManageLeaves ? (
         <EmployeeLeaveTable />
-      ) : activeTab === "approvals" && canManageLeaves ? (
+      ) : visibleTab === "approvals" && canManageLeaves ? (
         <AdminLeavePortal />
-      ) : activeTab === "settings" && canManageLeaves ? (
+      ) : visibleTab === "settings" && canManageLeaves ? (
         <LeaveSettings />
       ) : (
         <LeaveManagement
-          key={activeTab}
+          key={visibleTab}
           includeRecommendation={false}
-          view={activeTab === "overview" ? "overview" : "file"}
+          view={visibleTab === "overview" ? "overview" : "file"}
         />
       )}
     </div>

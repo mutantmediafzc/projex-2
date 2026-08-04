@@ -72,6 +72,19 @@ const navItems = [
     activeGradient: "from-emerald-500 to-teal-500",
   },
   {
+    href: "/lms",
+    label: "LMS",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4v16M4 7h5v4H4M10 7h5v7h-5M16 7h4v10h-4" />
+      </svg>
+    ),
+    gradient: "from-sky-100 to-cyan-100",
+    iconColor: "text-sky-600",
+    hoverGradient: "hover:from-sky-50 hover:to-cyan-50",
+    activeGradient: "from-sky-500 to-cyan-500",
+  },
+  {
     href: "/social-media",
     label: "Integrated Marketing",
     icon: (

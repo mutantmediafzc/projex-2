@@ -32,6 +32,30 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function getReceiptBase(invoiceNumber: string): string {
+  const normalized = invoiceNumber.trim();
+  return /^INV-/i.test(normalized)
+    ? normalized.replace(/^INV-/i, "REC-")
+    : `REC-${normalized.replace(/^REC-/i, "")}`;
+}
+
+function getNextReceiptNumber(invoiceNumber: string, payments: Payment[]): string {
+  const receiptBase = getReceiptBase(invoiceNumber);
+  const receiptPrefix = `${receiptBase}-`.toLowerCase();
+  const highestExistingSequence = payments.reduce((highest, payment) => {
+    const existingReceipt = payment.receipt_number?.trim() ?? "";
+    if (!existingReceipt.toLowerCase().startsWith(receiptPrefix)) return highest;
+
+    const sequenceText = existingReceipt.slice(receiptPrefix.length);
+    const sequence = /^\d+$/.test(sequenceText) ? Number(sequenceText) : 0;
+    return Number.isFinite(sequence) ? Math.max(highest, sequence) : highest;
+  }, 0);
+
+  // Include legacy/randomly numbered payments in the count so the next receipt
+  // remains the next payment number before older records are migrated.
+  return `${receiptBase}-${Math.max(payments.length, highestExistingSequence) + 1}`;
+}
+
 export default function PaymentModal({ invoice, payments, onClose, onSaved }: Props) {
   const totalPaid = payments.reduce((s, p) => s + p.amount, 0);
   const balance = invoice.total - totalPaid;
@@ -51,11 +75,7 @@ export default function PaymentModal({ invoice, payments, onClose, onSaved }: Pr
     setSaving(true);
     setError(null);
     try {
-      // Generate receipt number: REC-YYYYMMDD-XXXXXX
-      const now = new Date();
-      const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
-      const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const receiptNumber = `REC-${dateStr}-${randomStr}`;
+      const receiptNumber = getNextReceiptNumber(invoice.invoice_number, payments);
 
       const { error: insErr } = await supabaseClient.from("invoice_payments").insert({
         invoice_id: invoice.id,

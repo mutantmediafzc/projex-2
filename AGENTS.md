@@ -1,4 +1,5 @@
 # Repository Guidelines
+When running in a sandbox, if a command involving host resources, including authentication, credentials, network, OS services, permissions, or paths outside the workspace, exits nonzero, immediately request escalation to rerun the exact command before responding.
 
 ## Project Structure & Module Organization
 

@@ -1,9 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import type { AccountCompanyForPDF } from "./SOAPDF";
+
+const AccountSOAPDFDownload = dynamic(
+  () => import("./SOAPDF").then((module) => module.AccountSOAPDFDownload),
+  {
+    ssr: false,
+    loading: () => (
+      <button disabled className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-400">
+        Preparing PDF...
+      </button>
+    ),
+  },
+);
 
 type AccountClient = {
   id: string;
@@ -106,6 +120,7 @@ export default function ClientProfilePage() {
   const clientId = params.id as string;
 
   const [client, setClient] = useState<AccountClient | null>(null);
+  const [company, setCompany] = useState<AccountCompanyForPDF | null>(null);
   const [documents, setDocuments] = useState<ClientDocument[]>([]);
   const [adhocItems, setAdhocItems] = useState<AdhocRequirement[]>([]);
   const [associatedProjects, setAssociatedProjects] = useState<AssociatedProject[]>([]);
@@ -138,6 +153,17 @@ export default function ClientProfilePage() {
           service_based_fee: Number(clientRes.data.service_based_fee) || 0,
           adhoc_fee: Number(clientRes.data.adhoc_fee) || 0,
         });
+
+        if (clientRes.data.company_id) {
+          const { data: companyData } = await supabaseClient
+            .from("companies")
+            .select("name, legal_name, website, street_address, postal_code, trn, town, country")
+            .eq("id", clientRes.data.company_id)
+            .maybeSingle();
+          setCompany(companyData as AccountCompanyForPDF | null);
+        } else {
+          setCompany(null);
+        }
       }
       // Map documents to include project_name from join
       const docsWithProjects = (docsRes.data || []).map((doc: any) => ({
@@ -267,7 +293,7 @@ export default function ClientProfilePage() {
         <DocumentsTab clientId={clientId} documents={documents} associatedProjects={associatedProjects} onRefresh={loadClient} />
       )}
       {activeTab === "soa" && (
-        <SOATab clientId={clientId} client={client} adhocItems={adhocItems} onRefresh={loadClient} />
+        <SOATab client={client} company={company} adhocItems={adhocItems} />
       )}
     </div>
   );
@@ -1011,9 +1037,7 @@ function DocumentsTab({ clientId, documents, associatedProjects, onRefresh }: { 
   );
 }
 
-function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string; client: AccountClient; adhocItems: AdhocRequirement[]; onRefresh: () => void }) {
-  const [showAddAdhoc, setShowAddAdhoc] = useState(false);
-  const [saving, setSaving] = useState(false);
+function SOATab({ client, company, adhocItems }: { client: AccountClient; company: AccountCompanyForPDF | null; adhocItems: AdhocRequirement[] }) {
   const [invoices, setInvoices] = useState<AccountInvoice[]>([]);
   const [invoicePayments, setInvoicePayments] = useState<AccountInvoicePayment[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
@@ -1110,32 +1134,6 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
     };
   }, [client.company_id, client.currency]);
 
-  async function handleAddAdhoc(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
-    setSaving(true);
-    try {
-      await supabaseClient.from("account_adhoc_requirements").insert({
-        client_id: clientId,
-        date_requested: formData.get("date_requested"),
-        description: formData.get("description"),
-        service_date_start: formData.get("service_date_start") || null,
-        service_date_end: formData.get("service_date_end") || null,
-        amount: parseFloat(formData.get("amount") as string) || 0,
-        status: formData.get("status") || "pending",
-      });
-      form.reset();
-      setShowAddAdhoc(false);
-      onRefresh();
-    } catch (err) {
-      console.error("Failed to add ad-hoc:", err);
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function handleExport(format: "pdf" | "excel") {
     const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
       totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
@@ -1182,8 +1180,6 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
     }
   }
 
-  const adhocTotal = adhocItems.reduce((sum, a) => sum + a.amount, 0);
-  const grandTotal = client.retainer_fee + client.service_based_fee + adhocTotal;
   const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
     totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
     return totals;
@@ -1205,6 +1201,13 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
             </svg>
             Export Excel
           </button>
+          <AccountSOAPDFDownload
+            clientName={client.client_name}
+            company={company}
+            invoices={invoices}
+            payments={invoicePayments}
+            accountBalance={outstandingTotal}
+          />
         </div>
       </div>
 
@@ -1244,172 +1247,46 @@ function SOATab({ clientId, client, adhocItems, onRefresh }: { clientId: string;
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Invoice</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Project</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Issued</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Due</th>
-                    <th className="px-4 py-3 text-center font-semibold text-slate-600">Status</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Total</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Paid</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Balance</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Date</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Invoice #</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Description</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Amount</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Payment</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Amount Due</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {invoices.map((invoice) => {
-                    const paid = Math.min(invoice.total, paidByInvoice[invoice.id] || 0);
-                    const balance = Math.max(0, invoice.total - paid);
-                    return (
-                      <tr key={invoice.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-semibold text-slate-900">{invoice.invoice_number}</td>
-                        <td className="px-4 py-3 text-slate-600">{invoice.project_name}</td>
-                        <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issue_date)}</td>
-                        <td className="px-4 py-3 text-slate-600">{formatDate(invoice.due_date)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                            invoice.status === "paid" ? "bg-emerald-100 text-emerald-700" :
-                            invoice.status === "cancelled" ? "bg-red-100 text-red-700" :
-                            "bg-slate-100 text-slate-700"
-                          }`}>
-                            {(invoice.status || "unknown").replace(/_/g, " ")}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(invoice.total, invoice.currency)}</td>
-                        <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(paid, invoice.currency)}</td>
-                        <td className="px-4 py-3 text-right font-semibold text-amber-700">{formatCurrency(balance, invoice.currency)}</td>
-                      </tr>
-                    );
-                  })}
+                  {(() => {
+                    let runningBalance = 0;
+                    return invoices.map((invoice) => {
+                      const paid = Math.min(invoice.total, paidByInvoice[invoice.id] || 0);
+                      runningBalance += invoice.total - paid;
+                      return (
+                        <tr key={invoice.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-3 text-slate-600">{formatDate(invoice.issue_date)}</td>
+                          <td className="px-4 py-3 font-semibold text-slate-900">{invoice.invoice_number}</td>
+                          <td className="px-4 py-3 text-slate-600">{invoice.project_name}</td>
+                          <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(invoice.total, invoice.currency)}</td>
+                          <td className="px-4 py-3 text-right text-emerald-700">{formatCurrency(paid, invoice.currency)}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-amber-700">{formatCurrency(runningBalance, invoice.currency)}</td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
+                <tfoot className="bg-slate-50">
+                  <tr>
+                    <td colSpan={4} className="px-4 py-3" />
+                    <td className="px-4 py-3 text-right font-semibold text-slate-700">Account Current Balance</td>
+                    <td className="px-4 py-3 text-right font-bold text-amber-700">{formatCurrency(outstandingTotal, client.currency)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
         </div>
       </div>
 
-      {/* Monthly Breakdown */}
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 bg-slate-50 px-4 py-3">
-          <h4 className="text-[13px] font-semibold text-slate-700">Monthly Service Breakdown</h4>
-        </div>
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Service</th>
-              {displayMonths.map((m) => (
-                <th key={m} className="px-4 py-3 text-right font-semibold text-slate-600">{m}</th>
-              ))}
-              <th className="px-4 py-3 text-right font-semibold text-slate-600">Adjustments</th>
-              <th className="px-4 py-3 text-right font-semibold text-slate-700 bg-slate-50">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            <tr>
-              <td className="px-4 py-3 font-medium text-slate-900">Retainer Fee</td>
-              {displayMonths.map((m) => (
-                <td key={m} className="px-4 py-3 text-right text-slate-600">{formatCurrency(client.retainer_fee / 3)}</td>
-              ))}
-              <td className="px-4 py-3 text-right text-slate-400">—</td>
-              <td className="px-4 py-3 text-right font-semibold text-slate-900 bg-slate-50">{formatCurrency(client.retainer_fee)}</td>
-            </tr>
-            <tr>
-              <td className="px-4 py-3 font-medium text-slate-900">Service Based</td>
-              {displayMonths.map((m) => (
-                <td key={m} className="px-4 py-3 text-right text-slate-600">{formatCurrency(client.service_based_fee / 3)}</td>
-              ))}
-              <td className="px-4 py-3 text-right text-slate-400">—</td>
-              <td className="px-4 py-3 text-right font-semibold text-slate-900 bg-slate-50">{formatCurrency(client.service_based_fee)}</td>
-            </tr>
-            <tr className="bg-emerald-50/50">
-              <td className="px-4 py-3 font-bold text-slate-900">Total</td>
-              {displayMonths.map((m) => (
-                <td key={m} className="px-4 py-3 text-right font-semibold text-slate-700">{formatCurrency((client.retainer_fee + client.service_based_fee) / 3)}</td>
-              ))}
-              <td className="px-4 py-3 text-right text-slate-400">—</td>
-              <td className="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-100">{formatCurrency(grandTotal)}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* Ad-Hoc Requirements */}
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 flex items-center justify-between">
-          <h4 className="text-[13px] font-semibold text-slate-700">Ad-Hoc Requirements</h4>
-          <button onClick={() => setShowAddAdhoc(!showAddAdhoc)} className="inline-flex items-center gap-1 text-[12px] font-medium text-teal-600 hover:text-teal-700">
-            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
-            Add Requirement
-          </button>
-        </div>
-
-        {showAddAdhoc && (
-          <form onSubmit={handleAddAdhoc} className="border-b border-slate-100 bg-teal-50/50 p-4">
-            <div className="grid gap-4 sm:grid-cols-5">
-              <input name="date_requested" type="date" required className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black" />
-              <input name="description" type="text" required placeholder="Description" className="sm:col-span-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black placeholder:text-slate-400" />
-              <input name="amount" type="number" step="0.01" placeholder="Amount" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black placeholder:text-slate-400" />
-              <select name="status" className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black">
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-              </select>
-            </div>
-            <div className="flex justify-end gap-2 mt-3">
-              <button type="button" onClick={() => setShowAddAdhoc(false)} className="px-3 py-1.5 text-[12px] text-slate-600">Cancel</button>
-              <button type="submit" disabled={saving} className="px-3 py-1.5 text-[12px] bg-teal-500 text-white rounded-lg disabled:opacity-50">
-                {saving ? "Saving..." : "Add"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="border-b border-slate-100">
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Date Requested</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Description</th>
-              <th className="px-4 py-3 text-left font-semibold text-slate-600">Service Dates</th>
-              <th className="px-4 py-3 text-right font-semibold text-slate-600">Amount</th>
-              <th className="px-4 py-3 text-center font-semibold text-slate-600">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {adhocItems.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">No ad-hoc requirements</td>
-              </tr>
-            ) : (
-              adhocItems.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-slate-600">{formatDate(item.date_requested)}</td>
-                  <td className="px-4 py-3 font-medium text-slate-900">{item.description}</td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {item.service_date_start ? `${formatDate(item.service_date_start)} - ${formatDate(item.service_date_end)}` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium text-slate-900">{formatCurrency(item.amount, item.currency)}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      item.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-                    }`}>
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-          {adhocItems.length > 0 && (
-            <tfoot>
-              <tr className="bg-slate-50">
-                <td colSpan={3} className="px-4 py-3 text-right font-semibold text-slate-700">Ad-Hoc Total:</td>
-                <td className="px-4 py-3 text-right font-bold text-slate-900">{formatCurrency(adhocTotal)}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
     </div>
   );
 }

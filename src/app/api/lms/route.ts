@@ -8,6 +8,7 @@ const LEAD_STATUSES = [
 
 const TASK_TYPES = ["todo", "email", "call", "meeting", "lunch", "deadline", "linkedin"] as const;
 const TASK_PRIORITIES = ["low", "medium", "high"] as const;
+const TASK_STATUSES = ["in_progress", "completed"] as const;
 
 type LeadStatus = (typeof LEAD_STATUSES)[number];
 
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
   let body: {
     leadId?: unknown;
     taskType?: unknown;
+    status?: unknown;
     name?: unknown;
     dueDate?: unknown;
     dueTime?: unknown;
@@ -110,6 +112,9 @@ export async function POST(request: NextRequest) {
   }
   if (body.priority !== undefined && !TASK_PRIORITIES.includes(body.priority as (typeof TASK_PRIORITIES)[number])) {
     return NextResponse.json({ error: "A valid task priority is required" }, { status: 422 });
+  }
+  if (body.status !== undefined && !TASK_STATUSES.includes(body.status as (typeof TASK_STATUSES)[number])) {
+    return NextResponse.json({ error: "A valid task status is required" }, { status: 422 });
   }
   if (body.dueDate !== undefined && body.dueDate !== "" && typeof body.dueDate !== "string") {
     return NextResponse.json({ error: "A valid due date is required" }, { status: 422 });
@@ -151,7 +156,7 @@ export async function POST(request: NextRequest) {
       lead_submission_id: body.leadId,
       name: body.name.trim(),
       content: typeof body.notes === "string" && body.notes.trim() ? body.notes.trim() : null,
-      status: "not_started",
+      status: body.status || "in_progress",
       priority: body.priority || "medium",
       type: body.taskType || "todo",
       activity_date: activityDate,

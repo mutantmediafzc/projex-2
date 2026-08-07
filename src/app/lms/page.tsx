@@ -1,45 +1,325 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import TaskDetailModal from "@/components/TaskDetailModal";
 import { supabaseClient } from "@/lib/supabaseClient";
 
-const COLUMNS = [["new_lead", "New Lead"], ["contacted_initially", "Contacted Initially"], ["follow_up", "Follow-up"], ["qualified", "Qualified"], ["call_booked", "Call Booked / Meeting Set"], ["proposal_sent", "Proposal Sent"], ["for_invoicing", "For Invoicing"], ["won", "Won"], ["lost", "Lost"]] as const;
+const COLUMNS = [
+  ["new_lead", "New Lead"],
+  ["contacted_initially", "Contacted Initially"],
+  ["follow_up", "Follow-up"],
+  ["qualified", "Qualified"],
+  ["call_booked", "Call Booked / Meeting Set"],
+  ["proposal_sent", "Proposal Sent"],
+  ["for_invoicing", "For Invoicing"],
+  ["won", "Won"],
+  ["lost", "Lost"],
+] as const;
 type LeadStatus = (typeof COLUMNS)[number][0];
-type Answer = { id: string; question: string; answer: string | number | string[] | null };
+type Answer = {
+  id: string;
+  question: string;
+  answer: string | number | string[] | null;
+};
 type CRMUser = { id: string; full_name: string | null; email: string };
-type History = { id: string; submission_id: string; from_status: LeadStatus | null; to_status: LeadStatus; event_type?: string; assigned_user_name?: string | null; changed_by_email: string | null; changed_at: string };
-type TaskHistory = { id: string; task_id: string; action_type: string; field_name: string | null; old_value: string | null; new_value: string | null; changed_by_name: string | null; created_at: string };
-type LeadTask = { id: string; lead_submission_id: string; name: string; content: string | null; status: "not_started" | "in_progress" | "completed"; priority: "low" | "medium" | "high"; type: string; activity_date: string | null; reminder_enabled: boolean; created_at: string; created_by_name: string | null; assigned_user_id: string | null; assigned_user_name: string | null; history: TaskHistory[] };
-type ContactDetails = { name: string; email: string; phone: string; website: string };
-type Lead = { id: string; form_slug: "mm26-aeo" | "mm26-pm"; website: string; email: string; questionnaire: Answer[]; created_at: string; lead_status: LeadStatus; assigned_user_id: string | null; status_history: History[]; tasks: LeadTask[]; contact?: ContactDetails };
+type History = {
+  id: string;
+  submission_id: string;
+  from_status: LeadStatus | null;
+  to_status: LeadStatus;
+  event_type?: string;
+  assigned_user_name?: string | null;
+  changed_by_email: string | null;
+  changed_at: string;
+};
+type TaskHistory = {
+  id: string;
+  task_id: string;
+  action_type: string;
+  field_name: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  changed_by_name: string | null;
+  created_at: string;
+};
+type LeadTask = {
+  id: string;
+  lead_submission_id: string;
+  name: string;
+  content: string | null;
+  status: "not_started" | "in_progress" | "completed";
+  priority: "low" | "medium" | "high";
+  type: string;
+  activity_date: string | null;
+  reminder_enabled: boolean;
+  created_at: string;
+  created_by_name: string | null;
+  assigned_user_id: string | null;
+  assigned_user_name: string | null;
+  history: TaskHistory[];
+};
+type ContactDetails = {
+  name: string;
+  email: string;
+  phone: string;
+  website: string;
+};
+type Lead = {
+  id: string;
+  form_slug: "mm26-aeo" | "mm26-pm";
+  website: string;
+  email: string;
+  questionnaire: Answer[];
+  created_at: string;
+  lead_status: LeadStatus;
+  assigned_user_id: string | null;
+  status_history: History[];
+  tasks: LeadTask[];
+  contact?: ContactDetails;
+};
 
-const taskLabels: Record<string, string> = { todo: "To do", email: "Email", call: "Call", meeting: "Meeting", lunch: "Lunch", deadline: "Deadline", linkedin: "LinkedIn" };
-const statusLabel = (status: LeadStatus | null) => COLUMNS.find(([value]) => value === status)?.[1] || "New Lead";
-const textAnswer = (lead: Lead, ids: string[], match: string) => { const item = lead.questionnaire.find((entry) => ids.includes(entry.id) || entry.question.toLowerCase().includes(match)); return Array.isArray(item?.answer) ? item.answer.join(", ") : item?.answer == null ? "" : String(item.answer); };
-const isContactAnswer = (item: Answer) => ["firstName", "lastName", "fullName", "email", "phoneCountryCode", "countryCode", "mobile", "mobileNumber", "phone", "phoneNumber"].includes(item.id) || /first name|last name|full name|email|country calling code|mobile number|phone/i.test(item.question);
-function getContact(lead: Lead): ContactDetails { if (lead.contact) return lead.contact; const first = textAnswer(lead, ["firstName"], "first name"); const last = textAnswer(lead, ["lastName"], "last name"); const code = textAnswer(lead, ["phoneCountryCode", "countryCode"], "country calling code"); const mobile = textAnswer(lead, ["mobile", "mobileNumber", "phone", "phoneNumber"], "mobile number"); return { name: textAnswer(lead, ["fullName"], "full name") || [first, last].filter(Boolean).join(" "), email: textAnswer(lead, ["email"], "email") || lead.email, phone: [code, mobile].filter(Boolean).join(" "), website: lead.website }; }
-function leadName(lead: Lead) { return getContact(lead).name || lead.email; }
-function relativeDue(date: string | null) { if (!date) return "No due date"; const days = Math.ceil((new Date(date).getTime() - Date.now()) / 86400000); if (days === 0) return "today"; if (days === 1) return "in 1 day"; if (days > 1) return `in ${days} days`; if (days === -1) return "1 day overdue"; return `${Math.abs(days)} days overdue`; }
+const taskLabels: Record<string, string> = {
+  todo: "To do",
+  email: "Email",
+  call: "Call",
+  meeting: "Meeting",
+  lunch: "Lunch",
+  deadline: "Deadline",
+  linkedin: "LinkedIn",
+};
+const statusLabel = (status: LeadStatus | null) =>
+  COLUMNS.find(([value]) => value === status)?.[1] || "New Lead";
+const textAnswer = (lead: Lead, ids: string[], match: string) => {
+  const item = lead.questionnaire.find(
+    (entry) =>
+      ids.includes(entry.id) || entry.question.toLowerCase().includes(match),
+  );
+  return Array.isArray(item?.answer)
+    ? item.answer.join(", ")
+    : item?.answer == null
+      ? ""
+      : String(item.answer);
+};
+const isContactAnswer = (item: Answer) =>
+  [
+    "firstName",
+    "lastName",
+    "fullName",
+    "email",
+    "phoneCountryCode",
+    "countryCode",
+    "mobile",
+    "mobileNumber",
+    "phone",
+    "phoneNumber",
+  ].includes(item.id) ||
+  /first name|last name|full name|email|country calling code|mobile number|phone/i.test(
+    item.question,
+  );
+function getContact(lead: Lead): ContactDetails {
+  if (lead.contact) return lead.contact;
+  const first = textAnswer(lead, ["firstName"], "first name");
+  const last = textAnswer(lead, ["lastName"], "last name");
+  const code = textAnswer(
+    lead,
+    ["phoneCountryCode", "countryCode"],
+    "country calling code",
+  );
+  const mobile = textAnswer(
+    lead,
+    ["mobile", "mobileNumber", "phone", "phoneNumber"],
+    "mobile number",
+  );
+  return {
+    name:
+      textAnswer(lead, ["fullName"], "full name") ||
+      [first, last].filter(Boolean).join(" "),
+    email: textAnswer(lead, ["email"], "email") || lead.email,
+    phone: [code, mobile].filter(Boolean).join(" "),
+    website: lead.website,
+  };
+}
+function leadName(lead: Lead) {
+  return getContact(lead).name || lead.email;
+}
+function relativeDue(date: string | null) {
+  if (!date) return "No due date";
+  const dueDate = new Date(date);
+  if (Number.isNaN(dueDate.getTime())) return "No due date";
+  const today = new Date();
+  const dueDay = Date.UTC(
+    dueDate.getFullYear(),
+    dueDate.getMonth(),
+    dueDate.getDate(),
+  );
+  const currentDay = Date.UTC(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const days = Math.round((dueDay - currentDay) / 86400000);
+  if (days === 0) return "due today";
+  if (days === 1) return "tomorrow";
+  if (days === -1) return "yesterday";
+  if (days > 1) return `in ${days} days`;
+  return `${Math.abs(days)} days overdue`;
+}
 
-function TaskRows({ tasks, onEdit }: { tasks: LeadTask[]; onEdit: (id: string) => void }) {
-  if (!tasks.length) return null;
-  return <div className="mt-3 space-y-1 border-t border-slate-100 pt-2">{tasks.map((task) => <div key={task.id} role="button" tabIndex={0} onClick={(event) => { event.stopPropagation(); onEdit(task.id); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onEdit(task.id); } }} className="flex items-center gap-2 rounded-md px-1 py-1 text-[11px] text-slate-600 hover:bg-slate-50"><span className="text-slate-700">{task.status === "completed" ? "✓" : "◷"}</span><span className="min-w-0 flex-1 truncate">{taskLabels[task.type] || task.type}</span><span className="shrink-0 text-slate-400">{relativeDue(task.activity_date)}</span><span className="text-slate-400">⋮</span></div>)}</div>;
+function TaskRows({
+  tasks,
+  onEdit,
+}: {
+  tasks: LeadTask[];
+  onEdit: (id: string) => void;
+}) {
+  const activeTasks = tasks.filter((task) => task.status !== "completed");
+  if (!activeTasks.length) return null;
+  return (
+    <div className="mt-3 space-y-1 border-t border-slate-100 pt-2">
+      {activeTasks.map((task) => (
+        <div
+          key={task.id}
+          role="button"
+          tabIndex={0}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit(task.id);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+              onEdit(task.id);
+            }
+          }}
+          className="flex items-center gap-2 rounded-md px-1 py-1 text-[11px] text-slate-600 hover:bg-slate-50"
+        >
+          <span className="text-slate-700">
+            {task.status === "completed" ? "✓" : "◷"}
+          </span>
+          <span className="min-w-0 flex-1 truncate">
+            {taskLabels[task.type] || task.type}
+          </span>
+          <span className="shrink-0 text-slate-400">
+            {relativeDue(task.activity_date)}
+          </span>
+          <span className="text-slate-400">⋮</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function LMSPage() {
-  const [leads, setLeads] = useState<Lead[]>([]); const [users, setUsers] = useState<CRMUser[]>([]); const [selected, setSelected] = useState<Lead | null>(null); const [taskDetailId, setTaskDetailId] = useState<string | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [activeTab, setActiveTab] = useState<"details" | "tasks" | "history">("details"); const [answersExpanded, setAnswersExpanded] = useState(false); const [draggedId, setDraggedId] = useState<string | null>(null); const [assigneeFilter, setAssigneeFilter] = useState("all"); const [sourceFilter, setSourceFilter] = useState("all");
-  const [taskFormOpen, setTaskFormOpen] = useState(false); const [taskSaving, setTaskSaving] = useState(false); const [, setTaskError] = useState(""); const [taskType, setTaskType] = useState("todo"); const [taskName, setTaskName] = useState(""); const [taskDueDate, setTaskDueDate] = useState(""); const [taskDueTime, setTaskDueTime] = useState("10:00"); const [taskPriority] = useState<"low" | "medium" | "high">("medium"); const [taskNotes, setTaskNotes] = useState(""); const [taskReminder] = useState(false);
-  const authFetch = useCallback(async (url: string, init?: RequestInit) => { const { data } = await supabaseClient.auth.getSession(); if (!data.session?.access_token) throw new Error("You need to be signed in."); return fetch(url, { ...init, headers: { ...init?.headers, Authorization: `Bearer ${data.session.access_token}` } }); }, []);
-  const loadLeads = useCallback(async () => { const response = await authFetch("/api/lms"); const result = await response.json(); if (!response.ok) throw new Error(result.error || "Unable to load leads."); const normalized = result.leads.map((lead: Lead) => ({ ...lead, contact: getContact(lead), questionnaire: lead.questionnaire.filter((item) => !isContactAnswer(item)) })); setLeads(normalized); setUsers(result.users); setSelected((current) => current ? normalized.find((lead: Lead) => lead.id === current.id) || current : null); }, [authFetch]);
-  useEffect(() => { loadLeads().catch((reason) => setError(reason instanceof Error ? reason.message : "Unable to load leads.")).finally(() => setLoading(false)); }, [loadLeads]);
-  const filteredLeads = useMemo(() => leads.filter((lead) => (assigneeFilter === "all" || (assigneeFilter === "unassigned" ? !lead.assigned_user_id : lead.assigned_user_id === assigneeFilter)) && (sourceFilter === "all" || lead.form_slug === sourceFilter)), [assigneeFilter, leads, sourceFilter]);
-  const grouped = useMemo(() => Object.fromEntries(COLUMNS.map(([status]) => [status, filteredLeads.filter((lead) => lead.lead_status === status)])), [filteredLeads]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [users, setUsers] = useState<CRMUser[]>([]);
+  const [selected, setSelected] = useState<Lead | null>(null);
+  const [taskDetailId, setTaskDetailId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"details" | "tasks" | "history">(
+    "details",
+  );
+  const [answersExpanded, setAnswersExpanded] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [assigneeFilter, setAssigneeFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const boardHeaderRef = useRef<HTMLDivElement>(null);
+  const boardBodyRef = useRef<HTMLDivElement>(null);
+  const [taskFormOpen, setTaskFormOpen] = useState(false);
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskError, setTaskError] = useState("");
+  const [taskType, setTaskType] = useState("todo");
+  const [taskStatus, setTaskStatus] = useState<"in_progress" | "completed">(
+    "in_progress",
+  );
+  const [taskName, setTaskName] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskDueTime, setTaskDueTime] = useState("10:00");
+  const [taskPriority] = useState<"low" | "medium" | "high">("medium");
+  const [taskNotes, setTaskNotes] = useState("");
+  const [taskAssigneeId, setTaskAssigneeId] = useState("");
+  const [taskReminder] = useState(false);
+  const authFetch = useCallback(async (url: string, init?: RequestInit) => {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session?.access_token)
+      throw new Error("You need to be signed in.");
+    return fetch(url, {
+      ...init,
+      headers: {
+        ...init?.headers,
+        Authorization: `Bearer ${data.session.access_token}`,
+      },
+    });
+  }, []);
+  const loadLeads = useCallback(async () => {
+    const response = await authFetch("/api/lms");
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Unable to load leads.");
+    const normalized = result.leads.map((lead: Lead) => ({
+      ...lead,
+      contact: getContact(lead),
+      questionnaire: lead.questionnaire.filter(
+        (item) => !isContactAnswer(item),
+      ),
+    }));
+    setLeads(normalized);
+    setUsers(result.users);
+    setSelected((current) =>
+      current
+        ? normalized.find((lead: Lead) => lead.id === current.id) || current
+        : null,
+    );
+  }, [authFetch]);
+  useEffect(() => {
+    loadLeads()
+      .catch((reason) =>
+        setError(
+          reason instanceof Error ? reason.message : "Unable to load leads.",
+        ),
+      )
+      .finally(() => setLoading(false));
+  }, [loadLeads]);
+  const filteredLeads = useMemo(
+    () =>
+      leads.filter(
+        (lead) =>
+          (assigneeFilter === "all" ||
+            (assigneeFilter === "unassigned"
+              ? !lead.assigned_user_id
+              : lead.assigned_user_id === assigneeFilter)) &&
+          (sourceFilter === "all" || lead.form_slug === sourceFilter),
+      ),
+    [assigneeFilter, leads, sourceFilter],
+  );
+  const grouped = useMemo(
+    () =>
+      Object.fromEntries(
+        COLUMNS.map(([status]) => [
+          status,
+          filteredLeads.filter((lead) => lead.lead_status === status),
+        ]),
+      ),
+    [filteredLeads],
+  );
   async function moveLead(id: string, status: LeadStatus) {
     const previous = leads;
     const previousSelected = selected;
-    setLeads((items) => items.map((lead) => lead.id === id ? { ...lead, lead_status: status } : lead));
-    setSelected((lead) => lead?.id === id ? { ...lead, lead_status: status } : lead);
+    setLeads((items) =>
+      items.map((lead) =>
+        lead.id === id ? { ...lead, lead_status: status } : lead,
+      ),
+    );
+    setSelected((lead) =>
+      lead?.id === id ? { ...lead, lead_status: status } : lead,
+    );
     setDraggedId(null);
 
     try {
@@ -51,20 +331,626 @@ export default function LMSPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Unable to move lead.");
       if (result.history) {
-        setLeads((items) => items.map((lead) => lead.id === id ? { ...lead, status_history: [result.history, ...lead.status_history] } : lead));
-        setSelected((lead) => lead?.id === id ? { ...lead, status_history: [result.history, ...lead.status_history] } : lead);
+        setLeads((items) =>
+          items.map((lead) =>
+            lead.id === id
+              ? {
+                  ...lead,
+                  status_history: [result.history, ...lead.status_history],
+                }
+              : lead,
+          ),
+        );
+        setSelected((lead) =>
+          lead?.id === id
+            ? {
+                ...lead,
+                status_history: [result.history, ...lead.status_history],
+              }
+            : lead,
+        );
       }
     } catch (reason) {
       setLeads(previous);
-      setSelected((lead) => lead?.id === id ? previousSelected : lead);
-      setError(reason instanceof Error ? reason.message : "Unable to move lead.");
+      setSelected((lead) => (lead?.id === id ? previousSelected : lead));
+      setError(
+        reason instanceof Error ? reason.message : "Unable to move lead.",
+      );
     }
   }
-  async function assignLead(lead: Lead, assignedUserId: string | null) { const previous = lead.assigned_user_id; setLeads((items) => items.map((item) => item.id === lead.id ? { ...item, assigned_user_id: assignedUserId } : item)); setSelected((item) => item?.id === lead.id ? { ...item, assigned_user_id: assignedUserId } : item); try { const response = await authFetch("/api/lms", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: lead.id, assignedUserId }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || "Unable to assign lead."); if (result.history) { setLeads((items) => items.map((item) => item.id === lead.id ? { ...item, status_history: [result.history, ...item.status_history] } : item)); setSelected((item) => item?.id === lead.id ? { ...item, status_history: [result.history, ...item.status_history] } : item); } } catch (reason) { setLeads((items) => items.map((item) => item.id === lead.id ? { ...item, assigned_user_id: previous } : item)); setSelected((item) => item?.id === lead.id ? { ...item, assigned_user_id: previous } : item); setError(reason instanceof Error ? reason.message : "Unable to assign lead."); } }
-  async function createTask(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!selected || !taskName.trim()) { setTaskError("Task name is required."); return; } setTaskSaving(true); try { const response = await authFetch("/api/lms", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ leadId: selected.id, taskType, name: taskName, dueDate: taskDueDate, dueTime: taskDueTime, priority: taskPriority, notes: taskNotes, assignedUserId: selected.assigned_user_id, reminder: taskReminder }) }); const result = await response.json(); if (!response.ok) throw new Error(result.error || "Unable to create task."); setTaskFormOpen(false); setTaskName(""); await loadLeads(); } catch (reason) { setTaskError(reason instanceof Error ? reason.message : "Unable to create task."); } finally { setTaskSaving(false); } }
+  async function assignLead(lead: Lead, assignedUserId: string | null) {
+    const previous = lead.assigned_user_id;
+    setLeads((items) =>
+      items.map((item) =>
+        item.id === lead.id
+          ? { ...item, assigned_user_id: assignedUserId }
+          : item,
+      ),
+    );
+    setSelected((item) =>
+      item?.id === lead.id
+        ? { ...item, assigned_user_id: assignedUserId }
+        : item,
+    );
+    try {
+      const response = await authFetch("/api/lms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lead.id, assignedUserId }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Unable to assign lead.");
+      if (result.history) {
+        setLeads((items) =>
+          items.map((item) =>
+            item.id === lead.id
+              ? {
+                  ...item,
+                  status_history: [result.history, ...item.status_history],
+                }
+              : item,
+          ),
+        );
+        setSelected((item) =>
+          item?.id === lead.id
+            ? {
+                ...item,
+                status_history: [result.history, ...item.status_history],
+              }
+            : item,
+        );
+      }
+    } catch (reason) {
+      setLeads((items) =>
+        items.map((item) =>
+          item.id === lead.id ? { ...item, assigned_user_id: previous } : item,
+        ),
+      );
+      setSelected((item) =>
+        item?.id === lead.id ? { ...item, assigned_user_id: previous } : item,
+      );
+      setError(
+        reason instanceof Error ? reason.message : "Unable to assign lead.",
+      );
+    }
+  }
+  function toggleTaskForm() {
+    setTaskFormOpen((open) => {
+      if (!open) {
+        setTaskAssigneeId(selected?.assigned_user_id || "");
+        setTaskError("");
+      }
+      return !open;
+    });
+  }
 
-  return <main className="min-h-full bg-slate-50 px-5 py-6 sm:px-8"><div className="mb-6 space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600">Lead Management System</p><h1 className="mt-1 text-2xl font-bold text-slate-900">Campaign Leads</h1><p className="mt-1 text-sm text-slate-500">Drag a lead to update its pipeline stage.</p></div><div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm"><strong className="text-slate-900">{filteredLeads.length}</strong>{filteredLeads.length !== leads.length ? ` of ${leads.length}` : ""} total leads</div></div><div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"><span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Filter leads</span><label className="text-xs font-medium text-slate-600">Assigned<select value={assigneeFilter} onChange={(event) => setAssigneeFilter(event.target.value)} className="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><option value="all">Everyone</option><option value="unassigned">Unassigned</option>{users.map((user) => <option key={user.id} value={user.id}>{user.full_name || user.email}</option>)}</select></label><label className="text-xs font-medium text-slate-600">Source<select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)} className="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"><option value="all">All sources</option><option value="mm26-aeo">AEO</option><option value="mm26-pm">PM</option></select></label></div></div>{error && <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>}{loading ? <div className="py-20 text-center text-sm text-slate-500">Loading leads…</div> : <div className="overflow-x-auto pb-5"><div className="flex min-w-max gap-4">{COLUMNS.map(([status, label]) => <section key={status} className="w-72 rounded-2xl border border-slate-200 bg-slate-100/70 p-3" onDragOver={(event) => event.preventDefault()} onDrop={() => draggedId && moveLead(draggedId, status)}><header className="mb-3 flex items-center justify-between px-1"><h2 className="text-sm font-semibold text-slate-700">{label}</h2><span className="rounded-full bg-white px-2 py-0.5 text-xs text-slate-500">{grouped[status].length}</span></header><div className="min-h-32 space-y-3">{grouped[status].map((lead) => <button key={lead.id} draggable onDragStart={() => setDraggedId(lead.id)} onClick={() => { setSelected(lead); setActiveTab("details"); setAnswersExpanded(false); }} className="block w-full cursor-grab rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-violet-200"><div className="mb-2 flex items-start justify-between gap-2"><span className="font-semibold text-slate-900">{leadName(lead)}</span><span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase">{lead.form_slug.replace("mm26-", "")}</span></div><p className="truncate text-xs text-slate-500">{lead.email}</p><p className="truncate text-xs text-slate-500">{lead.website}</p><TaskRows tasks={lead.tasks} onEdit={setTaskDetailId} />{lead.assigned_user_id && <p className="mt-2 truncate text-[11px] font-medium text-violet-600">Assigned to {users.find((user) => user.id === lead.assigned_user_id)?.full_name || users.find((user) => user.id === lead.assigned_user_id)?.email}</p>}<p className="mt-3 text-[11px] text-slate-400">{new Date(lead.created_at).toLocaleDateString()}</p></button>)}</div></section>)}</div></div>}
-    {taskDetailId && <TaskDetailModal taskId={taskDetailId} onClose={() => setTaskDetailId(null)} onSave={loadLeads} />}
-    {selected && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}><div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl"><div className="flex items-start justify-between p-6 pb-4"><div><h2 className="text-xl font-bold text-slate-900">{leadName(selected)}</h2><p className="text-sm text-slate-500">{selected.email}</p></div><button onClick={() => setSelected(null)} className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-500">Close</button></div><div className="flex border-b border-slate-200 px-6">{([['details', 'Lead details'], ['tasks', `Tasks${selected.tasks.length ? ` (${selected.tasks.length})` : ''}`], ['history', 'History']] as const).map(([tab, label]) => <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === tab ? "border-violet-500 text-violet-700" : "border-transparent text-slate-500"}`}>{label}</button>)}</div><div className="space-y-5 p-6">{activeTab === "details" && <><section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4"><h3 className="text-xs font-semibold uppercase tracking-wider text-violet-700">Contact details</h3>{(() => { const contact = getContact(selected); return <div className="mt-3 grid gap-3 sm:grid-cols-2">{[["Full name", contact.name], ["Email", contact.email], ["Phone", contact.phone], ["Website", contact.website]].map(([label, value]) => <div key={label} className="rounded-xl bg-white/80 p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-sm text-slate-900">{value || "—"}</p></div>)}</div>; })()}</section><section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4"><label className="block text-xs font-semibold uppercase tracking-wider text-violet-700">Lead status<select aria-label="Lead status" value={selected.lead_status} onChange={(event) => moveLead(selected.id, event.target.value as LeadStatus)} className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-900"><option value="" disabled>Select a status</option>{COLUMNS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label></section><section className="rounded-xl border border-slate-200"><button type="button" onClick={() => setAnswersExpanded((value) => !value)} className="flex w-full justify-between p-4 text-left"><div><h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">Questionnaire answers</h3><p className="mt-1 text-xs text-slate-500">{selected.questionnaire.length} submitted answers</p></div><span>{answersExpanded ? "⌃" : "⌄"}</span></button>{answersExpanded && <div className="space-y-3 border-t p-4">{selected.questionnaire.map((item) => <div key={item.id} className="rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">{item.question}</p><p className="mt-1 text-sm text-slate-900">{Array.isArray(item.answer) ? item.answer.join(", ") : String(item.answer ?? "—")}</p></div>)}</div>}</section><section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4"><label className="block text-xs font-semibold uppercase tracking-wider text-violet-700">Assigned user<select value={selected.assigned_user_id || ""} onChange={(event) => assignLead(selected, event.target.value || null)} className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm"><option value="">Unassigned</option>{users.map((user) => <option key={user.id} value={user.id}>{user.full_name || user.email}</option>)}</select></label></section></>}{activeTab === "tasks" && <section><div className="mb-4 flex justify-between"><div><h3 className="text-sm font-semibold">Tasks for this lead</h3><p className="text-xs text-slate-500">Create and edit follow-ups.</p></div><button type="button" onClick={() => setTaskFormOpen((open) => !open)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white">{taskFormOpen ? "Cancel" : "+ Add task"}</button></div>{taskFormOpen && <form onSubmit={createTask} className="mb-5 space-y-3 rounded-xl bg-slate-50 p-4"><label className="block text-xs font-semibold">Task type<select value={taskType} onChange={(event) => setTaskType(event.target.value)} className="mt-1 w-full rounded-lg border bg-white p-2 text-sm">{Object.entries(taskLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label className="block text-xs font-semibold">Name<input required value={taskName} onChange={(event) => setTaskName(event.target.value)} className="mt-1 w-full rounded-lg border bg-white p-2 text-sm" /></label><div className="grid grid-cols-2 gap-2"><input required type="date" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} className="rounded-lg border bg-white p-2 text-sm" /><input type="time" value={taskDueTime} onChange={(event) => setTaskDueTime(event.target.value)} className="rounded-lg border bg-white p-2 text-sm" /></div><textarea value={taskNotes} onChange={(event) => setTaskNotes(event.target.value)} rows={3} placeholder="Notes" className="w-full rounded-lg border bg-white p-2 text-sm" /><button disabled={taskSaving} className="w-full rounded-lg bg-violet-600 p-2.5 text-sm font-semibold text-white">{taskSaving ? "Saving…" : "Save task"}</button></form>}{selected.tasks.map((task) => <div key={task.id} className="mb-2 rounded-xl border p-3"><p className="font-semibold">{task.name}</p><p className="text-xs text-slate-500">{taskLabels[task.type] || task.type} · {relativeDue(task.activity_date)}</p></div>)}</section>}{activeTab === "history" && <section><h3 className="text-sm font-semibold">Lead history</h3><div className="mt-4 space-y-4">{selected.status_history.map((entry) => <div key={entry.id} className="border-l-2 border-violet-200 pl-4"><p className="text-sm">{entry.event_type === "assignment_changed" ? `Assigned lead to ${entry.assigned_user_name || "Unassigned"}` : `Moved from ${statusLabel(entry.from_status)} to ${statusLabel(entry.to_status)}`}</p><p className="text-xs text-slate-500">{new Date(entry.changed_at).toLocaleString()} {entry.changed_by_email ? `by ${entry.changed_by_email}` : ""}</p></div>)}</div></section>}</div></div></div>}
-  </main>;
+  async function createTask(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected || !taskName.trim()) {
+      setTaskError("Task name is required.");
+      return;
+    }
+    setTaskSaving(true);
+    setTaskError("");
+    try {
+      const response = await authFetch("/api/lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: selected.id,
+          taskType,
+          status: taskStatus,
+          name: taskName,
+          dueDate: taskDueDate,
+          dueTime: taskDueTime,
+          priority: taskPriority,
+          notes: taskNotes,
+          assignedUserId: taskAssigneeId || null,
+          reminder: taskReminder,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Unable to create task.");
+      setTaskFormOpen(false);
+      setTaskName("");
+      setTaskNotes("");
+      setTaskAssigneeId("");
+      await loadLeads();
+    } catch (reason) {
+      setTaskError(
+        reason instanceof Error ? reason.message : "Unable to create task.",
+      );
+    } finally {
+      setTaskSaving(false);
+    }
+  }
+
+  return (
+    <main className="min-h-full bg-slate-50 px-5 py-6 sm:px-8">
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600">
+              Lead Management System
+            </p>
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+              Campaign Leads
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Drag a lead to update its pipeline stage.
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+            <strong className="text-slate-900">{filteredLeads.length}</strong>
+            {filteredLeads.length !== leads.length
+              ? ` of ${leads.length}`
+              : ""}{" "}
+            total leads
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+            Filter leads
+          </span>
+          <label className="text-xs font-medium text-slate-600">
+            Assigned
+            <select
+              value={assigneeFilter}
+              onChange={(event) => setAssigneeFilter(event.target.value)}
+              className="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+            >
+              <option value="all">Everyone</option>
+              <option value="unassigned">Unassigned</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.full_name || user.email}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs font-medium text-slate-600">
+            Source
+            <select
+              value={sourceFilter}
+              onChange={(event) => setSourceFilter(event.target.value)}
+              className="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
+            >
+              <option value="all">All sources</option>
+              <option value="mm26-aeo">AEO</option>
+              <option value="mm26-pm">PM</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      {error && (
+        <div className="mb-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </div>
+      )}
+      {loading ? (
+        <div className="py-20 text-center text-sm text-slate-500">
+          Loading leads…
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div
+            ref={boardHeaderRef}
+            onScroll={(event) => {
+              if (boardBodyRef.current) {
+                boardBodyRef.current.scrollLeft =
+                  event.currentTarget.scrollLeft;
+              }
+            }}
+            className="overflow-x-auto"
+          >
+            <div className="flex min-w-max">
+              {COLUMNS.map(([status, label]) => (
+                <header
+                  key={status}
+                  className="flex w-72 shrink-0 items-center justify-between border-r border-slate-200 bg-white px-4 py-4 last:border-r-0"
+                >
+                  <h2 className="text-sm font-semibold text-slate-700">
+                    {label}
+                  </h2>
+                  <span className="text-xs font-semibold text-slate-500">
+                    {grouped[status].length}
+                  </span>
+                </header>
+              ))}
+            </div>
+          </div>
+          <div
+            ref={boardBodyRef}
+            className="overflow-x-hidden"
+            aria-label="Campaign lead columns"
+          >
+            <div className="flex min-w-max items-stretch">
+              {COLUMNS.map(([status, label]) => (
+                <section
+                  key={status}
+                  aria-label={label}
+                  className="w-72 shrink-0 border-r border-slate-200 bg-slate-50/70 p-3 last:border-r-0"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => draggedId && moveLead(draggedId, status)}
+                >
+                  <div className="min-h-32 space-y-3">
+                    {grouped[status].map((lead) => (
+                      <button
+                        key={lead.id}
+                        draggable
+                        onDragStart={() => setDraggedId(lead.id)}
+                        onClick={() => {
+                          setSelected(lead);
+                          setActiveTab("details");
+                          setAnswersExpanded(false);
+                        }}
+                        className="block w-full cursor-grab rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm hover:border-violet-200"
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <span className="font-semibold text-slate-900">
+                            {leadName(lead)}
+                          </span>
+                          <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase">
+                            {lead.form_slug.replace("mm26-", "")}
+                          </span>
+                        </div>
+                        <p className="truncate text-xs text-slate-500">
+                          {lead.email}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {lead.website}
+                        </p>
+                        <TaskRows tasks={lead.tasks} onEdit={setTaskDetailId} />
+                        {lead.assigned_user_id && (
+                          <p className="mt-2 truncate text-[11px] font-medium text-violet-600">
+                            Assigned to{" "}
+                            {users.find(
+                              (user) => user.id === lead.assigned_user_id,
+                            )?.full_name ||
+                              users.find(
+                                (user) => user.id === lead.assigned_user_id,
+                              )?.email}
+                          </p>
+                        )}
+                        <p className="mt-3 text-[11px] text-slate-400">
+                          {new Date(lead.created_at).toLocaleDateString()}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {taskDetailId && (
+        <TaskDetailModal
+          taskId={taskDetailId}
+          onClose={() => setTaskDetailId(null)}
+          onSave={loadLeads}
+        />
+      )}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setSelected(null)
+          }
+        >
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-start justify-between p-6 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {leadName(selected)}
+                </h2>
+                <p className="text-sm text-slate-500">{selected.email}</p>
+              </div>
+              <button
+                onClick={() => setSelected(null)}
+                className="rounded-lg bg-slate-100 px-3 py-1.5 text-slate-500"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex border-b border-slate-200 px-6">
+              {(
+                [
+                  ["details", "Lead details"],
+                  [
+                    "tasks",
+                    `Tasks${selected.tasks.length ? ` (${selected.tasks.length})` : ""}`,
+                  ],
+                  ["history", "History"],
+                ] as const
+              ).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`border-b-2 px-3 py-3 text-sm font-semibold ${activeTab === tab ? "border-violet-500 text-violet-700" : "border-transparent text-slate-500"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="space-y-5 p-6">
+              {activeTab === "details" && (
+                <>
+                  <section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-violet-700">
+                      Contact details
+                    </h3>
+                    {(() => {
+                      const contact = getContact(selected);
+                      return (
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {[
+                            ["Full name", contact.name],
+                            ["Email", contact.email],
+                            ["Phone", contact.phone],
+                            ["Website", contact.website],
+                          ].map(([label, value]) => (
+                            <div
+                              key={label}
+                              className="rounded-xl bg-white/80 p-3"
+                            >
+                              <p className="text-xs text-slate-500">{label}</p>
+                              <p className="mt-1 text-sm text-slate-900">
+                                {value || "—"}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </section>
+                  <section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-violet-700">
+                      Lead status
+                      <select
+                        aria-label="Lead status"
+                        value={selected.lead_status}
+                        onChange={(event) =>
+                          moveLead(
+                            selected.id,
+                            event.target.value as LeadStatus,
+                          )
+                        }
+                        className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm font-normal text-slate-900"
+                      >
+                        <option value="" disabled>
+                          Select a status
+                        </option>
+                        {COLUMNS.map(([value, label]) => (
+                          <option key={value} value={value}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </section>
+                  <section className="rounded-xl border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setAnswersExpanded((value) => !value)}
+                      className="flex w-full justify-between p-4 text-left"
+                    >
+                      <div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                          Questionnaire answers
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {selected.questionnaire.length} submitted answers
+                        </p>
+                      </div>
+                      <span>{answersExpanded ? "⌃" : "⌄"}</span>
+                    </button>
+                    {answersExpanded && (
+                      <div className="space-y-3 border-t p-4">
+                        {selected.questionnaire.map((item) => (
+                          <div
+                            key={item.id}
+                            className="rounded-xl bg-slate-50 p-3"
+                          >
+                            <p className="text-xs text-slate-500">
+                              {item.question}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-900">
+                              {Array.isArray(item.answer)
+                                ? item.answer.join(", ")
+                                : String(item.answer ?? "—")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                  <section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-violet-700">
+                      Assigned user
+                      <select
+                        value={selected.assigned_user_id || ""}
+                        onChange={(event) =>
+                          assignLead(selected, event.target.value || null)
+                        }
+                        className="mt-3 w-full rounded-xl border border-violet-200 bg-white px-3 py-2.5 text-sm"
+                      >
+                        <option value="">Unassigned</option>
+                        {users.map((user) => (
+                          <option key={user.id} value={user.id}>
+                            {user.full_name || user.email}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </section>
+                </>
+              )}
+              {activeTab === "tasks" && (
+                <section>
+                  <div className="mb-4 flex justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold">
+                        Tasks for this lead
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Create and edit follow-ups.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={toggleTaskForm}
+                      className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                    >
+                      {taskFormOpen ? "Cancel" : "+ Add task"}
+                    </button>
+                  </div>
+                  {taskFormOpen && (
+                    <form
+                      onSubmit={createTask}
+                      className="mb-5 space-y-3 rounded-xl bg-slate-50 p-4"
+                    >
+                      <label className="block text-xs font-semibold">
+                        Task type
+                        <select
+                          value={taskType}
+                          onChange={(event) => setTaskType(event.target.value)}
+                          className="mt-1 w-full rounded-lg border bg-white p-2 text-sm"
+                        >
+                          {Object.entries(taskLabels).map(([value, label]) => (
+                            <option key={value} value={value}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block text-xs font-semibold">
+                        Status
+                        <select
+                          value={taskStatus}
+                          onChange={(event) =>
+                            setTaskStatus(
+                              event.target.value as "in_progress" | "completed",
+                            )
+                          }
+                          className="mt-1 w-full rounded-lg border bg-white p-2 text-sm"
+                        >
+                          <option value="in_progress">Active</option>
+                          <option value="completed">Completed</option>
+                        </select>
+                      </label>
+                      <label className="block text-xs font-semibold">
+                        Name
+                        <input
+                          required
+                          value={taskName}
+                          onChange={(event) => setTaskName(event.target.value)}
+                          className="mt-1 w-full rounded-lg border bg-white p-2 text-sm"
+                        />
+                      </label>
+                      <label className="block text-xs font-semibold">
+                        Assign to
+                        <select
+                          value={taskAssigneeId}
+                          onChange={(event) =>
+                            setTaskAssigneeId(event.target.value)
+                          }
+                          className="mt-1 w-full rounded-lg border bg-white p-2 text-sm"
+                        >
+                          <option value="">Unassigned</option>
+                          {users.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.full_name || user.email}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          required
+                          type="date"
+                          value={taskDueDate}
+                          onChange={(event) =>
+                            setTaskDueDate(event.target.value)
+                          }
+                          className="rounded-lg border bg-white p-2 text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={taskDueTime}
+                          onChange={(event) =>
+                            setTaskDueTime(event.target.value)
+                          }
+                          className="rounded-lg border bg-white p-2 text-sm"
+                        />
+                      </div>
+                      <textarea
+                        value={taskNotes}
+                        onChange={(event) => setTaskNotes(event.target.value)}
+                        rows={3}
+                        placeholder="Notes"
+                        className="w-full rounded-lg border bg-white p-2 text-sm"
+                      />
+                      {taskError && (
+                        <p role="alert" className="text-xs text-rose-600">
+                          {taskError}
+                        </p>
+                      )}
+                      <button
+                        disabled={taskSaving}
+                        className="w-full rounded-lg bg-violet-600 p-2.5 text-sm font-semibold text-white"
+                      >
+                        {taskSaving ? "Saving…" : "Save task"}
+                      </button>
+                    </form>
+                  )}
+                  {selected.tasks.map((task) => (
+                    <div key={task.id} className="mb-2 rounded-xl border p-3">
+                      <p className="font-semibold">{task.name}</p>
+                      <p className="text-xs text-slate-500">
+                        {taskLabels[task.type] || task.type} ·{" "}
+                        {relativeDue(task.activity_date)} ·{" "}
+                        {task.status === "completed" ? "Completed" : "Active"}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Assigned to {task.assigned_user_name || "Unassigned"}
+                      </p>
+                    </div>
+                  ))}
+                </section>
+              )}
+              {activeTab === "history" && (
+                <section>
+                  <h3 className="text-sm font-semibold">Lead history</h3>
+                  <div className="mt-4 space-y-4">
+                    {selected.status_history.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="border-l-2 border-violet-200 pl-4"
+                      >
+                        <p className="text-sm">
+                          {entry.event_type === "assignment_changed"
+                            ? `Assigned lead to ${entry.assigned_user_name || "Unassigned"}`
+                            : `Moved from ${statusLabel(entry.from_status)} to ${statusLabel(entry.to_status)}`}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(entry.changed_at).toLocaleString()}{" "}
+                          {entry.changed_by_email
+                            ? `by ${entry.changed_by_email}`
+                            : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
 }

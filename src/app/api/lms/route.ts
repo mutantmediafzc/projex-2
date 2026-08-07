@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const LEAD_STATUSES = [
-  "new_lead", "contacted_initially", "follow_up", "qualified", "call_booked",
+  "campaign_leads", "outreach", "audit", "qualified", "call_booked",
   "proposal_sent", "for_invoicing", "won", "lost",
 ] as const;
 
@@ -270,7 +270,7 @@ export async function PATCH(request: NextRequest) {
   }
   const assignmentChanged = body.assignedUserId !== undefined && previousAssignedUserId !== (body.assignedUserId as string | null);
   if (assignmentChanged) {
-    const currentStatus = (body.status as string | undefined) || previousStatus || "new_lead";
+    const currentStatus = (body.status as string | undefined) || previousStatus || "campaign_leads";
     const { data: assignmentHistory, error: assignmentHistoryError } = await supabaseAdmin.from("campaign_lead_status_history").insert({
       submission_id: body.id,
       from_status: currentStatus,

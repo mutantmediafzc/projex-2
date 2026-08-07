@@ -12,9 +12,9 @@ import TaskDetailModal from "@/components/TaskDetailModal";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const COLUMNS = [
-  ["new_lead", "New Lead"],
-  ["contacted_initially", "Contacted Initially"],
-  ["follow_up", "Follow-up"],
+  ["campaign_leads", "Campaign Leads"],
+  ["outreach", "Outreach"],
+  ["audit", "Audit"],
   ["qualified", "Qualified"],
   ["call_booked", "Call Booked / Meeting Set"],
   ["proposal_sent", "Proposal Sent"],
@@ -95,7 +95,7 @@ const taskLabels: Record<string, string> = {
   linkedin: "LinkedIn",
 };
 const statusLabel = (status: LeadStatus | null) =>
-  COLUMNS.find(([value]) => value === status)?.[1] || "New Lead";
+  COLUMNS.find(([value]) => value === status)?.[1] || "Campaign Leads";
 const textAnswer = (lead: Lead, ids: string[], match: string) => {
   const item = lead.questionnaire.find(
     (entry) =>

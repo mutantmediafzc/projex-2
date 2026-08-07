@@ -23,6 +23,15 @@ export type InvoiceItem = {
   sort_order: number;
 };
 
+export type InvoicePaymentBreakdown = {
+  id: string;
+  description: string;
+  amount: number;
+  due_date: string | null;
+  status: "pending" | "paid" | "due" | "cancelled";
+  sort_order: number;
+};
+
 export type Invoice = {
   id: string;
   project_id?: string | null;
@@ -54,6 +63,7 @@ export type Invoice = {
   bank_iban: string | null;
   created_at: string;
   items?: InvoiceItem[];
+  payment_breakdowns?: InvoicePaymentBreakdown[];
 };
 
 export type InvoiceSettings = {
@@ -176,13 +186,14 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
   }
 
   async function handleViewPdf(invoice: Invoice) {
-    const [{ data: items }, { data: billedCompany }, { data: project }] = await Promise.all([
+    const [{ data: items }, { data: breakdowns }, { data: billedCompany }, { data: project }] = await Promise.all([
       supabaseClient.from("invoice_items").select("*").eq("invoice_id", invoice.id).order("sort_order"),
+      supabaseClient.from("invoice_payment_breakdowns").select("id, description, amount, due_date, status, sort_order").eq("invoice_id", invoice.id).order("sort_order"),
       supabaseClient.from("companies").select("trn").ilike("name", invoice.client_name).maybeSingle(),
       supabaseClient.from("projects").select("company:companies(trn)").eq("id", projectId).single(),
     ]);
     const company = project?.company as unknown as { trn: string | null } | null;
-    setSelectedInvoice({ ...invoice, client_trn: billedCompany?.trn ?? company?.trn ?? null, items: (items as InvoiceItem[]) || [] });
+    setSelectedInvoice({ ...invoice, client_trn: billedCompany?.trn ?? company?.trn ?? null, items: (items as InvoiceItem[]) || [], payment_breakdowns: (breakdowns as InvoicePaymentBreakdown[]) || [] });
     setShowPdfModal(true);
   }
 

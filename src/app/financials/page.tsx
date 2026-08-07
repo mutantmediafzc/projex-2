@@ -10,7 +10,7 @@ import InvoiceSettingsModal from "@/app/projects/[id]/InvoiceSettingsModal";
 import InvoiceEditModal from "@/app/projects/[id]/InvoiceEditModal";
 import PaymentModal, { type Payment } from "@/app/projects/[id]/PaymentModal";
 import ReceiptModal from "@/app/projects/[id]/ReceiptModal";
-import type { InvoiceType, InvoiceSettings, InvoiceItem, Invoice as MgmtInvoice } from "@/app/projects/[id]/InvoiceManagement";
+import type { InvoiceType, InvoiceSettings, InvoiceItem, InvoicePaymentBreakdown, Invoice as MgmtInvoice } from "@/app/projects/[id]/InvoiceManagement";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
 type Invoice = {
@@ -44,6 +44,7 @@ type Invoice = {
   bank_iban: string | null;
   created_at: string;
   items?: InvoiceItem[];
+  payment_breakdowns?: InvoicePaymentBreakdown[];
   project?: { id: string; name: string; company_id: string; company?: { trn: string | null } | null } | null;
 };
 
@@ -692,9 +693,12 @@ export default function FinancialsPage() {
   }, [role, roleLoading]);
 
   async function handleViewPdf(inv: Invoice) {
-    const { data } = await supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order");
+    const [{ data }, { data: breakdowns }] = await Promise.all([
+      supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order"),
+      supabaseClient.from("invoice_payment_breakdowns").select("id, description, amount, due_date, status, sort_order").eq("invoice_id", inv.id).order("sort_order"),
+    ]);
     const billedCompany = companies.find((company) => company.name.localeCompare(inv.client_name, undefined, { sensitivity: "accent" }) === 0);
-    setSelectedInvoice({ ...inv, client_trn: billedCompany?.trn ?? inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [] });
+    setSelectedInvoice({ ...inv, client_trn: billedCompany?.trn ?? inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [], payment_breakdowns: (breakdowns as InvoicePaymentBreakdown[]) || [] });
     setShowPdfModal(true);
   }
 

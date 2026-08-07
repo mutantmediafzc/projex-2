@@ -23,6 +23,15 @@ type Contact = {
   is_primary: boolean;
 };
 
+type PaymentBreakdownStatus = "pending" | "paid" | "due" | "cancelled";
+
+type PaymentBreakdownForm = {
+  description: string;
+  amount: number;
+  due_date: string;
+  status: PaymentBreakdownStatus;
+};
+
 type Props = {
   projectId: string;
   projectName: string;
@@ -52,7 +61,9 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
   const [formItems, setFormItems] = useState<{ description: string; quantity: number; unit_price: number }[]>([{ description: "", quantity: 1, unit_price: 0 }]);
   const [formTaxRate, setFormTaxRate] = useState(settings?.tax_rate || 5);
   const [formDiscount, setFormDiscount] = useState(0);
+  const [formPaymentBreakdowns, setFormPaymentBreakdowns] = useState<PaymentBreakdownForm[]>([]);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [aiContext, setAiContext] = useState("");
   const [generatingAi, setGeneratingAi] = useState<number | null>(null);
 
@@ -142,6 +153,15 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
   const subtotal = formItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const taxAmount = (subtotal - formDiscount) * (formTaxRate / 100);
   const total = subtotal - formDiscount + taxAmount;
+  const formCurrency = settings?.currency || "AED";
+  const paymentBreakdownTotal = formPaymentBreakdowns.reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+  const paidBreakdownTotal = formPaymentBreakdowns
+    .filter((item) => item.status === "paid")
+    .reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+  const paymentBalance = Math.max(0, total - paidBreakdownTotal);
+  const paymentBreakdownError = paymentBreakdownTotal > total + 0.01
+    ? `Payment breakdowns exceed the invoice total by ${(paymentBreakdownTotal - total).toFixed(2)} ${formCurrency}.`
+    : null;
 
   function addItem() {
     setFormItems([...formItems, { description: "", quantity: 1, unit_price: 0 }]);
@@ -157,10 +177,30 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
     setFormItems(updated);
   }
 
+  function addPaymentBreakdown() {
+    setFormPaymentBreakdowns((items) => [
+      ...items,
+      { description: "", amount: 0, due_date: "", status: "pending" },
+    ]);
+  }
+
+  function removePaymentBreakdown(index: number) {
+    setFormPaymentBreakdowns((items) => items.filter((_, itemIndex) => itemIndex !== index));
+  }
+
+  function updatePaymentBreakdown(index: number, field: keyof PaymentBreakdownForm, value: string | number) {
+    setFormPaymentBreakdowns((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item));
+  }
+
   async function handleSubmit() {
     if (!formClientName.trim()) return;
+    if (paymentBreakdownError) {
+      setFormError(paymentBreakdownError);
+      return;
+    }
     try {
       setSaving(true);
+      setFormError(null);
       const { data: authData } = await supabaseClient.auth.getUser();
       if (!authData?.user) return;
 
@@ -183,7 +223,7 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
         tax_amount: taxAmount,
         discount_amount: formDiscount,
         total,
-        currency: settings?.currency || "AED",
+        currency: formCurrency,
         notes: formNotes || null,
         company_name: settings?.company_name,
         company_logo_url: settings?.company_logo_url,
@@ -208,13 +248,33 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
       }));
 
       if (itemsToInsert.length > 0) {
-        await supabaseClient.from("invoice_items").insert(itemsToInsert);
+        const { error: itemsError } = await supabaseClient.from("invoice_items").insert(itemsToInsert);
+        if (itemsError) throw itemsError;
+      }
+
+      const breakdownsToInsert = formPaymentBreakdowns
+        .filter((item) => item.amount > 0)
+        .map((item, index) => ({
+          invoice_id: invoice.id,
+          description: item.description.trim() || "Payment installment",
+          amount: Number(item.amount.toFixed(2)),
+          due_date: item.due_date || null,
+          status: item.status,
+          sort_order: index,
+        }));
+
+      if (breakdownsToInsert.length > 0) {
+        const { error: breakdownError } = await supabaseClient
+          .from("invoice_payment_breakdowns")
+          .insert(breakdownsToInsert);
+        if (breakdownError) throw breakdownError;
       }
 
       onCreated();
       onClose();
     } catch (err) {
       console.error("Failed to create invoice:", err);
+      setFormError(err instanceof Error ? err.message : "Failed to create invoice.");
     } finally {
       setSaving(false);
     }
@@ -411,11 +471,69 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
             <div className="flex justify-between text-[13px]"><span className="text-slate-700">Tax ({formTaxRate}%)</span><span className="font-semibold text-slate-900">{taxAmount.toFixed(2)}</span></div>
             <div className="flex justify-between text-[15px] font-bold border-t border-slate-200 pt-2"><span className="text-slate-900">Total</span><span className="text-slate-900">{total.toFixed(2)}</span></div>
           </div>
+
+          {type === "invoice" && (
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Payment Breakdowns</h4>
+                  <p className="mt-1 text-[11px] text-slate-500">Add installments or payment portions. Their combined amount cannot exceed the invoice total.</p>
+                </div>
+                <button type="button" onClick={addPaymentBreakdown} className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 hover:text-violet-700">
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14m-7-7h14" /></svg>
+                  Add Payment
+                </button>
+              </div>
+
+              {formPaymentBreakdowns.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 px-4 py-5 text-center text-[12px] text-slate-500">No payment breakdowns added.</div>
+              ) : (
+                <div className="space-y-3">
+                  {formPaymentBreakdowns.map((item, index) => (
+                    <div key={index} className="rounded-xl border border-violet-100 bg-violet-50/40 p-3">
+                      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_140px_130px_auto] sm:items-end">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold text-slate-500">Description</label>
+                          <input type="text" value={item.description} onChange={(event) => updatePaymentBreakdown(index, "description", event.target.value)} placeholder="e.g. First installment" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold text-slate-500">Amount</label>
+                          <input type="number" min="0" step="0.01" value={item.amount || ""} onChange={(event) => updatePaymentBreakdown(index, "amount", parseFloat(event.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold text-slate-500">Due date</label>
+                          <input type="date" value={item.due_date} onChange={(event) => updatePaymentBreakdown(index, "due_date", event.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-violet-400 focus:outline-none" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold text-slate-500">Status</label>
+                          <select value={item.status} onChange={(event) => updatePaymentBreakdown(index, "status", event.target.value as PaymentBreakdownStatus)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-900 focus:border-violet-400 focus:outline-none">
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="due">Due</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                        <button type="button" onClick={() => removePaymentBreakdown(index)} aria-label={`Remove payment breakdown ${index + 1}`} className="mb-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100">×</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(paymentBreakdownError || formError) && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-[12px] text-red-600">{paymentBreakdownError || formError}</p>}
+              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                <div className="flex justify-between text-[12px]"><span className="text-slate-600">Breakdowns total</span><span className="font-semibold text-slate-900">{formCurrency} {paymentBreakdownTotal.toFixed(2)}</span></div>
+                <div className="flex justify-between text-[12px]"><span className="text-slate-600">Paid breakdowns</span><span className="font-semibold text-violet-600">{formCurrency} {paidBreakdownTotal.toFixed(2)}</span></div>
+                <div className="flex justify-between border-t border-slate-100 pt-2 text-[14px] font-bold"><span className="text-slate-900">Invoice balance</span><span className={paymentBalance > 0.01 ? "text-amber-700" : "text-emerald-700"}>{formCurrency} {paymentBalance.toFixed(2)}</span></div>
+                {paidBreakdownTotal > 0 && <p className="text-[11px] text-slate-500">Balance reflects payment breakdowns marked as paid.</p>}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="sticky bottom-0 flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
           <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-2.5 text-[12px] font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button type="button" onClick={handleSubmit} disabled={saving || !formClientName.trim()} className="rounded-xl bg-violet-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-violet-700 disabled:opacity-50">
+          <button type="button" onClick={handleSubmit} disabled={saving || !formClientName.trim() || Boolean(paymentBreakdownError)} className="rounded-xl bg-violet-600 px-4 py-2.5 text-[12px] font-semibold text-white shadow-lg hover:bg-violet-700 disabled:opacity-50">
             {saving ? "Creating..." : `Create ${type === "quote" ? "Quote" : "Invoice"}`}
           </button>
         </div>

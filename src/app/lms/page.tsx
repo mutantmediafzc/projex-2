@@ -29,6 +29,14 @@ type Answer = {
   answer: string | number | string[] | null;
 };
 type CRMUser = { id: string; full_name: string | null; email: string };
+type CRMContact = {
+  id: string;
+  company_id: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+};
+type CRMCompany = { id: string; name: string };
 type History = {
   id: string;
   submission_id: string;
@@ -73,7 +81,7 @@ type ContactDetails = {
 };
 type Lead = {
   id: string;
-  form_slug: "mm26-aeo" | "mm26-pm";
+  form_slug: "mm26-aeo" | "mm26-pm" | "manual";
   website: string;
   email: string;
   questionnaire: Answer[];
@@ -82,6 +90,12 @@ type Lead = {
   assigned_user_id: string | null;
   status_history: History[];
   tasks: LeadTask[];
+  lead_name: string | null;
+  contact_id: string | null;
+  company_id: string | null;
+  pipeline: string;
+  amount: number;
+  close_date: string | null;
   contact?: ContactDetails;
 };
 
@@ -89,10 +103,11 @@ const taskLabels: Record<string, string> = {
   todo: "To do",
   email: "Email",
   call: "Call",
-  meeting: "Meeting",
+  whatsapp: "WhatsApp",
+  online_meeting: "Online Meeting",
+  in_person_meeting: "In-person Meeting",
   lunch: "Lunch",
   deadline: "Deadline",
-  linkedin: "LinkedIn",
 };
 const statusLabel = (status: LeadStatus | null) =>
   COLUMNS.find(([value]) => value === status)?.[1] || "Campaign Leads";
@@ -147,7 +162,18 @@ function getContact(lead: Lead): ContactDetails {
   };
 }
 function leadName(lead: Lead) {
-  return getContact(lead).name || lead.email;
+  return lead.lead_name || getContact(lead).name || lead.email;
+}
+function pipelineLabel(lead: Lead) {
+  if (lead.form_slug === "mm26-aeo") return "AEO";
+  if (lead.form_slug === "mm26-pm") return "Performance Marketing";
+  return lead.pipeline || "Mutant Leads";
+}
+function formatAmount(amount: number) {
+  return `AED ${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 function relativeDue(date: string | null) {
   if (!date) return "No due date";
@@ -220,6 +246,8 @@ function TaskRows({
 export default function LMSPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [users, setUsers] = useState<CRMUser[]>([]);
+  const [contacts, setContacts] = useState<CRMContact[]>([]);
+  const [companies, setCompanies] = useState<CRMCompany[]>([]);
   const [selected, setSelected] = useState<Lead | null>(null);
   const [taskDetailId, setTaskDetailId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +259,23 @@ export default function LMSPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [assigneeFilter, setAssigneeFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [createLeadOpen, setCreateLeadOpen] = useState(false);
+  const [createLeadSaving, setCreateLeadSaving] = useState(false);
+  const [createLeadError, setCreateLeadError] = useState("");
+  const [newLeadName, setNewLeadName] = useState("");
+  const [newContactId, setNewContactId] = useState("");
+  const [newContactFirstName, setNewContactFirstName] = useState("");
+  const [newContactLastName, setNewContactLastName] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
+  const [newCompanyId, setNewCompanyId] = useState("");
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newOwnerId, setNewOwnerId] = useState("");
+  const [newPipeline, setNewPipeline] = useState("Mutant Leads");
+  const [newLeadStatus, setNewLeadStatus] =
+    useState<LeadStatus>("campaign_leads");
+  const [newAmount, setNewAmount] = useState("");
+  const [newCloseDate, setNewCloseDate] = useState("");
+  const [newCreateTask, setNewCreateTask] = useState(false);
   const boardHeaderRef = useRef<HTMLDivElement>(null);
   const boardBodyRef = useRef<HTMLDivElement>(null);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
@@ -243,7 +288,9 @@ export default function LMSPage() {
   const [taskName, setTaskName] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskDueTime, setTaskDueTime] = useState("10:00");
-  const [taskPriority] = useState<"low" | "medium" | "high">("medium");
+  const [taskPriority, setTaskPriority] = useState<"low" | "medium" | "high">(
+    "medium",
+  );
   const [taskNotes, setTaskNotes] = useState("");
   const [taskAssigneeId, setTaskAssigneeId] = useState("");
   const [taskReminder] = useState(false);
@@ -272,6 +319,8 @@ export default function LMSPage() {
     }));
     setLeads(normalized);
     setUsers(result.users);
+    setContacts(result.contacts);
+    setCompanies(result.companies);
     setSelected((current) =>
       current
         ? normalized.find((lead: Lead) => lead.id === current.id) || current
@@ -415,6 +464,40 @@ export default function LMSPage() {
       );
     }
   }
+  async function updateDealDetails(
+    lead: Lead,
+    changes: {
+      amount?: number;
+      companyId?: string | null;
+      closeDate?: string | null;
+    },
+  ) {
+    try {
+      const response = await authFetch("/api/lms", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: lead.id, ...changes }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to update deal details.");
+      }
+      setLeads((items) =>
+        items.map((item) =>
+          item.id === lead.id ? { ...item, ...result.lead } : item,
+        ),
+      );
+      setSelected((item) =>
+        item?.id === lead.id ? { ...item, ...result.lead } : item,
+      );
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Unable to update deal details.",
+      );
+    }
+  }
   function toggleTaskForm() {
     setTaskFormOpen((open) => {
       if (!open) {
@@ -457,6 +540,7 @@ export default function LMSPage() {
       setTaskName("");
       setTaskNotes("");
       setTaskAssigneeId("");
+      setTaskPriority("medium");
       await loadLeads();
     } catch (reason) {
       setTaskError(
@@ -464,6 +548,69 @@ export default function LMSPage() {
       );
     } finally {
       setTaskSaving(false);
+    }
+  }
+
+  async function createLead(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setCreateLeadSaving(true);
+    setCreateLeadError("");
+    try {
+      const response = await authFetch("/api/lms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create_lead",
+          leadName: newLeadName,
+          contactId:
+            newContactId && newContactId !== "__create_new__"
+              ? newContactId
+              : null,
+          newContactFirstName:
+            newContactId === "__create_new__" ? newContactFirstName : null,
+          newContactLastName:
+            newContactId === "__create_new__" ? newContactLastName : null,
+          newContactEmail:
+            newContactId === "__create_new__" ? newContactEmail : null,
+          createNewContact: newContactId === "__create_new__",
+          companyId:
+            newCompanyId && newCompanyId !== "__create_new__"
+              ? newCompanyId
+              : null,
+          newCompanyName:
+            newCompanyId === "__create_new__" ? newCompanyName : null,
+          assignedUserId: newOwnerId,
+          pipeline: newPipeline,
+          leadStatus: newLeadStatus,
+          amount: newAmount || 0,
+          closeDate: newCloseDate || null,
+          createTask: newCreateTask,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || "Unable to create lead.");
+      setCreateLeadOpen(false);
+      setNewLeadName("");
+      setNewContactId("");
+      setNewContactFirstName("");
+      setNewContactLastName("");
+      setNewContactEmail("");
+      setNewCompanyId("");
+      setNewCompanyName("");
+      setNewOwnerId("");
+      setNewPipeline("Mutant Leads");
+      setNewLeadStatus("campaign_leads");
+      setNewAmount("");
+      setNewCloseDate("");
+      setNewCreateTask(false);
+      await loadLeads();
+    } catch (reason) {
+      setCreateLeadError(
+        reason instanceof Error ? reason.message : "Unable to create lead.",
+      );
+    } finally {
+      setCreateLeadSaving(false);
     }
   }
 
@@ -482,12 +629,24 @@ export default function LMSPage() {
               Drag a lead to update its pipeline stage.
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
-            <strong className="text-slate-900">{filteredLeads.length}</strong>
-            {filteredLeads.length !== leads.length
-              ? ` of ${leads.length}`
-              : ""}{" "}
-            total leads
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setCreateLeadError("");
+                setCreateLeadOpen(true);
+              }}
+              className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-violet-700"
+            >
+              + Create lead
+            </button>
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+              <strong className="text-slate-900">{filteredLeads.length}</strong>
+              {filteredLeads.length !== leads.length
+                ? ` of ${leads.length}`
+                : ""}{" "}
+              total leads
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
@@ -520,6 +679,7 @@ export default function LMSPage() {
               <option value="all">All sources</option>
               <option value="mm26-aeo">AEO</option>
               <option value="mm26-pm">PM</option>
+              <option value="manual">Manual</option>
             </select>
           </label>
         </div>
@@ -549,11 +709,24 @@ export default function LMSPage() {
               {COLUMNS.map(([status, label]) => (
                 <header
                   key={status}
-                  className="flex w-72 shrink-0 items-center justify-between border-r border-slate-200 bg-white px-4 py-4 last:border-r-0"
+                  className="flex w-72 shrink-0 items-start justify-between border-r border-slate-200 bg-white px-4 py-3 last:border-r-0"
                 >
-                  <h2 className="text-sm font-semibold text-slate-700">
-                    {label}
-                  </h2>
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-700">
+                      {label}
+                    </h2>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Total amount{" "}
+                      <span className="font-semibold text-slate-700">
+                        {formatAmount(
+                          grouped[status].reduce(
+                            (total, lead) => total + Number(lead.amount || 0),
+                            0,
+                          ),
+                        )}
+                      </span>
+                    </p>
+                  </div>
                   <span className="text-xs font-semibold text-slate-500">
                     {grouped[status].length}
                   </span>
@@ -593,7 +766,9 @@ export default function LMSPage() {
                             {leadName(lead)}
                           </span>
                           <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase">
-                            {lead.form_slug.replace("mm26-", "")}
+                            {lead.form_slug === "manual"
+                              ? "Manual"
+                              : lead.form_slug.replace("mm26-", "")}
                           </span>
                         </div>
                         <p className="truncate text-xs text-slate-500">
@@ -602,6 +777,11 @@ export default function LMSPage() {
                         <p className="truncate text-xs text-slate-500">
                           {lead.website}
                         </p>
+                        {lead.amount > 0 && (
+                          <p className="mt-2 text-xs font-semibold text-slate-700">
+                            AED {Number(lead.amount).toLocaleString()}
+                          </p>
+                        )}
                         <TaskRows tasks={lead.tasks} onEdit={setTaskDetailId} />
                         {lead.assigned_user_id && (
                           <p className="mt-2 truncate text-[11px] font-medium text-violet-600">
@@ -623,6 +803,268 @@ export default function LMSPage() {
                 </section>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+      {createLeadOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setCreateLeadOpen(false)
+          }
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-lead-title"
+            className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-lime-200 to-emerald-200 px-7 py-5">
+              <h2
+                id="create-lead-title"
+                className="text-xl font-bold text-slate-900"
+              >
+                Create a lead
+              </h2>
+              <button
+                type="button"
+                onClick={() => setCreateLeadOpen(false)}
+                aria-label="Close create lead form"
+                className="text-2xl text-slate-600 hover:text-slate-900"
+              >
+                ×
+              </button>
+            </div>
+            <form
+              onSubmit={createLead}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div className="flex-1 space-y-4 overflow-y-auto px-7 py-6">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Associate lead to contact
+                  <select
+                    value={newContactId}
+                    onChange={(event) => {
+                      const contactId = event.target.value;
+                      setNewContactId(contactId);
+                      if (contactId !== "__create_new__") {
+                        setNewContactFirstName("");
+                        setNewContactLastName("");
+                        setNewContactEmail("");
+                      }
+                      const contact = contacts.find(
+                        (item) => item.id === contactId,
+                      );
+                      if (contact?.company_id)
+                        setNewCompanyId(contact.company_id);
+                    }}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  >
+                    <option value="">Select a contact</option>
+                    <option value="__create_new__">+ Create new contact</option>
+                    {contacts.map((contact) => (
+                      <option key={contact.id} value={contact.id}>
+                        {[contact.first_name, contact.last_name]
+                          .filter(Boolean)
+                          .join(" ") || contact.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {newContactId === "__create_new__" && (
+                  <div className="grid gap-3 rounded-xl border border-violet-100 bg-violet-50/50 p-3 sm:grid-cols-2">
+                    <label className="block text-sm font-semibold text-slate-700">
+                      First name <span className="text-rose-500">*</span>
+                      <input
+                        required
+                        autoFocus
+                        value={newContactFirstName}
+                        onChange={(event) =>
+                          setNewContactFirstName(event.target.value)
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                      />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700">
+                      Last name <span className="text-rose-500">*</span>
+                      <input
+                        required
+                        value={newContactLastName}
+                        onChange={(event) =>
+                          setNewContactLastName(event.target.value)
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                      />
+                    </label>
+                    <label className="block text-sm font-semibold text-slate-700 sm:col-span-2">
+                      Email
+                      <input
+                        type="email"
+                        value={newContactEmail}
+                        onChange={(event) =>
+                          setNewContactEmail(event.target.value)
+                        }
+                        className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                      />
+                    </label>
+                    <p className="text-xs text-slate-500 sm:col-span-2">
+                      Select or create a company below to save this contact.
+                    </p>
+                  </div>
+                )}
+                <label className="block text-sm font-semibold text-slate-700">
+                  Associate lead to company
+                  <select
+                    required={newContactId === "__create_new__"}
+                    value={newCompanyId}
+                    onChange={(event) => {
+                      setNewCompanyId(event.target.value);
+                      if (event.target.value !== "__create_new__") {
+                        setNewCompanyName("");
+                      }
+                    }}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  >
+                    <option value="">Select a company</option>
+                    <option value="__create_new__">+ Create new company</option>
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {newCompanyId === "__create_new__" && (
+                  <label className="block text-sm font-semibold text-slate-700">
+                    New company name <span className="text-rose-500">*</span>
+                    <input
+                      required
+                      autoFocus
+                      value={newCompanyName}
+                      onChange={(event) =>
+                        setNewCompanyName(event.target.value)
+                      }
+                      placeholder="Enter company name"
+                      className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"
+                    />
+                  </label>
+                )}
+                <label className="block text-sm font-semibold text-slate-700">
+                  Lead name <span className="text-rose-500">*</span>
+                  <input
+                    required
+                    value={newLeadName}
+                    onChange={(event) => setNewLeadName(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Lead owner <span className="text-rose-500">*</span>
+                  <select
+                    required
+                    value={newOwnerId}
+                    onChange={(event) => setNewOwnerId(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  >
+                    <option value="">Select an owner</option>
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.full_name || user.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Pipeline <span className="text-rose-500">*</span>
+                  <select
+                    required
+                    value={newPipeline}
+                    onChange={(event) => setNewPipeline(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  >
+                    <option value="Mutant Leads">Mutant Leads</option>
+                    <option value="AEO">AEO</option>
+                    <option value="Performance Marketing">
+                      Performance Marketing
+                    </option>
+                  </select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Deal stage <span className="text-rose-500">*</span>
+                  <select
+                    required
+                    value={newLeadStatus}
+                    onChange={(event) =>
+                      setNewLeadStatus(event.target.value as LeadStatus)
+                    }
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
+                  >
+                    {COLUMNS.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Amount
+                  <div className="relative mt-1.5">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={newAmount}
+                      onChange={(event) => setNewAmount(event.target.value)}
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2.5 pr-14 font-normal"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                      AED
+                    </span>
+                  </div>
+                </label>
+                <label className="block text-sm font-semibold text-slate-700">
+                  Close date
+                  <input
+                    type="date"
+                    value={newCloseDate}
+                    onChange={(event) => setNewCloseDate(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal"
+                  />
+                </label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={newCreateTask}
+                    onChange={(event) => setNewCreateTask(event.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-violet-600"
+                  />
+                  Create a task to follow up on this lead
+                </label>
+                {createLeadError && (
+                  <p
+                    role="alert"
+                    className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700"
+                  >
+                    {createLeadError}
+                  </p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center justify-between border-t border-slate-200 px-7 py-4">
+                <button
+                  type="button"
+                  onClick={() => setCreateLeadOpen(false)}
+                  className="font-semibold text-violet-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={createLeadSaving}
+                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {createLeadSaving ? "Creating…" : "Create"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -706,6 +1148,75 @@ export default function LMSPage() {
                         </div>
                       );
                     })()}
+                  </section>
+                  <section className="rounded-xl border border-slate-200 bg-white p-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                      Deal details
+                    </h3>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-slate-500">Pipeline</p>
+                        <p className="mt-1 text-sm text-slate-900">
+                          {pipelineLabel(selected)}
+                        </p>
+                      </div>
+                      <label className="rounded-xl bg-slate-50 p-3">
+                        <span className="text-xs text-slate-500">Amount</span>
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-xs text-slate-500">AED</span>
+                          <input
+                            key={`${selected.id}-${selected.amount}`}
+                            aria-label="Deal amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            defaultValue={selected.amount || 0}
+                            onBlur={(event) =>
+                              updateDealDetails(selected, {
+                                amount: Number(event.target.value || 0),
+                              })
+                            }
+                            className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900"
+                          />
+                        </div>
+                      </label>
+                      <label className="rounded-xl bg-slate-50 p-3">
+                        <span className="text-xs text-slate-500">Company</span>
+                        <select
+                          aria-label="Deal company"
+                          value={selected.company_id || ""}
+                          onChange={(event) =>
+                            updateDealDetails(selected, {
+                              companyId: event.target.value || null,
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900"
+                        >
+                          <option value="">No company</option>
+                          {companies.map((company) => (
+                            <option key={company.id} value={company.id}>
+                              {company.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="rounded-xl bg-slate-50 p-3">
+                        <span className="text-xs text-slate-500">
+                          Close date
+                        </span>
+                        <input
+                          aria-label="Deal close date"
+                          type="date"
+                          value={selected.close_date || ""}
+                          onChange={(event) =>
+                            updateDealDetails(selected, {
+                              closeDate: event.target.value || null,
+                            })
+                          }
+                          className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm text-slate-900"
+                        />
+                      </label>
+                    </div>
                   </section>
                   <section className="rounded-xl border border-violet-100 bg-violet-50/60 p-4">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-violet-700">
@@ -866,6 +1377,22 @@ export default function LMSPage() {
                               {user.full_name || user.email}
                             </option>
                           ))}
+                        </select>
+                      </label>
+                      <label className="block text-xs font-semibold">
+                        Priority
+                        <select
+                          value={taskPriority}
+                          onChange={(event) =>
+                            setTaskPriority(
+                              event.target.value as "low" | "medium" | "high",
+                            )
+                          }
+                          className="mt-1 w-full rounded-lg border bg-white p-2 text-sm"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
                         </select>
                       </label>
                       <div className="grid grid-cols-2 gap-2">

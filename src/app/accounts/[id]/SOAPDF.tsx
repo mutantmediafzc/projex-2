@@ -156,21 +156,27 @@ const styles = StyleSheet.create({
     borderBottomColor: "#b7b7b7",
   },
   balanceBar: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    minHeight: 21,
-    paddingVertical: 5,
+    flexDirection: "column",
+    alignItems: "flex-end",
+    minHeight: 48,
+    paddingVertical: 6,
     paddingHorizontal: 6,
     backgroundColor: "#000000",
   },
-  balanceLabel: {
-    marginRight: 10,
+  balanceMetric: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: 220,
+    marginBottom: 3,
+  },
+  balanceMetricLabel: {
+    marginRight: 5,
     color: "#ffffff",
     fontSize: 8,
     fontWeight: "bold",
   },
-  balanceValue: {
+  balanceMetricValue: {
     color: "#ffffff",
     fontSize: 8,
     fontWeight: "bold",
@@ -234,7 +240,7 @@ function extractTrn(company: AccountCompanyForPDF | null) {
   return embeddedTrn || null;
 }
 
-function SOADocument({
+export function SOADocument({
   clientName,
   company,
   invoices,
@@ -269,6 +275,8 @@ function SOADocument({
     const previousBalance = rows.length > 0 ? rows[rows.length - 1].amountDue : 0;
     return [...rows, { invoice, paid, amountDue: previousBalance + invoice.total - paid }];
   }, []);
+  const totalAmount = ledgerRows.reduce((sum, row) => sum + row.invoice.total, 0);
+  const totalPayments = ledgerRows.reduce((sum, row) => sum + row.paid, 0);
 
   return (
     <Document>
@@ -335,8 +343,18 @@ function SOADocument({
           })}
           <View style={styles.spacer} />
           <View style={styles.balanceBar}>
-            <Text style={styles.balanceLabel}>Account Current Balance</Text>
-            <Text style={styles.balanceValue}>{formatMoney(accountBalance)}</Text>
+            <View style={styles.balanceMetric}>
+              <Text style={styles.balanceMetricLabel}>Total Amount</Text>
+              <Text style={styles.balanceMetricValue}>{formatMoney(totalAmount)}</Text>
+            </View>
+            <View style={styles.balanceMetric}>
+              <Text style={styles.balanceMetricLabel}>Total Payment Made</Text>
+              <Text style={styles.balanceMetricValue}>{formatMoney(totalPayments)}</Text>
+            </View>
+            <View style={styles.balanceMetric}>
+              <Text style={styles.balanceMetricLabel}>Total Amount Due</Text>
+              <Text style={styles.balanceMetricValue}>{formatMoney(accountBalance)}</Text>
+            </View>
           </View>
         </View>
 

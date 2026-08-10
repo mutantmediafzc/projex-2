@@ -238,6 +238,71 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
     }
   }
 
+  async function syncAndOpenBreakdownInvoice(index: number) {
+    const breakdown = formPaymentBreakdowns[index];
+    if (!breakdown.id || !breakdown.generated_invoice_id || breakdown.amount <= 0 || total <= 0) return;
+
+    try {
+      setGeneratingBreakdownId(breakdown.id);
+      setFormError(null);
+      const childTotal = Number(breakdown.amount.toFixed(2));
+      const ratio = childTotal / total;
+      const childSubtotal = Number((subtotal * ratio).toFixed(2));
+      const childDiscount = Number((formDiscount * ratio).toFixed(2));
+      const childTax = Number((childTotal - childSubtotal + childDiscount).toFixed(2));
+
+      const { error: invoiceError } = await supabaseClient.from("invoices").update({
+        project_id: invoice.project_id || null,
+        invoice_type: "invoice",
+        status: formStatus,
+        client_name: formClientName,
+        client_email: formClientEmail || null,
+        client_phone: formClientPhone || null,
+        client_address: formClientAddress || null,
+        issue_date: formIssueDate,
+        due_date: formDueDate || null,
+        paid_date: formPaidDate || null,
+        subtotal: childSubtotal,
+        tax_rate: formTaxRate,
+        tax_amount: childTax,
+        discount_amount: childDiscount,
+        total: childTotal,
+        currency: formCurrency,
+        notes: formNotes || null,
+        company_name: invoice.company_name,
+        company_logo_url: invoice.company_logo_url,
+        company_address: invoice.company_address,
+        company_phone: invoice.company_phone,
+        company_email: invoice.company_email,
+        bank_name: invoice.bank_name,
+        bank_account_number: invoice.bank_account_number,
+        bank_iban: invoice.bank_iban,
+        updated_at: new Date().toISOString(),
+      }).eq("id", breakdown.generated_invoice_id);
+      if (invoiceError) throw invoiceError;
+
+      const { error: deleteError } = await supabaseClient.from("invoice_items").delete().eq("invoice_id", breakdown.generated_invoice_id);
+      if (deleteError) throw deleteError;
+      const generatedItems = formItems.filter((item) => item.description.trim()).map((item, itemIndex) => ({
+        invoice_id: breakdown.generated_invoice_id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        amount: item.quantity * item.unit_price,
+        sort_order: itemIndex,
+      }));
+      if (generatedItems.length > 0) {
+        const { error: itemsError } = await supabaseClient.from("invoice_items").insert(generatedItems);
+        if (itemsError) throw itemsError;
+      }
+      await openGeneratedInvoice(breakdown.generated_invoice_id);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to update the generated invoice.");
+    } finally {
+      setGeneratingBreakdownId(null);
+    }
+  }
+
   async function generateBreakdownInvoice(index: number) {
     const breakdown = formPaymentBreakdowns[index];
     if (!breakdown.id) {
@@ -268,14 +333,14 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
           project_id: invoice.project_id || null,
           invoice_number: childInvoiceNumber,
           invoice_type: "invoice",
-          status: breakdown.status === "paid" ? "paid" : "unpaid",
+          status: formStatus,
           client_name: formClientName,
           client_email: formClientEmail || null,
           client_phone: formClientPhone || null,
           client_address: formClientAddress || null,
           issue_date: formIssueDate,
-          due_date: breakdown.due_date || null,
-          paid_date: breakdown.status === "paid" ? new Date().toISOString().split("T")[0] : null,
+          due_date: formDueDate || null,
+          paid_date: formPaidDate || null,
           subtotal: childSubtotal,
           tax_rate: formTaxRate,
           tax_amount: childTax,
@@ -304,14 +369,12 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
           invoice_id: generatedInvoice.id,
           description: item.description,
           quantity: item.quantity,
-          unit_price: Number((item.unit_price * ratio).toFixed(2)),
-          amount: Number((item.quantity * item.unit_price * ratio).toFixed(2)),
+          unit_price: item.unit_price,
+          amount: item.quantity * item.unit_price,
           sort_order: itemIndex,
         }));
 
       if (generatedItems.length > 0) {
-        const generatedItemsTotal = generatedItems.reduce((sum, item) => sum + item.amount, 0);
-        generatedItems[generatedItems.length - 1].amount = Number((generatedItems[generatedItems.length - 1].amount + childSubtotal - generatedItemsTotal).toFixed(2));
         const { error: itemsError } = await supabaseClient.from("invoice_items").insert(generatedItems);
         if (itemsError) throw itemsError;
       }
@@ -703,12 +766,12 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
                         {item.generated_invoice_id && <span className="text-[11px] font-medium text-emerald-700">Invoice {item.generated_invoice_number || `${formInvoiceNumber}-${index + 1}`} generated</span>}
                         <button
                           type="button"
-                          onClick={() => item.generated_invoice_id ? openGeneratedInvoice(item.generated_invoice_id) : generateBreakdownInvoice(index)}
+                          onClick={() => item.generated_invoice_id ? syncAndOpenBreakdownInvoice(index) : generateBreakdownInvoice(index)}
                           disabled={!item.id || generatingBreakdownId !== null || item.amount <= 0}
                           title={!item.id ? "Save the parent invoice first" : undefined}
                           className="rounded-lg bg-violet-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                         >
-                          {generatingBreakdownId === item.id ? "Generating..." : item.generated_invoice_id ? "View Invoice" : "Generate Invoice"}
+                          {generatingBreakdownId === item.id ? (item.generated_invoice_id ? "Updating..." : "Generating...") : item.generated_invoice_id ? "View Invoice" : "Generate Invoice"}
                         </button>
                       </div>
                     </div>

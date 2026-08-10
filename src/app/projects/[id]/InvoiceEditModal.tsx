@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
-import type { InvoiceSettings, InvoiceItem } from "./InvoiceManagement";
+import InvoicePdfModal from "./InvoicePdfModal";
+import type { Invoice as ManagedInvoice, InvoiceSettings, InvoiceItem } from "./InvoiceManagement";
 
 type Company = {
   id: string;
@@ -49,6 +50,8 @@ type PaymentBreakdownStatus = "pending" | "paid" | "due" | "cancelled";
 
 type PaymentBreakdownForm = {
   id?: string;
+  generated_invoice_id?: string | null;
+  generated_invoice_number?: string | null;
   description: string;
   amount: number;
   due_date: string;
@@ -62,7 +65,7 @@ type Props = {
   onSaved: () => void;
 };
 
-export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
+export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }: Props) {
   // Company search
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companySearch, setCompanySearch] = useState(invoice.client_name || "");
@@ -86,6 +89,8 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
   const [formCurrency, setFormCurrency] = useState(invoice.currency || "AED");
   const [formPaymentBreakdowns, setFormPaymentBreakdowns] = useState<PaymentBreakdownForm[]>([]);
   const [saving, setSaving] = useState(false);
+  const [generatingBreakdownId, setGeneratingBreakdownId] = useState<string | null>(null);
+  const [generatedPdfInvoice, setGeneratedPdfInvoice] = useState<ManagedInvoice | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -113,7 +118,7 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
           .order("sort_order"),
         supabaseClient
           .from("invoice_payment_breakdowns")
-          .select("id, description, amount, due_date, status")
+          .select("id, generated_invoice_id, description, amount, due_date, status")
           .eq("invoice_id", invoice.id)
           .order("sort_order"),
       ]);
@@ -128,8 +133,15 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
       } else {
         setFormItems([{ description: "", quantity: 1, unit_price: 0 }]);
       }
+      const generatedInvoiceIds = (breakdownData || []).flatMap((item) => item.generated_invoice_id ? [item.generated_invoice_id] : []);
+      const { data: generatedInvoices } = generatedInvoiceIds.length > 0
+        ? await supabaseClient.from("invoices").select("id, invoice_number").in("id", generatedInvoiceIds)
+        : { data: [] };
+      const generatedInvoiceNumbers = new Map((generatedInvoices || []).map((item) => [item.id, item.invoice_number]));
       setFormPaymentBreakdowns((breakdownData || []).map((item) => ({
         id: item.id,
+        generated_invoice_id: item.generated_invoice_id || null,
+        generated_invoice_number: item.generated_invoice_id ? generatedInvoiceNumbers.get(item.generated_invoice_id) || null : null,
         description: item.description || "",
         amount: Number(item.amount) || 0,
         due_date: item.due_date || "",
@@ -200,11 +212,129 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
   }
 
   function removePaymentBreakdown(index: number) {
+    if (formPaymentBreakdowns[index]?.generated_invoice_id) {
+      setFormError("This payment breakdown already has a generated invoice and cannot be removed.");
+      return;
+    }
     setFormPaymentBreakdowns((items) => items.filter((_, itemIndex) => itemIndex !== index));
   }
 
   function updatePaymentBreakdown(index: number, field: keyof PaymentBreakdownForm, value: string | number) {
     setFormPaymentBreakdowns((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item));
+  }
+
+  async function openGeneratedInvoice(invoiceId: string) {
+    try {
+      setFormError(null);
+      const [{ data: generatedInvoice, error: invoiceError }, { data: generatedItems, error: itemsError }] = await Promise.all([
+        supabaseClient.from("invoices").select("*").eq("id", invoiceId).single(),
+        supabaseClient.from("invoice_items").select("*").eq("invoice_id", invoiceId).order("sort_order"),
+      ]);
+      if (invoiceError || !generatedInvoice) throw invoiceError || new Error("Generated invoice was not found.");
+      if (itemsError) throw itemsError;
+      setGeneratedPdfInvoice({ ...generatedInvoice, items: (generatedItems || []) as InvoiceItem[] } as ManagedInvoice);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to open the generated invoice.");
+    }
+  }
+
+  async function generateBreakdownInvoice(index: number) {
+    const breakdown = formPaymentBreakdowns[index];
+    if (!breakdown.id) {
+      setFormError("Save the parent invoice before generating an invoice for this new payment breakdown.");
+      return;
+    }
+    if (breakdown.generated_invoice_id || breakdown.amount <= 0) return;
+
+    let generatedInvoiceId: string | null = null;
+    try {
+      setGeneratingBreakdownId(breakdown.id);
+      setFormError(null);
+
+      const { data: authData } = await supabaseClient.auth.getUser();
+      if (!authData?.user) throw new Error("You must be signed in to generate an invoice.");
+      if (total <= 0) throw new Error("The parent invoice total must be greater than zero.");
+
+      const childTotal = Number(breakdown.amount.toFixed(2));
+      const ratio = childTotal / total;
+      const childSubtotal = Number((subtotal * ratio).toFixed(2));
+      const childDiscount = Number((formDiscount * ratio).toFixed(2));
+      const childTax = Number((childTotal - childSubtotal + childDiscount).toFixed(2));
+      const childInvoiceNumber = `${formInvoiceNumber}-${index + 1}`;
+
+      const { data: generatedInvoice, error: invoiceError } = await supabaseClient
+        .from("invoices")
+        .insert({
+          project_id: invoice.project_id || null,
+          invoice_number: childInvoiceNumber,
+          invoice_type: "invoice",
+          status: breakdown.status === "paid" ? "paid" : "unpaid",
+          client_name: formClientName,
+          client_email: formClientEmail || null,
+          client_phone: formClientPhone || null,
+          client_address: formClientAddress || null,
+          issue_date: formIssueDate,
+          due_date: breakdown.due_date || null,
+          paid_date: breakdown.status === "paid" ? new Date().toISOString().split("T")[0] : null,
+          subtotal: childSubtotal,
+          tax_rate: formTaxRate,
+          tax_amount: childTax,
+          discount_amount: childDiscount,
+          total: childTotal,
+          currency: formCurrency,
+          notes: formNotes || null,
+          company_name: invoice.company_name,
+          company_logo_url: invoice.company_logo_url,
+          company_address: invoice.company_address,
+          company_phone: invoice.company_phone,
+          company_email: invoice.company_email,
+          bank_name: invoice.bank_name,
+          bank_account_number: invoice.bank_account_number,
+          bank_iban: invoice.bank_iban,
+          created_by: authData.user.id,
+        })
+        .select("id")
+        .single();
+      if (invoiceError || !generatedInvoice) throw invoiceError || new Error("Failed to create invoice.");
+      generatedInvoiceId = generatedInvoice.id;
+
+      const generatedItems = formItems
+        .filter((item) => item.description.trim())
+        .map((item, itemIndex) => ({
+          invoice_id: generatedInvoice.id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: Number((item.unit_price * ratio).toFixed(2)),
+          amount: Number((item.quantity * item.unit_price * ratio).toFixed(2)),
+          sort_order: itemIndex,
+        }));
+
+      if (generatedItems.length > 0) {
+        const generatedItemsTotal = generatedItems.reduce((sum, item) => sum + item.amount, 0);
+        generatedItems[generatedItems.length - 1].amount = Number((generatedItems[generatedItems.length - 1].amount + childSubtotal - generatedItemsTotal).toFixed(2));
+        const { error: itemsError } = await supabaseClient.from("invoice_items").insert(generatedItems);
+        if (itemsError) throw itemsError;
+      }
+
+      const { error: linkError } = await supabaseClient
+        .from("invoice_payment_breakdowns")
+        .update({ generated_invoice_id: generatedInvoice.id, updated_at: new Date().toISOString() })
+        .eq("id", breakdown.id)
+        .is("generated_invoice_id", null);
+      if (linkError) throw linkError;
+
+      setFormPaymentBreakdowns((items) => items.map((item, itemIndex) => (
+        itemIndex === index ? { ...item, generated_invoice_id: generatedInvoice.id, generated_invoice_number: childInvoiceNumber } : item
+      )));
+      await openGeneratedInvoice(generatedInvoice.id);
+    } catch (err) {
+      if (generatedInvoiceId) {
+        await supabaseClient.from("invoices").delete().eq("id", generatedInvoiceId);
+      }
+      setFormError(err instanceof Error ? err.message : "Failed to generate the payment invoice.");
+    } finally {
+      setGeneratingBreakdownId(null);
+    }
   }
 
   async function handleSubmit() {
@@ -257,28 +387,32 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
         if (itemsError) throw itemsError;
       }
 
-      const { error: breakdownDeleteError } = await supabaseClient
+      const validBreakdowns = formPaymentBreakdowns.filter((item) => item.amount > 0);
+      const retainedBreakdownIds = validBreakdowns.flatMap((item) => item.id ? [item.id] : []);
+      let breakdownDeleteQuery = supabaseClient
         .from("invoice_payment_breakdowns")
         .delete()
         .eq("invoice_id", invoice.id);
+      if (retainedBreakdownIds.length > 0) {
+        breakdownDeleteQuery = breakdownDeleteQuery.not("id", "in", `(${retainedBreakdownIds.join(",")})`);
+      }
+      const { error: breakdownDeleteError } = await breakdownDeleteQuery;
       if (breakdownDeleteError) throw breakdownDeleteError;
 
-      const breakdownsToInsert = formPaymentBreakdowns
-        .filter((item) => item.amount > 0)
-        .map((item, index) => ({
+      for (const [index, item] of validBreakdowns.entries()) {
+        const values = {
           invoice_id: invoice.id,
           description: item.description.trim() || "Payment installment",
           amount: Number(item.amount.toFixed(2)),
           due_date: item.due_date || null,
           status: item.status,
           sort_order: index,
-        }));
-
-      if (breakdownsToInsert.length > 0) {
-        const { error: breakdownInsertError } = await supabaseClient
-          .from("invoice_payment_breakdowns")
-          .insert(breakdownsToInsert);
-        if (breakdownInsertError) throw breakdownInsertError;
+          updated_at: new Date().toISOString(),
+        };
+        const { error: breakdownSaveError } = item.id
+          ? await supabaseClient.from("invoice_payment_breakdowns").update(values).eq("id", item.id)
+          : await supabaseClient.from("invoice_payment_breakdowns").insert(values);
+        if (breakdownSaveError) throw breakdownSaveError;
       }
 
       onSaved();
@@ -511,7 +645,15 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
               <div className="flex justify-between text-[13px]"><span className="text-slate-700">Subtotal</span><span className="font-semibold text-slate-900">{subtotal.toFixed(2)}</span></div>
               {formDiscount > 0 && <div className="flex justify-between text-[13px]"><span className="text-slate-700">Discount</span><span className="font-semibold text-red-600">-{formDiscount.toFixed(2)}</span></div>}
               <div className="flex justify-between text-[13px]"><span className="text-slate-700">Tax ({formTaxRate}%)</span><span className="font-semibold text-slate-900">{taxAmount.toFixed(2)}</span></div>
-              <div className="flex justify-between text-[15px] font-bold border-t border-slate-200 pt-2"><span className="text-slate-900">Total</span><span className="text-slate-900">{formCurrency} {total.toFixed(2)}</span></div>
+              {paidBreakdownTotal > 0 ? (
+                <>
+                  <div className="flex justify-between text-[13px]"><span className="text-slate-700">Total</span><span className="font-semibold text-slate-900">{formCurrency} {total.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-[13px]"><span className="text-slate-700">Total Paid</span><span className="font-semibold text-emerald-700">-{formCurrency} {paidBreakdownTotal.toFixed(2)}</span></div>
+                  <div className="flex justify-between text-[15px] font-bold border-t border-slate-200 pt-2"><span className="text-slate-900">Final Amount</span><span className="text-violet-600">{formCurrency} {paymentBalance.toFixed(2)}</span></div>
+                </>
+              ) : (
+                <div className="flex justify-between text-[15px] font-bold border-t border-slate-200 pt-2"><span className="text-slate-900">Total</span><span className="text-slate-900">{formCurrency} {total.toFixed(2)}</span></div>
+              )}
             </div>
 
             {/* Payment Breakdowns */}
@@ -555,7 +697,19 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </div>
-                        <button type="button" onClick={() => removePaymentBreakdown(index)} aria-label={`Remove payment breakdown ${index + 1}`} className="mb-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100">Ã—</button>
+                        <button type="button" onClick={() => removePaymentBreakdown(index)} disabled={Boolean(item.generated_invoice_id)} aria-label={`Remove payment breakdown ${index + 1}`} className="mb-0.5 flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40">Ã—</button>
+                      </div>
+                      <div className="mt-3 flex items-center justify-end gap-3 border-t border-violet-100 pt-3">
+                        {item.generated_invoice_id && <span className="text-[11px] font-medium text-emerald-700">Invoice {item.generated_invoice_number || `${formInvoiceNumber}-${index + 1}`} generated</span>}
+                        <button
+                          type="button"
+                          onClick={() => item.generated_invoice_id ? openGeneratedInvoice(item.generated_invoice_id) : generateBreakdownInvoice(index)}
+                          disabled={!item.id || generatingBreakdownId !== null || item.amount <= 0}
+                          title={!item.id ? "Save the parent invoice first" : undefined}
+                          className="rounded-lg bg-violet-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        >
+                          {generatingBreakdownId === item.id ? "Generating..." : item.generated_invoice_id ? "View Invoice" : "Generate Invoice"}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -580,6 +734,13 @@ export default function InvoiceEditModal({ invoice, onClose, onSaved }: Props) {
           </button>
         </div>
       </div>
+      {generatedPdfInvoice && (
+        <InvoicePdfModal
+          invoice={generatedPdfInvoice}
+          settings={settings}
+          onClose={() => setGeneratedPdfInvoice(null)}
+        />
+      )}
     </div>
   );
 }

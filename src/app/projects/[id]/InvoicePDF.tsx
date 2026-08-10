@@ -91,10 +91,11 @@ function createStyles(settings?: InvoiceSettings | null, isQuote = false) {
     grandTotalValue: { fontSize: isQuote ? 10 : 12, fontWeight: "bold", color: "#7c3aed" },
     breakdownSection: { marginTop: 20 },
     sectionTitle: { fontSize: 10, fontWeight: "bold", color: "#475569", marginBottom: 8, textTransform: "uppercase" },
-    breakdownDescCol: { width: "42%" },
-    breakdownAmountCol: { width: "20%", textAlign: "right" },
-    breakdownDateCol: { width: "23%", textAlign: "right" },
-    breakdownStatusCol: { width: "15%", textAlign: "right" },
+    breakdownInvoiceCol: { width: "19%" },
+    breakdownDescCol: { width: "31%" },
+    breakdownAmountCol: { width: "18%", textAlign: "right" },
+    breakdownDateCol: { width: "20%", textAlign: "right" },
+    breakdownStatusCol: { width: "12%", textAlign: "right" },
     footer: { marginTop: footerMargin, paddingTop: isQuote ? 10 : 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
     bankTitle: { fontSize: isQuote ? 8 : 10, fontWeight: "bold", marginBottom: isQuote ? 4 : 6, color: "#475569" },
     bankRow: { fontSize: isQuote ? 7 : 9, color: "#334155", marginBottom: 3 },
@@ -123,6 +124,10 @@ function formatDate(date: string | null): string {
 function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: InvoiceSettings | null }) {
   const items = invoice.items || [];
   const paymentBreakdowns = invoice.payment_breakdowns || [];
+  const totalPaid = paymentBreakdowns
+    .filter((breakdown) => breakdown.status === "paid")
+    .reduce((sum, breakdown) => sum + Number(breakdown.amount), 0);
+  const finalAmount = Math.max(0, invoice.total - totalPaid);
   const isQuote = invoice.invoice_type === "quote";
   const styles = createStyles(settings, isQuote);
   const headerStyle = settings?.pdf_header_style ?? "detailed";
@@ -204,13 +209,15 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           <View style={styles.breakdownSection} wrap={false}>
             <Text style={styles.sectionTitle}>Payment Breakdown</Text>
             <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderCell, styles.breakdownInvoiceCol]}>Invoice</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownDescCol]}>Description</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownAmountCol]}>Amount</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownDateCol]}>Due Date</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownStatusCol]}>Status</Text>
             </View>
-            {paymentBreakdowns.map((breakdown) => (
+            {paymentBreakdowns.map((breakdown, index) => (
               <View key={breakdown.id} style={styles.tableRow}>
+                <Text style={[styles.tableCell, styles.breakdownInvoiceCol]}>{invoice.invoice_number}-{index + 1}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDescCol]}>{breakdown.description}</Text>
                 <Text style={[styles.tableCell, styles.breakdownAmountCol]}>{formatMoney(Number(breakdown.amount), invoice.currency)}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDateCol]}>{formatDate(breakdown.due_date)}</Text>
@@ -236,10 +243,27 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             <Text style={styles.totalLabel}>Tax ({invoice.tax_rate}%)</Text>
             <Text style={styles.totalValue}>{formatMoney(invoice.tax_amount, invoice.currency)}</Text>
           </View>
-          <View style={styles.grandTotal}>
-            <Text style={styles.grandTotalLabel}>Total</Text>
-            <Text style={styles.grandTotalValue}>{formatMoney(invoice.total, invoice.currency)}</Text>
-          </View>
+          {totalPaid > 0 ? (
+            <>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total</Text>
+                <Text style={styles.totalValue}>{formatMoney(invoice.total, invoice.currency)}</Text>
+              </View>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Total Paid</Text>
+                <Text style={styles.totalValue}>-{formatMoney(totalPaid, invoice.currency)}</Text>
+              </View>
+              <View style={styles.grandTotal}>
+                <Text style={styles.grandTotalLabel}>Final Amount</Text>
+                <Text style={styles.grandTotalValue}>{formatMoney(finalAmount, invoice.currency)}</Text>
+              </View>
+            </>
+          ) : (
+            <View style={styles.grandTotal}>
+              <Text style={styles.grandTotalLabel}>Total</Text>
+              <Text style={styles.grandTotalValue}>{formatMoney(invoice.total, invoice.currency)}</Text>
+            </View>
+          )}
         </View>
 
         {/* Notes */}

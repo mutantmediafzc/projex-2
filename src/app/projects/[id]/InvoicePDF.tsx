@@ -95,7 +95,6 @@ function createStyles(settings?: InvoiceSettings | null, isQuote = false) {
     breakdownAmountCol: { width: "20%", textAlign: "right" },
     breakdownDateCol: { width: "23%", textAlign: "right" },
     breakdownStatusCol: { width: "15%", textAlign: "right" },
-    breakdownSummary: { marginTop: 8, alignItems: "flex-end" },
     footer: { marginTop: footerMargin, paddingTop: isQuote ? 10 : 16, borderTopWidth: 1, borderTopColor: "#e2e8f0" },
     bankTitle: { fontSize: isQuote ? 8 : 10, fontWeight: "bold", marginBottom: isQuote ? 4 : 6, color: "#475569" },
     bankRow: { fontSize: isQuote ? 7 : 9, color: "#334155", marginBottom: 3 },
@@ -130,11 +129,6 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
 
   // Determine what to show in header based on header style
   const showBankDetails = headerStyle === "detailed";
-  const paidBreakdownTotal = paymentBreakdowns
-    .filter((breakdown) => breakdown.status === "paid")
-    .reduce((sum, breakdown) => sum + Number(breakdown.amount), 0);
-  const invoiceBalance = Math.max(0, invoice.total - paidBreakdownTotal);
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -206,8 +200,28 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           ))}
         </View>
 
+        {!isQuote && paymentBreakdowns.length > 0 && (
+          <View style={styles.breakdownSection} wrap={false}>
+            <Text style={styles.sectionTitle}>Payment Breakdown</Text>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderCell, styles.breakdownDescCol]}>Description</Text>
+              <Text style={[styles.tableHeaderCell, styles.breakdownAmountCol]}>Amount</Text>
+              <Text style={[styles.tableHeaderCell, styles.breakdownDateCol]}>Due Date</Text>
+              <Text style={[styles.tableHeaderCell, styles.breakdownStatusCol]}>Status</Text>
+            </View>
+            {paymentBreakdowns.map((breakdown) => (
+              <View key={breakdown.id} style={styles.tableRow}>
+                <Text style={[styles.tableCell, styles.breakdownDescCol]}>{breakdown.description}</Text>
+                <Text style={[styles.tableCell, styles.breakdownAmountCol]}>{formatMoney(Number(breakdown.amount), invoice.currency)}</Text>
+                <Text style={[styles.tableCell, styles.breakdownDateCol]}>{formatDate(breakdown.due_date)}</Text>
+                <Text style={[styles.tableCell, styles.breakdownStatusCol]}>{breakdown.status.charAt(0).toUpperCase() + breakdown.status.slice(1)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
         {/* Totals */}
-        <View style={styles.totals}>
+        <View style={styles.totals} wrap={false}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal</Text>
             <Text style={styles.totalValue}>{formatMoney(invoice.subtotal, invoice.currency)}</Text>
@@ -227,36 +241,6 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             <Text style={styles.grandTotalValue}>{formatMoney(invoice.total, invoice.currency)}</Text>
           </View>
         </View>
-
-        {!isQuote && paymentBreakdowns.length > 0 && (
-          <View style={styles.breakdownSection} wrap={false}>
-            <Text style={styles.sectionTitle}>Payment Breakdown</Text>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, styles.breakdownDescCol]}>Description</Text>
-              <Text style={[styles.tableHeaderCell, styles.breakdownAmountCol]}>Amount</Text>
-              <Text style={[styles.tableHeaderCell, styles.breakdownDateCol]}>Due Date</Text>
-              <Text style={[styles.tableHeaderCell, styles.breakdownStatusCol]}>Status</Text>
-            </View>
-            {paymentBreakdowns.map((breakdown) => (
-              <View key={breakdown.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.breakdownDescCol]}>{breakdown.description}</Text>
-                <Text style={[styles.tableCell, styles.breakdownAmountCol]}>{formatMoney(Number(breakdown.amount), invoice.currency)}</Text>
-                <Text style={[styles.tableCell, styles.breakdownDateCol]}>{formatDate(breakdown.due_date)}</Text>
-                <Text style={[styles.tableCell, styles.breakdownStatusCol]}>{breakdown.status.charAt(0).toUpperCase() + breakdown.status.slice(1)}</Text>
-              </View>
-            ))}
-            <View style={styles.breakdownSummary}>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Paid breakdowns</Text>
-                <Text style={styles.totalValue}>{formatMoney(paidBreakdownTotal, invoice.currency)}</Text>
-              </View>
-              <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Invoice balance</Text>
-                <Text style={styles.totalValue}>{formatMoney(invoiceBalance, invoice.currency)}</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Notes */}
         {invoice.notes && (

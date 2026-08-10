@@ -232,7 +232,20 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
       ]);
       if (invoiceError || !generatedInvoice) throw invoiceError || new Error("Generated invoice was not found.");
       if (itemsError) throw itemsError;
-      setGeneratedPdfInvoice({ ...generatedInvoice, items: (generatedItems || []) as InvoiceItem[] } as ManagedInvoice);
+      setGeneratedPdfInvoice({
+        ...generatedInvoice,
+        items: (generatedItems || []) as InvoiceItem[],
+        payment_breakdowns: formPaymentBreakdowns.map((item, index) => ({
+          id: item.id || `payment-breakdown-${index}`,
+          description: item.description,
+          amount: item.amount,
+          due_date: item.due_date || null,
+          status: item.status,
+          sort_order: index,
+        })),
+        payment_breakdown_parent_invoice_number: formInvoiceNumber,
+        is_payment_breakdown_invoice: true,
+      } as ManagedInvoice);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to open the generated invoice.");
     }

@@ -45,6 +45,8 @@ type Invoice = {
   created_at: string;
   items?: InvoiceItem[];
   payment_breakdowns?: InvoicePaymentBreakdown[];
+  payment_breakdown_parent_invoice_number?: string;
+  is_payment_breakdown_invoice?: boolean;
   project?: { id: string; name: string; company_id: string; company?: { trn: string | null } | null } | null;
 };
 
@@ -693,12 +695,23 @@ export default function FinancialsPage() {
   }, [role, roleLoading]);
 
   async function handleViewPdf(inv: Invoice) {
-    const [{ data }, { data: breakdowns }] = await Promise.all([
+    const [{ data }, { data: breakdowns }, { data: sourceBreakdown }] = await Promise.all([
       supabaseClient.from("invoice_items").select("*").eq("invoice_id", inv.id).order("sort_order"),
       supabaseClient.from("invoice_payment_breakdowns").select("id, description, amount, due_date, status, sort_order").eq("invoice_id", inv.id).order("sort_order"),
+      supabaseClient.from("invoice_payment_breakdowns").select("invoice_id").eq("generated_invoice_id", inv.id).maybeSingle(),
     ]);
+    let pdfBreakdowns = (breakdowns as InvoicePaymentBreakdown[]) || [];
+    let parentInvoiceNumber: string | undefined;
+    if (sourceBreakdown?.invoice_id) {
+      const [{ data: parentInvoice }, { data: parentBreakdowns }] = await Promise.all([
+        supabaseClient.from("invoices").select("invoice_number").eq("id", sourceBreakdown.invoice_id).single(),
+        supabaseClient.from("invoice_payment_breakdowns").select("id, description, amount, due_date, status, sort_order").eq("invoice_id", sourceBreakdown.invoice_id).order("sort_order"),
+      ]);
+      parentInvoiceNumber = parentInvoice?.invoice_number;
+      pdfBreakdowns = (parentBreakdowns as InvoicePaymentBreakdown[]) || [];
+    }
     const billedCompany = companies.find((company) => company.name.localeCompare(inv.client_name, undefined, { sensitivity: "accent" }) === 0);
-    setSelectedInvoice({ ...inv, client_trn: billedCompany?.trn ?? inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [], payment_breakdowns: (breakdowns as InvoicePaymentBreakdown[]) || [] });
+    setSelectedInvoice({ ...inv, client_trn: billedCompany?.trn ?? inv.project?.company?.trn ?? null, items: (data as InvoiceItem[]) || [], payment_breakdowns: pdfBreakdowns, payment_breakdown_parent_invoice_number: parentInvoiceNumber, is_payment_breakdown_invoice: Boolean(sourceBreakdown) });
     setShowPdfModal(true);
   }
 

@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
 
-const ADMIN_ONLY_PATHS = ["/companies", "/contacts", "/accounts", "/financials", "/users"];
-
 type NavItem = {
   href: string;
   label: string;
@@ -152,6 +150,17 @@ const NAV_ITEMS: NavItem[] = [
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 18 2 18 2c1 5-1 10-5 12" />
         <path d="M2 21c0-3 1.85-5.36 5.08-6.94C9.4 12.92 12.5 12 16 12" />
+      </svg>
+    ),
+  },
+  {
+    href: "/request-documents",
+    label: "Request Documents",
+    gradient: { from: "from-blue-100 to-indigo-100", to: "from-blue-500 to-indigo-500", hover: "from-blue-50 to-indigo-50", shadow: "shadow-blue-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <path d="M14 2v6h6M8 13h8M8 17h5" />
       </svg>
     ),
   },

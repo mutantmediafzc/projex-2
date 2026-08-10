@@ -29,7 +29,7 @@ type NotificationTask = {
   created_at: string;
   assigned_read_at: string | null;
   created_by_name: string | null;
-  source: "operations" | "admin" | "social_workflow" | "leave" | null;
+  source: "operations" | "admin" | "social_workflow" | "leave" | "document_request" | null;
 };
 
 type TaskNotificationRow = {
@@ -278,6 +278,11 @@ export default function NotificationsPage() {
   }, [toastMessage]);
 
   function getTaskHref(row: TaskNotificationRow): string {
+    if (row.task?.source === "document_request") {
+      return row.task.name === "New document request"
+        ? "/request-documents?tab=approvals"
+        : "/request-documents";
+    }
     if (row.task?.source === "leave") {
       return row.task.name.startsWith("New ")
         ? "/leaves?tab=approvals"

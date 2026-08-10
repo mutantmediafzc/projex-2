@@ -124,7 +124,7 @@ function formatDate(date: string | null): string {
 function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: InvoiceSettings | null }) {
   const items = invoice.items || [];
   const paymentBreakdowns = invoice.payment_breakdowns || [];
-  const totalPaid = paymentBreakdowns
+  const totalPaid = (invoice.is_payment_breakdown_invoice ? [] : paymentBreakdowns)
     .filter((breakdown) => breakdown.status === "paid")
     .reduce((sum, breakdown) => sum + Number(breakdown.amount), 0);
   const finalAmount = Math.max(0, invoice.total - totalPaid);
@@ -217,7 +217,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             </View>
             {paymentBreakdowns.map((breakdown, index) => (
               <View key={breakdown.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.breakdownInvoiceCol]}>{invoice.invoice_number}-{index + 1}</Text>
+                <Text style={[styles.tableCell, styles.breakdownInvoiceCol]}>{invoice.payment_breakdown_parent_invoice_number || invoice.invoice_number}-{index + 1}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDescCol]}>{breakdown.description}</Text>
                 <Text style={[styles.tableCell, styles.breakdownAmountCol]}>{formatMoney(Number(breakdown.amount), invoice.currency)}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDateCol]}>{formatDate(breakdown.due_date)}</Text>

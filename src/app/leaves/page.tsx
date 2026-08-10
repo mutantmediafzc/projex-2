@@ -10,9 +10,10 @@ import AdminLeavePortal from "@/app/profile/AdminLeavePortal";
 import LeaveCalendar from "./LeaveCalendar";
 import EmployeeLeaveTable from "./EmployeeLeaveTable";
 import MaternityEligibilitySettings from "./MaternityEligibilitySettings";
+import WorkforceOverview from "./WorkforceOverview";
 import { hasLeaveCalendarAccess } from "@/lib/leaveCalendarAccess";
 
-type LeaveTab = "overview" | "file" | "calendar" | "employees" | "settings" | "approvals";
+type LeaveTab = "overview" | "file" | "workforce" | "calendar" | "employees" | "settings" | "approvals";
 
 function LeaveSettings() {
   const { hasHrAccess, loading: roleLoading } = useUserRole();
@@ -157,7 +158,7 @@ function LeavesPageContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<LeaveTab>(() => {
     const requestedTab = searchParams.get("tab");
-    const validTabs: LeaveTab[] = ["overview", "file", "calendar", "employees", "settings", "approvals"];
+    const validTabs: LeaveTab[] = ["overview", "file", "workforce", "calendar", "employees", "settings", "approvals"];
     return requestedTab && validTabs.includes(requestedTab as LeaveTab)
       ? requestedTab as LeaveTab
       : "file";
@@ -205,6 +206,22 @@ function LeavesPageContent() {
             <path d="M12 5v14M5 12h14" />
           </svg>
           File a Leave
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("workforce")}
+          className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+            visibleTab === "workforce"
+              ? "bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25"
+              : "bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+          }`}
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          Workforce
         </button>
         {canViewCalendar && (
           <button
@@ -279,6 +296,8 @@ function LeavesPageContent() {
 
       {visibleTab === "calendar" ? (
         <LeaveCalendar />
+      ) : visibleTab === "workforce" ? (
+        <WorkforceOverview />
       ) : visibleTab === "employees" && canManageLeaves ? (
         <EmployeeLeaveTable />
       ) : visibleTab === "approvals" && canManageLeaves ? (

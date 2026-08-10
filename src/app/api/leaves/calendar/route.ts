@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
 
   let usersQuery = supabaseAdmin
     .from("users")
-    .select("id, full_name, email");
+    .select("id, full_name, email")
+    .eq("is_active", true);
 
   if (scopedUserIds) {
     leavesQuery = leavesQuery.in("user_id", scopedUserIds);

@@ -33,6 +33,7 @@ function userName(leave: CalendarLeave) {
 
 export default function LeaveCalendar() {
   const [month, setMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [selectedDay, setSelectedDay] = useState(() => new Date());
   const [leaves, setLeaves] = useState<CalendarLeave[]>([]);
   const [users, setUsers] = useState<CalendarUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
@@ -93,6 +94,32 @@ export default function LeaveCalendar() {
   });
   const today = dateKey(new Date());
 
+  const overview = useMemo(() => {
+    const monthStart = dateKey(new Date(month.getFullYear(), month.getMonth(), 1));
+    const monthEnd = dateKey(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+    const selectedDayKey = dateKey(selectedDay);
+    const employeeCount = users.length;
+    const activeEmployeeIds = new Set(users.map((user) => user.id));
+    const monthlyEmployees = new Set(
+      leaves
+        .filter((leave) => activeEmployeeIds.has(leave.user_id) && leave.start_date <= monthEnd && leave.end_date >= monthStart)
+        .map((leave) => leave.user_id),
+    ).size;
+    const dailyEmployees = new Set(
+      leaves
+        .filter((leave) => activeEmployeeIds.has(leave.user_id) && leave.start_date <= selectedDayKey && leave.end_date >= selectedDayKey)
+        .map((leave) => leave.user_id),
+    ).size;
+
+    return {
+      employeeCount,
+      monthlyEmployees,
+      dailyEmployees,
+      monthlyPercentage: employeeCount ? Math.round((monthlyEmployees / employeeCount) * 100) : 0,
+      dailyPercentage: employeeCount ? Math.round((dailyEmployees / employeeCount) * 100) : 0,
+    };
+  }, [leaves, month, selectedDay, users]);
+
   function colorFor(userId: string) {
     let hash = 0;
     for (const char of userId) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
@@ -105,14 +132,29 @@ export default function LeaveCalendar() {
   }
 
   function changeMonth(offset: number) {
-    setMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+    setMonth((current) => {
+      const next = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+      const now = new Date();
+      setSelectedDay(
+        next.getFullYear() === now.getFullYear() && next.getMonth() === now.getMonth()
+          ? now
+          : next,
+      );
+      return next;
+    });
+  }
+
+  function goToToday() {
+    const now = new Date();
+    setMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+    setSelectedDay(now);
   }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
       <div className="flex min-h-[680px]">
         <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-slate-50/60 p-4 md:block">
-          <button type="button" onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))} className="w-full rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 py-2.5 text-sm font-medium text-white shadow-md">
+          <button type="button" onClick={goToToday} className="w-full rounded-xl bg-gradient-to-r from-violet-500 to-indigo-500 py-2.5 text-sm font-medium text-white shadow-md">
             Today
           </button>
           <div className="mt-6">
@@ -151,6 +193,44 @@ export default function LeaveCalendar() {
             <span className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">Approved leaves</span>
           </div>
 
+          <section className="border-b border-slate-200 bg-gradient-to-r from-violet-50/70 via-white to-sky-50/70 px-4 py-4" aria-label="Leave overview">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Overview</h3>
+                <p className="text-xs text-slate-500">Approved employee leave across {overview.employeeCount} active {overview.employeeCount === 1 ? "employee" : "employees"}.</p>
+              </div>
+              <span className="hidden text-xs text-slate-400 sm:inline">Select a calendar day for its daily rate</span>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-violet-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-violet-600">Monthly</p>
+                    <p className="mt-1 text-xs text-slate-500">Employees on leave in {month.toLocaleDateString(undefined, { month: "long" })}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{overview.monthlyPercentage}%</p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-violet-100">
+                  <div className="h-full rounded-full bg-violet-500 transition-all" style={{ width: `${overview.monthlyPercentage}%` }} />
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-600">{overview.monthlyEmployees} of {overview.employeeCount} employees</p>
+              </div>
+              <div className="rounded-xl border border-sky-100 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-600">Daily</p>
+                    <p className="mt-1 text-xs text-slate-500">Employees on leave on {selectedDay.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</p>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900">{overview.dailyPercentage}%</p>
+                </div>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-sky-100">
+                  <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${overview.dailyPercentage}%` }} />
+                </div>
+                <p className="mt-2 text-xs font-medium text-slate-600">{overview.dailyEmployees} of {overview.employeeCount} employees</p>
+              </div>
+            </div>
+          </section>
+
           {error && <div className="m-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>}
           <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50">
             {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <div key={day} className="px-2 py-2 text-center text-[10px] font-semibold uppercase text-slate-500">{day}</div>)}
@@ -161,7 +241,13 @@ export default function LeaveCalendar() {
               const events = eventsFor(date);
               const inMonth = date.getMonth() === month.getMonth();
               return (
-                <div key={key} className={`min-h-24 border-b border-r border-slate-200 p-1.5 sm:min-h-28 ${inMonth ? "bg-white" : "bg-slate-50/70"}`}>
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSelectedDay(date)}
+                  aria-label={`Show leave overview for ${date.toLocaleDateString()}`}
+                  className={`min-h-24 border-b border-r border-slate-200 p-1.5 text-left transition-colors sm:min-h-28 ${inMonth ? "bg-white hover:bg-violet-50/40" : "bg-slate-50/70 hover:bg-slate-100"} ${dateKey(selectedDay) === key ? "ring-2 ring-inset ring-violet-400" : ""}`}
+                >
                   <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full text-[11px] ${key === today ? "bg-violet-600 font-semibold text-white" : inMonth ? "text-slate-600" : "text-slate-400"}`}>{date.getDate()}</span>
                   <div className="mt-1 space-y-1">
                     {events.slice(0, 3).map((leave) => (
@@ -171,7 +257,7 @@ export default function LeaveCalendar() {
                     ))}
                     {events.length > 3 && <p className="px-1 text-[10px] font-medium text-slate-500">+{events.length - 3} more</p>}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

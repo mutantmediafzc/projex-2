@@ -190,17 +190,25 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
         {/* Items Table */}
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.descCol]}>Description</Text>
-            <Text style={[styles.tableHeaderCell, styles.qtyCol]}>Qty</Text>
-            <Text style={[styles.tableHeaderCell, styles.priceCol]}>Price</Text>
-            <Text style={[styles.tableHeaderCell, styles.amountCol]}>Amount</Text>
+            <Text style={[styles.tableHeaderCell, invoice.is_payment_breakdown_invoice ? { width: "100%" } : styles.descCol]}>Description</Text>
+            {!invoice.is_payment_breakdown_invoice && (
+              <>
+                <Text style={[styles.tableHeaderCell, styles.qtyCol]}>Qty</Text>
+                <Text style={[styles.tableHeaderCell, styles.priceCol]}>Price</Text>
+                <Text style={[styles.tableHeaderCell, styles.amountCol]}>Amount</Text>
+              </>
+            )}
           </View>
           {items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
-              <Text style={[styles.tableCell, styles.descCol]}>{item.description}</Text>
-              <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
-              <Text style={[styles.tableCell, styles.priceCol]}>{formatMoney(item.unit_price, invoice.currency)}</Text>
-              <Text style={[styles.tableCell, styles.amountCol]}>{formatMoney(item.amount, invoice.currency)}</Text>
+              <Text style={[styles.tableCell, invoice.is_payment_breakdown_invoice ? { width: "100%" } : styles.descCol]}>{item.description}</Text>
+              {!invoice.is_payment_breakdown_invoice && (
+                <>
+                  <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
+                  <Text style={[styles.tableCell, styles.priceCol]}>{formatMoney(item.unit_price, invoice.currency)}</Text>
+                  <Text style={[styles.tableCell, styles.amountCol]}>{formatMoney(item.amount, invoice.currency)}</Text>
+                </>
+              )}
             </View>
           ))}
         </View>

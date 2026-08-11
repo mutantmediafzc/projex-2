@@ -1893,9 +1893,19 @@ export default function ProjectNotesTasksCard({
                           <div
                             key={task.id}
                             draggable
+                            role="button"
+                            tabIndex={0}
+                            aria-label={`Open task ${task.name}`}
+                            onClick={() => setSelectedTaskIdForModal(task.id)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                setSelectedTaskIdForModal(task.id);
+                              }
+                            }}
                             onDragStart={() => setDraggedTaskId(task.id)}
                             onDragEnd={() => setDraggedTaskId(null)}
-                            className={`group cursor-grab rounded-lg border border-white/80 bg-white p-2.5 shadow-sm transition-all hover:shadow-md active:cursor-grabbing active:shadow-lg ${draggedTaskId === task.id ? "opacity-50 scale-95" : ""}`}
+                            className={`group cursor-grab rounded-lg border border-white/80 bg-white p-2.5 shadow-sm transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 active:cursor-grabbing active:shadow-lg ${draggedTaskId === task.id ? "opacity-50 scale-95" : ""}`}
                           >
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="text-[11px] font-semibold text-slate-900 line-clamp-2">{task.name}</h4>

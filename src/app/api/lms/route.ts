@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { addContactToBrevoList } from "@/lib/brevo";
 
 const LEAD_STATUSES = [
   "campaign_leads",
@@ -432,6 +433,17 @@ export async function POST(request: NextRequest) {
         assigned_user_name: assignedUserName,
         source: "operations",
       });
+    }
+
+    if (
+      body.pipeline.trim().toLowerCase() === "mutant leads" &&
+      contact?.email
+    ) {
+      try {
+        await addContactToBrevoList(contact.email, 224);
+      } catch (error) {
+        console.error("Unable to sync LMS lead contact to Brevo list 224", error);
+      }
     }
 
     return NextResponse.json({ leadId: lead.id }, { status: 201 });

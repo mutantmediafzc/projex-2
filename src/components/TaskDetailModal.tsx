@@ -101,14 +101,18 @@ function formatDate(value: string | null): string {
 }
 
 function taskStatusPillClasses(status: TaskStatus): string {
-  if (status === "completed")
-    return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  return "bg-amber-100 text-amber-700 border-amber-200";
+  if (status === "not_started")
+    return "bg-red-100 text-red-700 border-red-200";
+  if (status === "in_progress")
+    return "bg-amber-100 text-amber-700 border-amber-200";
+  return "bg-emerald-100 text-emerald-700 border-emerald-200";
 }
 
 function formatTaskStatusLabel(status: TaskStatus | null): string {
+  if (status === "not_started") return "Not started";
+  if (status === "in_progress") return "In progress";
   if (status === "completed") return "Completed";
-  return "Active";
+  return "Unknown";
 }
 
 function activityDateParts(value: string | null): {
@@ -771,7 +775,8 @@ export default function TaskDetailModal({
                       }
                       className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-[12px] text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                     >
-                      <option value="in_progress">Active</option>
+                      <option value="not_started">Not started</option>
+                      <option value="in_progress">In progress</option>
                       <option value="completed">Completed</option>
                     </select>
                   </div>

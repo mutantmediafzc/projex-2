@@ -81,6 +81,7 @@ export default function TasksPage() {
           .from("tasks")
           .select("id, project_id, name, content, status, priority, activity_date, created_by_name, assigned_user_id, assigned_user_name, created_at, source, project:projects(id, name)")
           .eq("assigned_user_id", user.id)
+          .is("lead_submission_id", null)
           .order("activity_date", { ascending: false });
         if (!isMounted) return;
         if (fetchError || !data) {

@@ -24,7 +24,14 @@ const statusStyles: Record<DocumentRequest["status"], string> = {
   rejected: "bg-rose-50 text-rose-700 ring-rose-600/20",
 };
 
-type ApprovalStatus = "pending" | "completed" | "rejected";
+const statusLabels: Record<DocumentRequest["status"], string> = {
+  pending: "Pending",
+  processing: "Approved",
+  completed: "Completed",
+  rejected: "Rejected",
+};
+
+type ApprovalStatus = "pending" | "processing" | "completed" | "rejected";
 
 async function getAccessToken() {
   const { data } = await supabaseClient.auth.getSession();
@@ -39,7 +46,7 @@ export default function RequestDocumentsPage() {
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>("pending");
   const [approvalPage, setApprovalPage] = useState(1);
   const [approvalTotalPages, setApprovalTotalPages] = useState(1);
-  const [approvalCounts, setApprovalCounts] = useState<Record<ApprovalStatus, number>>({ pending: 0, completed: 0, rejected: 0 });
+  const [approvalCounts, setApprovalCounts] = useState<Record<ApprovalStatus, number>>({ pending: 0, processing: 0, completed: 0, rejected: 0 });
   const [loadingApprovals, setLoadingApprovals] = useState(false);
   const [canApprove, setCanApprove] = useState(false);
   const [activeTab, setActiveTab] = useState<"requests" | "approvals">("requests");
@@ -85,7 +92,7 @@ export default function RequestDocumentsPage() {
       if (!response.ok) throw new Error(result.error || "Failed to load approvals.");
       setApprovalRequests(result.requests || []);
       setApprovalTotalPages(result.pagination?.totalPages || 1);
-      setApprovalCounts(result.statusCounts || { pending: 0, completed: 0, rejected: 0 });
+      setApprovalCounts(result.statusCounts || { pending: 0, processing: 0, completed: 0, rejected: 0 });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to load approvals." });
     } finally {
@@ -131,11 +138,7 @@ export default function RequestDocumentsPage() {
     }
   }
 
-  async function handleApproval(requestId: string, file: File | null) {
-    if (!file) {
-      setMessage({ type: "error", text: "Select a PDF before approving the request." });
-      return;
-    }
+  async function handleApproval(requestId: string) {
     setApprovingId(requestId);
     setMessage(null);
 
@@ -145,7 +148,6 @@ export default function RequestDocumentsPage() {
       const formData = new FormData();
       formData.append("requestId", requestId);
       formData.append("action", "approve");
-      formData.append("file", file);
 
       const response = await fetch("/api/document-requests", {
         method: "PATCH",
@@ -156,10 +158,41 @@ export default function RequestDocumentsPage() {
       if (!response.ok) throw new Error(result.error || "Failed to approve request.");
 
       setApprovalRequests((current) => current.filter((request) => request.id !== requestId));
-      setApprovalCounts((current) => ({ ...current, pending: Math.max(0, current.pending - 1), completed: current.completed + 1 }));
-      setMessage({ type: "success", text: "The PDF was attached and the request was approved." });
+      setApprovalCounts((current) => ({ ...current, pending: Math.max(0, current.pending - 1), processing: current.processing + 1 }));
+      setMessage({ type: "success", text: "The request was approved. The document can be uploaded later from Approved." });
     } catch (error) {
       setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to approve request." });
+    } finally {
+      setApprovingId(null);
+    }
+  }
+
+  async function handleUpload(requestId: string, file: File | null) {
+    if (!file) {
+      setMessage({ type: "error", text: "Select a PDF to upload." });
+      return;
+    }
+    setApprovingId(requestId);
+    setMessage(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error("You must be signed in to upload a document.");
+      const formData = new FormData();
+      formData.append("requestId", requestId);
+      formData.append("action", "upload");
+      formData.append("file", file);
+      const response = await fetch("/api/document-requests", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Failed to upload document.");
+      setApprovalRequests((current) => current.filter((request) => request.id !== requestId));
+      setApprovalCounts((current) => ({ ...current, processing: Math.max(0, current.processing - 1), completed: current.completed + 1 }));
+      setMessage({ type: "success", text: "The document was uploaded and is ready for the employee." });
+    } catch (error) {
+      setMessage({ type: "error", text: error instanceof Error ? error.message : "Failed to upload document." });
     } finally {
       setApprovingId(null);
     }
@@ -313,7 +346,7 @@ export default function RequestDocumentsPage() {
                       <h3 className="text-sm font-semibold text-slate-900">{request.document_type}</h3>
                       <p className="mt-1 text-xs text-slate-500">{request.addressed_to || "General addressee"}</p>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${statusStyles[request.status]}`}>{request.status}</span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[request.status]}`}>{statusLabels[request.status]}</span>
                   </div>
                   <p className="mt-3 text-xs text-slate-400">Requested {new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
                   {request.status === "completed" && request.pdf_path && (
@@ -343,14 +376,14 @@ export default function RequestDocumentsPage() {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Approval status">
-            {(["pending", "completed", "rejected"] as ApprovalStatus[]).map((status) => (
+            {(["pending", "processing", "completed", "rejected"] as ApprovalStatus[]).map((status) => (
               <button
                 key={status}
                 type="button"
                 onClick={() => { setApprovalStatus(status); setApprovalPage(1); }}
                 className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${approvalStatus === status ? "bg-slate-900 text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
               >
-                {status} <span className={`ml-1 text-xs ${approvalStatus === status ? "text-white/70" : "text-slate-400"}`}>{approvalCounts[status]}</span>
+                {status === "processing" ? "Approved" : status} <span className={`ml-1 text-xs ${approvalStatus === status ? "text-white/70" : "text-slate-400"}`}>{approvalCounts[status]}</span>
               </button>
             ))}
           </div>
@@ -373,6 +406,7 @@ export default function RequestDocumentsPage() {
                   request={request}
                   submitting={approvingId === request.id}
                   onApprove={handleApproval}
+                  onUpload={handleUpload}
                   onDeny={handleDenial}
                   onDownload={downloadPdf}
                 />
@@ -410,12 +444,14 @@ function ApprovalRequestCard({
   request,
   submitting,
   onApprove,
+  onUpload,
   onDeny,
   onDownload,
 }: {
   request: DocumentRequest;
   submitting: boolean;
-  onApprove: (requestId: string, file: File | null) => Promise<void>;
+  onApprove: (requestId: string) => Promise<void>;
+  onUpload: (requestId: string, file: File | null) => Promise<void>;
   onDeny: (requestId: string, reason: string) => Promise<void>;
   onDownload: (request: DocumentRequest) => Promise<void>;
 }) {
@@ -432,19 +468,10 @@ function ApprovalRequestCard({
           <p className="mt-1 text-xs text-slate-500">Addressee: {request.addressed_to || "General addressee"}</p>
           <p className="mt-1 text-xs text-slate-400">Requested {new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
         </div>
-        <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium capitalize ring-1 ring-inset ${statusStyles[request.status]}`}>{request.status}</span>
+        <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[request.status]}`}>{statusLabels[request.status]}</span>
       </div>
 
-      {request.status === "pending" ? <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <label className="flex-1 text-sm font-medium text-slate-700">
-          Attach completed PDF
-          <input
-            type="file"
-            accept="application/pdf,.pdf"
-            onChange={(event) => setFile(event.target.files?.[0] || null)}
-            className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:font-medium file:text-blue-700"
-          />
-        </label>
+      {request.status === "pending" ? <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-4">
         <div className="flex gap-2">
           <button
             type="button"
@@ -456,14 +483,34 @@ function ApprovalRequestCard({
           </button>
           <button
             type="button"
-            disabled={submitting || !file}
-            onClick={() => void onApprove(request.id, file)}
+            disabled={submitting}
+            onClick={() => void onApprove(request.id)}
             className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {submitting ? "Saving..." : "Approve & upload"}
+            {submitting ? "Approving..." : "Approve"}
           </button>
         </div>
-      </div> : request.status === "completed" && request.pdf_path ? (
+      </div> : request.status === "processing" ? (
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end">
+          <label className="flex-1 text-sm font-medium text-slate-700">
+            Upload completed PDF
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={(event) => setFile(event.target.files?.[0] || null)}
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:font-medium file:text-blue-700"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={submitting || !file}
+            onClick={() => void onUpload(request.id, file)}
+            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Uploading..." : "Upload document"}
+          </button>
+        </div>
+      ) : request.status === "completed" && request.pdf_path ? (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
           <p className="text-xs text-slate-500">
             Approved {request.approved_at ? new Date(request.approved_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : ""}

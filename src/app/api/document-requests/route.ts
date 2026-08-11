@@ -69,16 +69,17 @@ export async function GET(request: NextRequest) {
   let statusCounts: Record<string, number> | null = null;
   if (approvals) {
     const statusParam = request.nextUrl.searchParams.get("status");
-    const status = ["pending", "completed", "rejected"].includes(statusParam || "") ? statusParam! : "pending";
+    const status = ["pending", "processing", "completed", "rejected"].includes(statusParam || "") ? statusParam! : "pending";
     const page = Math.max(1, Number(request.nextUrl.searchParams.get("page")) || 1);
     const pageSize = 8;
-    const [{ count: pending }, { count: completed }, { count: rejected }, { count: total }] = await Promise.all([
+    const [{ count: pending }, { count: processing }, { count: completed }, { count: rejected }, { count: total }] = await Promise.all([
       supabaseAdmin.from("document_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabaseAdmin.from("document_requests").select("id", { count: "exact", head: true }).eq("status", "processing"),
       supabaseAdmin.from("document_requests").select("id", { count: "exact", head: true }).eq("status", "completed"),
       supabaseAdmin.from("document_requests").select("id", { count: "exact", head: true }).eq("status", "rejected"),
       supabaseAdmin.from("document_requests").select("id", { count: "exact", head: true }).eq("status", status),
     ]);
-    statusCounts = { pending: pending || 0, completed: completed || 0, rejected: rejected || 0 };
+    statusCounts = { pending: pending || 0, processing: processing || 0, completed: completed || 0, rejected: rejected || 0 };
     pagination = { page, pageSize, total: total || 0, totalPages: Math.max(1, Math.ceil((total || 0) / pageSize)) };
     query = query.eq("status", status).range((page - 1) * pageSize, page * pageSize - 1);
   } else {
@@ -158,20 +159,20 @@ export async function PATCH(request: NextRequest) {
   const action = formData.get("action");
   const file = formData.get("file");
   const denialReason = typeof formData.get("denialReason") === "string" ? String(formData.get("denialReason")).trim() : "";
-  if (typeof requestId !== "string" || (action !== "approve" && action !== "deny")) {
+  if (typeof requestId !== "string" || !["approve", "upload", "deny"].includes(String(action))) {
     return NextResponse.json({ error: "A request and valid action are required." }, { status: 400 });
   }
-  if (action === "approve") {
-    if (!(file instanceof File)) return NextResponse.json({ error: "A PDF file is required for approval." }, { status: 400 });
+  if (action === "upload") {
+    if (!(file instanceof File)) return NextResponse.json({ error: "A PDF file is required." }, { status: 400 });
     if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
       return NextResponse.json({ error: "Only PDF files can be attached." }, { status: 400 });
     }
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: "The PDF must be 10 MB or smaller." }, { status: 400 });
     }
-  } else if (!denialReason) {
+  } else if (action === "deny" && !denialReason) {
     return NextResponse.json({ error: "A reason is required when denying a request." }, { status: 400 });
-  } else if (denialReason.length > 500) {
+  } else if (action === "deny" && denialReason.length > 500) {
     return NextResponse.json({ error: "The denial reason must be 500 characters or fewer." }, { status: 400 });
   }
 
@@ -183,12 +184,13 @@ export async function PATCH(request: NextRequest) {
   if (!documentRequest) {
     return NextResponse.json({ error: "Document request not found." }, { status: 404 });
   }
-  if (documentRequest.status !== "pending") {
-    return NextResponse.json({ error: "Only pending requests can be approved or denied." }, { status: 409 });
+  const expectedStatus = action === "upload" ? "processing" : "pending";
+  if (documentRequest.status !== expectedStatus) {
+    return NextResponse.json({ error: action === "upload" ? "Only approved requests can receive a document." : "Only pending requests can be approved or denied." }, { status: 409 });
   }
 
   let pdfPath: string | null = null;
-  if (action === "approve" && file instanceof File) {
+  if (action === "upload" && file instanceof File) {
     pdfPath = `${requestId}/${crypto.randomUUID()}.pdf`;
     const { error: uploadError } = await supabaseAdmin.storage
       .from("employee-documents")
@@ -201,15 +203,15 @@ export async function PATCH(request: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from("document_requests")
     .update({
-      status: action === "approve" ? "completed" : "rejected",
+      status: action === "approve" ? "processing" : action === "upload" ? "completed" : "rejected",
       pdf_path: pdfPath,
       approved_by: user.id,
-      approved_at: new Date().toISOString(),
+      approved_at: action === "approve" ? new Date().toISOString() : undefined,
       denial_reason: action === "deny" ? denialReason : null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", requestId)
-    .eq("status", "pending")
+    .eq("status", expectedStatus)
     .select("id, user_id, document_type, addressed_to, status, pdf_path, approved_at, denial_reason, created_at")
     .single();
 
@@ -224,10 +226,12 @@ export async function PATCH(request: NextRequest) {
   ]);
   if (employee) {
     await createDocumentNotifications([employee], {
-      name: action === "approve" ? "Document request approved" : "Document request denied",
+      name: action === "approve" ? "Document request approved" : action === "upload" ? "Document ready" : "Document request denied",
       content: action === "approve"
-        ? `Your ${documentRequest.document_type} request was approved and is ready to download.`
-        : `Your ${documentRequest.document_type} request was denied. Reason: ${denialReason}`,
+        ? `Your ${documentRequest.document_type} request was approved. The completed document will be uploaded soon.`
+        : action === "upload"
+          ? `Your ${documentRequest.document_type} is ready to download.`
+          : `Your ${documentRequest.document_type} request was denied. Reason: ${denialReason}`,
       createdById: user.id,
       createdByName: approver?.full_name || user.email || "Employee Services",
     });

@@ -12,6 +12,8 @@ type DocumentRequest = {
   status: "pending" | "processing" | "completed" | "rejected";
   pdf_path?: string | null;
   approved_at?: string | null;
+  completed_at?: string | null;
+  rejected_at?: string | null;
   denial_reason?: string | null;
   created_at: string;
   user?: { full_name: string | null; email: string | null } | null;
@@ -254,7 +256,7 @@ export default function RequestDocumentsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="w-full space-y-6 p-4 sm:p-6 lg:p-8">
       <header>
         <p className="text-sm font-semibold text-blue-600">Employee services</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Request Documents</h1>
@@ -399,18 +401,29 @@ export default function RequestDocumentsPage() {
           ) : approvalRequests.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">No document requests yet.</div>
           ) : (
-            <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              {approvalRequests.map((request) => (
-                <ApprovalRequestCard
-                  key={request.id}
-                  request={request}
-                  submitting={approvingId === request.id}
-                  onApprove={handleApproval}
-                  onUpload={handleUpload}
-                  onDeny={handleDenial}
-                  onDownload={downloadPdf}
-                />
-              ))}
+            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+              <div className="min-w-[1260px]">
+                <div className="grid grid-cols-[220px_160px_180px_140px_110px_140px_minmax(280px,1fr)] items-center gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <div>Document</div>
+                  <div>Requested by</div>
+                  <div>To whom</div>
+                  <div>Date submitted</div>
+                  <div>Status</div>
+                  <div>{approvalStatus === "processing" ? "Date approved" : approvalStatus === "completed" ? "Date completed" : approvalStatus === "rejected" ? "Date rejected" : "Decision date"}</div>
+                  <div className="text-right">Actions</div>
+                </div>
+                {approvalRequests.map((request) => (
+                  <ApprovalRequestCard
+                    key={request.id}
+                    request={request}
+                    submitting={approvingId === request.id}
+                    onApprove={handleApproval}
+                    onUpload={handleUpload}
+                    onDeny={handleDenial}
+                    onDownload={downloadPdf}
+                  />
+                ))}
+              </div>
             </div>
           )}
           {!loadingApprovals && approvalTotalPages > 1 && (
@@ -458,10 +471,17 @@ function ApprovalRequestCard({
   const [file, setFile] = useState<File | null>(null);
   const [showDenial, setShowDenial] = useState(false);
   const [denialReason, setDenialReason] = useState("");
+  const statusDate = request.status === "processing"
+    ? request.approved_at
+    : request.status === "completed"
+      ? request.completed_at
+      : request.status === "rejected"
+        ? request.rejected_at
+        : null;
 
   return (
     <article className="border-b border-slate-200 last:border-b-0">
-      <div className="grid gap-4 px-4 py-4 transition hover:bg-slate-50/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center lg:grid-cols-[minmax(0,1fr)_130px_minmax(220px,auto)]">
+      <div className="grid grid-cols-[220px_160px_180px_140px_110px_140px_minmax(280px,1fr)] items-center gap-4 px-4 py-4 transition hover:bg-slate-50/60">
         <div className="flex min-w-0 items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -470,25 +490,21 @@ function ApprovalRequestCard({
             </svg>
           </div>
           <div className="min-w-0">
-          <h3 className="font-semibold text-slate-900">{request.document_type}</h3>
-          <p className="mt-1 text-sm text-slate-600">{request.user?.full_name || request.user?.email || "Employee"}</p>
-          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
-            <span>Requested {new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
-            <span className="text-violet-600">Addressee: {request.addressed_to || "General addressee"}</span>
-          </div>
-          {request.status === "rejected" && (
-            <p className="mt-2 text-xs text-rose-600"><span className="font-semibold">Denied:</span> {request.denial_reason}</p>
-          )}
-          {request.status === "completed" && request.approved_at && (
-            <p className="mt-2 text-xs text-slate-400">Approved {new Date(request.approved_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
-          )}
+            <h3 className="font-semibold text-slate-900">{request.document_type}</h3>
           </div>
         </div>
-        <div className="sm:justify-self-end lg:justify-self-start">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-slate-700">{request.user?.full_name || "Employee"}</p>
+          {request.user?.email && <p className="mt-1 truncate text-xs text-slate-400">{request.user.email}</p>}
+        </div>
+        <p className="text-sm text-slate-600">{request.addressed_to || "General addressee"}</p>
+        <p className="text-sm text-slate-600">{new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+        <div>
           <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[request.status]}`}>{statusLabels[request.status]}</span>
         </div>
+        <p className="text-sm text-slate-600">{statusDate ? new Date(statusDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "—"}</p>
 
-      {request.status === "pending" ? <div className="flex flex-wrap justify-end gap-2 sm:col-span-2 lg:col-span-1">
+      {request.status === "pending" ? <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
             disabled={submitting}
@@ -506,7 +522,7 @@ function ApprovalRequestCard({
             {submitting ? "Approving..." : "Approve"}
           </button>
       </div> : request.status === "processing" ? (
-        <div className="flex min-w-0 flex-col gap-2 sm:col-span-2 lg:col-span-1 lg:min-w-[320px] lg:flex-row lg:items-center">
+        <div className="flex min-w-0 items-center justify-end gap-2">
           <label className="min-w-0 flex-1 text-xs font-medium text-slate-600">
             <span className="sr-only">Upload completed PDF</span>
             <input
@@ -526,7 +542,7 @@ function ApprovalRequestCard({
           </button>
         </div>
       ) : request.status === "completed" && request.pdf_path ? (
-        <div className="flex justify-end sm:col-span-2 lg:col-span-1">
+        <div className="flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={() => void onDownload(request)}
@@ -535,7 +551,9 @@ function ApprovalRequestCard({
             Download PDF
           </button>
         </div>
-      ) : <div className="hidden lg:block" />}
+      ) : request.status === "rejected" ? (
+        <p className="text-right text-xs text-rose-600"><span className="font-semibold">Reason:</span> {request.denial_reason || "No reason provided"}</p>
+      ) : <span className="text-right text-slate-300">—</span>}
       </div>
 
       {request.status === "pending" && showDenial && (

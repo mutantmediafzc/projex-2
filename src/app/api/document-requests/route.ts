@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabaseAdmin
     .from("document_requests")
-    .select("id, user_id, document_type, addressed_to, status, pdf_path, approved_at, denial_reason, created_at, user:users!document_requests_user_id_fkey(full_name, email)")
+    .select("id, user_id, document_type, addressed_to, status, pdf_path, approved_at, completed_at, rejected_at, denial_reason, created_at, user:users!document_requests_user_id_fkey(full_name, email)")
     .order("created_at", { ascending: false });
 
   let pagination: { page: number; pageSize: number; total: number; totalPages: number } | null = null;
@@ -207,12 +207,14 @@ export async function PATCH(request: NextRequest) {
       pdf_path: pdfPath,
       approved_by: user.id,
       approved_at: action === "approve" ? new Date().toISOString() : undefined,
+      completed_at: action === "upload" ? new Date().toISOString() : undefined,
+      rejected_at: action === "deny" ? new Date().toISOString() : undefined,
       denial_reason: action === "deny" ? denialReason : null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", requestId)
     .eq("status", expectedStatus)
-    .select("id, user_id, document_type, addressed_to, status, pdf_path, approved_at, denial_reason, created_at")
+    .select("id, user_id, document_type, addressed_to, status, pdf_path, approved_at, completed_at, rejected_at, denial_reason, created_at")
     .single();
 
   if (error) {

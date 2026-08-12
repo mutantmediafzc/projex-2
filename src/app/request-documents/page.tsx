@@ -399,7 +399,7 @@ export default function RequestDocumentsPage() {
           ) : approvalRequests.length === 0 ? (
             <div className="mt-5 rounded-xl border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">No document requests yet.</div>
           ) : (
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
               {approvalRequests.map((request) => (
                 <ApprovalRequestCard
                   key={request.id}
@@ -460,19 +460,35 @@ function ApprovalRequestCard({
   const [denialReason, setDenialReason] = useState("");
 
   return (
-    <article className="rounded-xl border border-slate-200 p-4 sm:p-5">
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
-        <div>
+    <article className="border-b border-slate-200 last:border-b-0">
+      <div className="grid gap-4 px-4 py-4 transition hover:bg-slate-50/60 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center lg:grid-cols-[minmax(0,1fr)_130px_minmax(220px,auto)]">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+              <path d="M14 2v6h6M8 13h8M8 17h5" />
+            </svg>
+          </div>
+          <div className="min-w-0">
           <h3 className="font-semibold text-slate-900">{request.document_type}</h3>
           <p className="mt-1 text-sm text-slate-600">{request.user?.full_name || request.user?.email || "Employee"}</p>
-          <p className="mt-1 text-xs text-slate-500">Addressee: {request.addressed_to || "General addressee"}</p>
-          <p className="mt-1 text-xs text-slate-400">Requested {new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
+            <span>Requested {new Date(request.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+            <span className="text-violet-600">Addressee: {request.addressed_to || "General addressee"}</span>
+          </div>
+          {request.status === "rejected" && (
+            <p className="mt-2 text-xs text-rose-600"><span className="font-semibold">Denied:</span> {request.denial_reason}</p>
+          )}
+          {request.status === "completed" && request.approved_at && (
+            <p className="mt-2 text-xs text-slate-400">Approved {new Date(request.approved_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
+          )}
+          </div>
         </div>
-        <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[request.status]}`}>{statusLabels[request.status]}</span>
-      </div>
+        <div className="sm:justify-self-end lg:justify-self-start">
+          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${statusStyles[request.status]}`}>{statusLabels[request.status]}</span>
+        </div>
 
-      {request.status === "pending" ? <div className="mt-4 flex justify-end gap-2 border-t border-slate-100 pt-4">
-        <div className="flex gap-2">
+      {request.status === "pending" ? <div className="flex flex-wrap justify-end gap-2 sm:col-span-2 lg:col-span-1">
           <button
             type="button"
             disabled={submitting}
@@ -489,32 +505,28 @@ function ApprovalRequestCard({
           >
             {submitting ? "Approving..." : "Approve"}
           </button>
-        </div>
       </div> : request.status === "processing" ? (
-        <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-end">
-          <label className="flex-1 text-sm font-medium text-slate-700">
-            Upload completed PDF
+        <div className="flex min-w-0 flex-col gap-2 sm:col-span-2 lg:col-span-1 lg:min-w-[320px] lg:flex-row lg:items-center">
+          <label className="min-w-0 flex-1 text-xs font-medium text-slate-600">
+            <span className="sr-only">Upload completed PDF</span>
             <input
               type="file"
               accept="application/pdf,.pdf"
               onChange={(event) => setFile(event.target.files?.[0] || null)}
-              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:font-medium file:text-blue-700"
+              className="block w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-600 file:mr-2 file:rounded-md file:border-0 file:bg-blue-50 file:px-2 file:py-1 file:font-medium file:text-blue-700"
             />
           </label>
           <button
             type="button"
             disabled={submitting || !file}
             onClick={() => void onUpload(request.id, file)}
-            className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Uploading..." : "Upload document"}
           </button>
         </div>
       ) : request.status === "completed" && request.pdf_path ? (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-          <p className="text-xs text-slate-500">
-            Approved {request.approved_at ? new Date(request.approved_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : ""}
-          </p>
+        <div className="flex justify-end sm:col-span-2 lg:col-span-1">
           <button
             type="button"
             onClick={() => void onDownload(request)}
@@ -523,15 +535,11 @@ function ApprovalRequestCard({
             Download PDF
           </button>
         </div>
-      ) : request.status === "rejected" ? (
-        <div className="mt-4 border-t border-slate-100 pt-4">
-          <p className="text-xs font-medium text-slate-500">Reason for denial</p>
-          <p className="mt-1 text-sm text-slate-700">{request.denial_reason}</p>
-        </div>
-      ) : null}
+      ) : <div className="hidden lg:block" />}
+      </div>
 
       {request.status === "pending" && showDenial && (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50/50 p-4">
+        <div className="border-t border-rose-100 bg-rose-50/50 p-4">
           <label className="text-sm font-medium text-slate-700" htmlFor={`denial-${request.id}`}>Reason for denial</label>
           <textarea
             id={`denial-${request.id}`}

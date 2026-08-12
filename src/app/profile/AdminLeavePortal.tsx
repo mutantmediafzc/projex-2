@@ -140,21 +140,16 @@ export default function AdminLeavePortal() {
       {success && <div className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-600">{success}</div>}
 
       {/* Leave Requests Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/80 shadow-lg backdrop-blur">
+      <div className="rounded-2xl border border-slate-200/80 bg-white/80 shadow-lg backdrop-blur overflow-hidden">
         {loading ? (
           <div className="flex h-40 items-center justify-center text-sm text-slate-500">Loading requests...</div>
         ) : leaves.length === 0 ? (
           <div className="flex h-40 items-center justify-center text-sm text-slate-500">No {filter === "all" ? "" : filter} leave requests found.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[900px]">
-              <div className="grid grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <div>Leave request</div>
-                <div className="text-center">Actions</div>
-              </div>
+          <div className="divide-y divide-slate-200">
             {leaves.map((leave) => (
-              <div key={leave.id} className="grid grid-cols-[minmax(0,1fr)_120px] gap-4 border-b border-slate-200 p-4 transition-colors last:border-b-0 hover:bg-slate-50/50">
-                <div className="contents">
+              <div key={leave.id} className="p-4 hover:bg-slate-50/50 transition-colors">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4">
                     <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-violet-100 to-purple-100 text-sm font-bold text-violet-600">
                       {leave.user?.avatar_url ? (
@@ -188,7 +183,7 @@ export default function AdminLeavePortal() {
                     </div>
                   </div>
                   {leave.status === "pending" && (
-                    <div className="flex shrink-0 flex-col gap-2">
+                    <div className="flex shrink-0 gap-2">
                       <button onClick={() => handleAction(leave.id, "approved")} disabled={processing === leave.id} className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-green-500 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:from-emerald-600 hover:to-green-600 disabled:opacity-50">
                         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
                         Approve
@@ -202,7 +197,6 @@ export default function AdminLeavePortal() {
                 </div>
               </div>
             ))}
-            </div>
           </div>
         )}
       </div>

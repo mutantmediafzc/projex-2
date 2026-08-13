@@ -8,7 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
-import TaskDetailModal from "@/components/TaskDetailModal";
+import LMSTaskEditModal from "@/components/LMSTaskEditModal";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 const COLUMNS = [
@@ -375,6 +375,13 @@ export default function LMSPage() {
           (sourceFilter === "all" || lead.form_slug === sourceFilter),
       ),
     [assigneeFilter, leads, sourceFilter],
+  );
+  const taskToEdit = useMemo(
+    () =>
+      taskDetailId
+        ? leads.flatMap((lead) => lead.tasks).find((task) => task.id === taskDetailId) || null
+        : null,
+    [leads, taskDetailId],
   );
   const grouped = useMemo(
     () =>
@@ -1148,9 +1155,10 @@ export default function LMSPage() {
           </div>
         </div>
       )}
-      {taskDetailId && (
-        <TaskDetailModal
-          taskId={taskDetailId}
+      {taskToEdit && (
+        <LMSTaskEditModal
+          task={taskToEdit}
+          users={users}
           onClose={() => setTaskDetailId(null)}
           onSave={loadLeads}
         />

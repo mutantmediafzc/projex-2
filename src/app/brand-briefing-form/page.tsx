@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
 
 type Submission = {
@@ -118,22 +117,16 @@ export default function BrandBriefingFormPage() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-600">
-              Lead Management System
+              Brand Briefing Form
             </p>
             <h1 className="mt-1 text-2xl font-bold text-slate-900">
-              Brand Briefing Form
+              Submissions
             </h1>
             <p className="mt-1 text-sm text-slate-500">
               Submissions received from the brand briefing form.
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              href="/lms"
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
-            >
-              ← Campaign Leads
-            </Link>
             <div className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
               <strong className="text-slate-900">{filtered.length}</strong>
               {filtered.length !== submissions.length

@@ -8,6 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import Link from "next/link";
 import LMSTaskEditModal from "@/components/LMSTaskEditModal";
 import { supabaseClient } from "@/lib/supabaseClient";
 
@@ -703,6 +704,12 @@ export default function LMSPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/lms/brand-briefing"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50"
+            >
+              Brand Briefing Form
+            </Link>
             <button
               type="button"
               onClick={() => {

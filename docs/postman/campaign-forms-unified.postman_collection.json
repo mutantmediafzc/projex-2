@@ -1,0 +1,245 @@
+{
+  "info": {
+    "_postman_id": "d4dfb95d-5ec8-48e3-9dda-dfd90940469b",
+    "name": "Projex Unified Campaign Forms API",
+    "description": "Authenticate and submit AEO, PM, or any other campaign source through POST /api/campaign-forms. Run Authorize first to save the access token automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://www.creamcrm.io",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authorization",
+      "item": [
+        {
+          "name": "Authorize",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Authorization succeeded', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "if (response.accessToken) {",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/campaign-forms/authorize",
+            "description": "Authenticates with Supabase and stores the returned token in the accessToken collection variable."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Submissions",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{accessToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "item": [
+        {
+          "name": "Submit AEO Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"mm26-aeo\",\n  \"sourceUrl\": \"https://www.mutant.ae/campaign/mm26-aeo\",\n  \"answers\": {\n    \"website\": \"https://example.com\",\n    \"email\": \"jane@example.com\",\n    \"business\": \"Real Estate\",\n    \"ranking\": \"Page 2 or beyond\",\n    \"aiSearch\": \"Never tried it\"\n  },\n  \"metadata\": {\n    \"utm_source\": \"postman\",\n    \"utm_campaign\": \"mm26-aeo\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/campaign-forms",
+            "description": "Submits an AEO lead through the unified endpoint."
+          }
+        },
+        {
+          "name": "Submit PM Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"mm26-pm\",\n  \"sourceUrl\": \"https://www.mutant.ae/campaign/mm26-pm\",\n  \"answers\": {\n    \"website\": \"https://example.com\",\n    \"email\": \"jane@example.com\",\n    \"business\": \"Real Estate\",\n    \"adSpend\": 10000,\n    \"monthlyLeads\": 75\n  },\n  \"metadata\": {\n    \"utm_source\": \"postman\",\n    \"utm_campaign\": \"mm26-pm\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/campaign-forms",
+            "description": "Submits a performance marketing lead through the unified endpoint."
+          }
+        },
+        {
+          "name": "Submit Any New Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Submission ID returned', function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.submission.id).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"new-campaign-source\",\n  \"sourceUrl\": \"https://example.com/new-campaign\",\n  \"answers\": {\n    \"website\": \"https://customer.example\",\n    \"email\": \"customer@example.com\",\n    \"fullName\": \"Sample Customer\",\n    \"customField\": \"Any value is accepted\",\n    \"customList\": [\"Option one\", \"Option two\"]\n  },\n  \"metadata\": {\n    \"utm_source\": \"postman\",\n    \"external_id\": \"example-123\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/campaign-forms",
+            "description": "Change source, sourceUrl, answers, and metadata to submit data from any campaign."
+          }
+        },
+        {
+          "name": "Submit Questionnaire Array",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submission created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"questionnaire-example\",\n  \"sourceUrl\": \"https://example.com/questionnaire\",\n  \"website\": \"https://customer.example\",\n  \"email\": \"customer@example.com\",\n  \"questionnaire\": [\n    {\n      \"id\": \"companyName\",\n      \"question\": \"What is your company name?\",\n      \"answer\": \"Example Company\"\n    },\n    {\n      \"id\": \"goals\",\n      \"question\": \"What are your goals?\",\n      \"answer\": [\"More leads\", \"Brand awareness\"]\n    }\n  ],\n  \"metadata\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/campaign-forms",
+            "description": "Shows the alternative questionnaire-array body format."
+          }
+        }
+      ]
+    }
+  ]
+}

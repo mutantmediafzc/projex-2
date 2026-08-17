@@ -2,16 +2,15 @@
 
 Production requests must use `https://www.creamcrm.io` directly. The apex domain redirects to the `www` host, and clients may remove the `Authorization` header while following that cross-host redirect.
 
-The two campaigns have separate endpoints:
+All campaign sources submit through one endpoint:
 
-- `GET|POST /api/campaign-forms/mm26-aeo`
-- `GET|POST /api/campaign-forms/mm26-pm`
+- `POST /api/campaign-forms`
 
-`GET` returns the canonical questions for that form. `POST` validates and stores a submission.
+The API accepts any source name and does not apply source-specific or questionnaire field validation.
 
 ## Authorization
 
-First exchange a valid Supabase email and password for a Supabase access token:
+Exchange a valid Supabase email and password for an access token:
 
 ```http
 POST /api/campaign-forms/authorize
@@ -23,30 +22,26 @@ Content-Type: application/json
 }
 ```
 
-The returned token can be used to submit either campaign form. Its lifetime is controlled by the Supabase project's JWT expiry setting, which is normally one hour. Include it when submitting:
+Include the returned token with every submission:
 
 ```http
 Authorization: Bearer <accessToken>
 ```
 
-The access token is verified through Supabase Auth on every submission. `CAMPAIGN_FORMS_TOKEN_SECRET` is no longer used and may be removed from the deployment environment.
+## Submit a campaign form
 
-## Recommended POST body
+```http
+POST /api/campaign-forms
+Authorization: Bearer <accessToken>
+Content-Type: application/json
 
-```json
 {
+  "source": "mm26-aeo",
+  "sourceUrl": "https://www.mutant.ae/campaign/mm26-aeo",
   "answers": {
     "website": "https://example.com",
-    "business": "Real Estate",
-    "ranking": "Page 2 or beyond",
-    "aiSearch": "Never tried it",
-    "traffic": "Mostly paid",
-    "frustration": ["Competitors outrank us"],
-    "firstName": "Jane",
-    "lastName": "Doe",
     "email": "jane@example.com",
-    "phoneCountryCode": "+971",
-    "mobile": "501234567"
+    "customQuestion": "Any value"
   },
   "metadata": {
     "utm_source": "meta"
@@ -54,20 +49,8 @@ The access token is verified through Supabase Auth on every submission. `CAMPAIG
 }
 ```
 
-The API also accepts a `questionnaire` array when the client needs to send both the question and answer:
+`source` may be `mm26-aeo`, `mm26-pm`, or any other source name. For compatibility, `formSlug` is also accepted as an alias for `source`. `source_url` is accepted as an alias for `sourceUrl`.
 
-```json
-{
-  "questionnaire": [
-    {
-      "id": "website",
-      "question": "What is your company website?",
-      "answer": "https://example.com"
-    }
-  ]
-}
-```
+Instead of `answers`, callers may provide any `questionnaire` array. When `answers` is supplied, it is stored as a questionnaire automatically. Top-level `website` and `email` fields are also accepted; otherwise they are taken from `answers` when present.
 
-Every required question must be included. Question text supplied by a client must exactly match the canonical question returned by `GET`. The saved `questionnaire` always contains both the canonical question and its validated answer.
-
-Before deploying, apply `supabase/migrations/20260803_create_campaign_form_submissions.sql` to the configured Supabase project.
+Before deploying, apply all pending migrations under `supabase/migrations/`.

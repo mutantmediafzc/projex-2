@@ -662,7 +662,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
                           value={item.description}
                           onChange={(e) => updateItem(index, "description", e.target.value)}
                           rows={2}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none resize-none"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-black focus:border-violet-400 focus:outline-none"
                         />
                       </div>
                       <div className="flex items-end gap-3">

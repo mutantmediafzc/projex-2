@@ -401,7 +401,7 @@ export default function InvoiceCreateModal({ projectId, projectName, clientName,
                         value={item.description}
                         onChange={(e) => updateItem(index, "description", e.target.value)}
                         rows={3}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none resize-none"
+                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:border-violet-400 focus:outline-none"
                       />
                       {aiContext.trim() && (
                         <button

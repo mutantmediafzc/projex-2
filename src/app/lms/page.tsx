@@ -81,7 +81,7 @@ type ContactDetails = {
 };
 type Lead = {
   id: string;
-  form_slug: "mm26-aeo" | "mm26-pm" | "manual";
+  form_slug: string;
   website: string;
   email: string;
   questionnaire: Answer[];
@@ -111,10 +111,22 @@ const taskLabels: Record<string, string> = {
 };
 const statusLabel = (status: LeadStatus | null) =>
   COLUMNS.find(([value]) => value === status)?.[1] || "Campaign Leads";
+function sourceLabel(source: string) {
+  if (source === "mm26-aeo") return "AEO";
+  if (source === "mm26-pm") return "PM";
+  if (source === "manual") return "Manual";
+  return source
+    .replace(/^mm\d+-/i, "")
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ") || "Unknown";
+}
 const textAnswer = (lead: Lead, ids: string[], match: string) => {
   const item = lead.questionnaire.find(
     (entry) =>
-      ids.includes(entry.id) || entry.question.toLowerCase().includes(match),
+      ids.includes(entry.id) ||
+      String(entry.question ?? "").toLowerCase().includes(match),
   );
   return Array.isArray(item?.answer)
     ? item.answer.join(", ")
@@ -136,7 +148,7 @@ const isContactAnswer = (item: Answer) =>
     "phoneNumber",
   ].includes(item.id) ||
   /first name|last name|full name|email|country calling code|mobile number|phone/i.test(
-    item.question,
+    String(item.question ?? ""),
   );
 function getContact(lead: Lead): ContactDetails {
   if (lead.contact) return lead.contact;
@@ -165,8 +177,6 @@ function leadName(lead: Lead) {
   return lead.lead_name || getContact(lead).name || lead.email;
 }
 function pipelineLabel(lead: Lead) {
-  if (lead.form_slug === "mm26-aeo") return "AEO";
-  if (lead.form_slug === "mm26-pm") return "Performance Marketing";
   return lead.pipeline || "Mutant Leads";
 }
 function formatAmount(amount: number) {
@@ -375,6 +385,23 @@ export default function LMSPage() {
           (sourceFilter === "all" || lead.form_slug === sourceFilter),
       ),
     [assigneeFilter, leads, sourceFilter],
+  );
+  const sourceOptions = useMemo(
+    () =>
+      Array.from(new Set(leads.map((lead) => lead.form_slug))).sort((a, b) =>
+        sourceLabel(a).localeCompare(sourceLabel(b)),
+      ),
+    [leads],
+  );
+  const pipelineOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          "Mutant Leads",
+          ...leads.map((lead) => lead.pipeline).filter(Boolean),
+        ]),
+      ).sort((a, b) => a.localeCompare(b)),
+    [leads],
   );
   const taskToEdit = useMemo(
     () =>
@@ -750,9 +777,11 @@ export default function LMSPage() {
               className="ml-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
             >
               <option value="all">All sources</option>
-              <option value="mm26-aeo">AEO</option>
-              <option value="mm26-pm">PM</option>
-              <option value="manual">Manual</option>
+              {sourceOptions.map((source) => (
+                <option key={source} value={source}>
+                  {sourceLabel(source)}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -848,10 +877,11 @@ export default function LMSPage() {
                           <span className="font-semibold text-slate-900">
                             {leadName(lead)}
                           </span>
-                          <span className="rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase">
-                            {lead.form_slug === "manual"
-                              ? "Manual"
-                              : lead.form_slug.replace("mm26-", "")}
+                          <span
+                            title={lead.form_slug}
+                            className="max-w-28 truncate rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-bold uppercase"
+                          >
+                            {sourceLabel(lead.form_slug)}
                           </span>
                         </div>
                         <p className="truncate text-xs text-slate-500">
@@ -1063,18 +1093,19 @@ export default function LMSPage() {
                 </label>
                 <label className="block text-sm font-semibold text-slate-700">
                   Pipeline <span className="text-rose-500">*</span>
-                  <select
+                  <input
                     required
+                    list="lms-pipeline-options"
                     value={newPipeline}
                     onChange={(event) => setNewPipeline(event.target.value)}
+                    placeholder="Enter or select a pipeline"
                     className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"
-                  >
-                    <option value="Mutant Leads">Mutant Leads</option>
-                    <option value="AEO">AEO</option>
-                    <option value="Performance Marketing">
-                      Performance Marketing
-                    </option>
-                  </select>
+                  />
+                  <datalist id="lms-pipeline-options">
+                    {pipelineOptions.map((pipeline) => (
+                      <option key={pipeline} value={pipeline} />
+                    ))}
+                  </datalist>
                 </label>
                 <label className="block text-sm font-semibold text-slate-700">
                   Deal stage <span className="text-rose-500">*</span>
@@ -1242,6 +1273,12 @@ export default function LMSPage() {
                       Deal details
                     </h3>
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl bg-slate-50 p-3">
+                        <p className="text-xs text-slate-500">Source</p>
+                        <p className="mt-1 text-sm text-slate-900">
+                          {sourceLabel(selected.form_slug)}
+                        </p>
+                      </div>
                       <div className="rounded-xl bg-slate-50 p-3">
                         <p className="text-xs text-slate-500">Pipeline</p>
                         <p className="mt-1 text-sm text-slate-900">

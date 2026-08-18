@@ -7,9 +7,7 @@ export const LEAVE_CALENDAR_ACCESS_USER_IDS = new Set([
   "7c423f1b-c119-43cf-a1a3-3900c3a509dc", // Majd Saleh
 ]);
 
-export const EXCALIBUR_CALENDAR_VIEWER_USER_IDS = new Set([
-  "7c423f1b-c119-43cf-a1a3-3900c3a509dc", // Majd Saleh
-]);
+export const EXCALIBUR_CALENDAR_VIEWER_USER_IDS = new Set<string>([]);
 
 export function hasLeaveCalendarAccess(userId: string | null) {
   return Boolean(userId && LEAVE_CALENDAR_ACCESS_USER_IDS.has(userId));

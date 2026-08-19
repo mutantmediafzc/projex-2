@@ -326,3 +326,52 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Failed to update leave request" }, { status: 500 });
   }
 }
+
+// DELETE - Remove a leave request - HR ONLY
+export async function DELETE(request: NextRequest) {
+  try {
+    const currentUser = await verifySession(request);
+    if (!currentUser || !(await isHR(currentUser.id))) {
+      return NextResponse.json(
+        { error: "Unauthorized. Only HR can delete leave requests." },
+        { status: 403 },
+      );
+    }
+
+    const leaveId = new URL(request.url).searchParams.get("leaveId");
+    if (!leaveId) {
+      return NextResponse.json({ error: "Leave request ID is required." }, { status: 400 });
+    }
+
+    const { data: leaveData, error: leaveError } = await supabaseAdmin
+      .from("leaves")
+      .select("id, status, leave_type, days_count")
+      .eq("id", leaveId)
+      .maybeSingle();
+
+    if (leaveError) {
+      return NextResponse.json({ error: leaveError.message }, { status: 500 });
+    }
+    if (!leaveData) {
+      return NextResponse.json({ error: "Leave request not found." }, { status: 404 });
+    }
+
+    // The leave balance trigger restores used days when an approved request is deleted.
+    const { error: deleteError } = await supabaseAdmin
+      .from("leaves")
+      .delete()
+      .eq("id", leaveId);
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      deletedLeave: leaveData,
+      balanceRestored: leaveData.status === "approved"
+        && ["annual", "sick", "maternity"].includes(leaveData.leave_type),
+    });
+  } catch {
+    return NextResponse.json({ error: "Failed to delete leave request" }, { status: 500 });
+  }
+}

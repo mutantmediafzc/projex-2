@@ -16,10 +16,14 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
-function obj(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
-    : {};
+    : null;
+}
+
+function optionalRecord(value: unknown): Record<string, unknown> {
+  return record(value) ?? {};
 }
 
 async function authenticate(request: NextRequest) {
@@ -44,20 +48,49 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  let body: Record<string, unknown>;
+  let payload: unknown;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    payload = await request.json();
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  const contact = obj(body.contact);
+  const body = record(payload);
+  if (!body) {
+    return json({ error: "Request body must be a JSON object" }, 400);
+  }
+
+  const contact = record(body.contact);
+  if (!contact) {
+    return json({ error: "contact must be a JSON object" }, 400);
+  }
+
   const email = str(contact.email);
 
   if (!email) {
     return json({ error: "contact.email is required" }, 400);
   }
 
+  const sectionKeys = [
+    "brandBrief",
+    "objectives",
+    "challenges",
+    "currentMarketingActivities",
+    "goals",
+    "serviceRequirements",
+    "metadata",
+  ] as const;
+  const invalidSection = sectionKeys.find(
+    (key) => body[key] !== undefined && record(body[key]) === null,
+  );
+  if (invalidSection) {
+    return json({ error: `${invalidSection} must be a JSON object` }, 400);
+  }
+
+  const firstName = str(contact.firstName);
+  const lastName = str(contact.lastName);
+  const phoneCountryCode = str(contact.phoneCountryCode);
+  const mobile = str(contact.mobile);
   const sourceIp =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
 
@@ -65,20 +98,27 @@ export async function POST(request: NextRequest) {
     .from("brand_briefing_form_submissions")
     .insert({
       company: str(body.company),
-      full_name: str(contact.fullName),
-      first_name: str(contact.firstName),
-      last_name: str(contact.lastName),
+      full_name:
+        str(contact.fullName) ||
+        [firstName, lastName].filter(Boolean).join(" ") ||
+        null,
+      first_name: firstName,
+      last_name: lastName,
       email,
-      phone_country_code: str(contact.phoneCountryCode),
-      mobile: str(contact.mobile),
-      mobile_with_country_code: str(contact.mobileWithCountryCode),
-      brand_brief: obj(body.brandBrief),
-      objectives: obj(body.objectives),
-      challenges: obj(body.challenges),
-      current_marketing_activities: obj(body.currentMarketingActivities),
-      goals: obj(body.goals),
-      service_requirements: obj(body.serviceRequirements),
-      metadata: obj(body.metadata),
+      phone_country_code: phoneCountryCode,
+      mobile,
+      mobile_with_country_code:
+        str(contact.mobileWithCountryCode) ||
+        (phoneCountryCode && mobile ? `${phoneCountryCode}${mobile}` : null),
+      brand_brief: optionalRecord(body.brandBrief),
+      objectives: optionalRecord(body.objectives),
+      challenges: optionalRecord(body.challenges),
+      current_marketing_activities: optionalRecord(
+        body.currentMarketingActivities,
+      ),
+      goals: optionalRecord(body.goals),
+      service_requirements: optionalRecord(body.serviceRequirements),
+      metadata: optionalRecord(body.metadata),
       raw_payload: body,
       source_ip: sourceIp,
     })

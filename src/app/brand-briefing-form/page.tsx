@@ -19,8 +19,17 @@ type Submission = {
   current_marketing_activities: Record<string, unknown>;
   goals: Record<string, unknown>;
   service_requirements: Record<string, unknown>;
+  question_answers: QuestionAnswer[];
   metadata: Record<string, unknown>;
   created_at: string;
+};
+
+type QuestionAnswer = {
+  id: string;
+  sectionKey: string;
+  sectionTitle: string;
+  question: string;
+  answer: unknown;
 };
 
 function labelize(key: string) {
@@ -55,6 +64,34 @@ function Section({
             </dt>
             <dd className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700">
               {renderValue(value)}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function QuestionAnswerSection({
+  title,
+  entries,
+}: {
+  title: string;
+  entries: QuestionAnswer[];
+}) {
+  if (entries.length === 0) return null;
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-4">
+      <h3 className="mb-3 text-sm font-semibold text-slate-900">{title}</h3>
+      <dl className="space-y-2.5">
+        {entries.map((entry) => (
+          <div key={entry.id}>
+            <dt className="text-xs font-semibold text-slate-500">
+              {entry.question}
+            </dt>
+            <dd className="mt-0.5 whitespace-pre-wrap text-sm text-slate-700">
+              {renderValue(entry.answer)}
             </dd>
           </div>
         ))}
@@ -110,6 +147,22 @@ export default function BrandBriefingFormPage() {
         .some((field) => field!.toLowerCase().includes(query)),
     );
   }, [submissions, search]);
+
+  const selectedQuestionSections = useMemo(() => {
+    const sections = new Map<string, { title: string; entries: QuestionAnswer[] }>();
+    for (const entry of selected?.question_answers || []) {
+      const current = sections.get(entry.sectionKey);
+      if (current) {
+        current.entries.push(entry);
+      } else {
+        sections.set(entry.sectionKey, {
+          title: entry.sectionTitle,
+          entries: [entry],
+        });
+      }
+    }
+    return Array.from(sections.values());
+  }, [selected]);
 
   return (
     <main className="min-h-full bg-slate-50 px-5 py-6 sm:px-8">
@@ -242,18 +295,30 @@ export default function BrandBriefingFormPage() {
                   mobile: selected.mobile_with_country_code,
                 }}
               />
-              <Section title="Brand Brief" data={selected.brand_brief} />
-              <Section title="Objectives" data={selected.objectives} />
-              <Section title="Challenges" data={selected.challenges} />
-              <Section
-                title="Current Marketing Activities"
-                data={selected.current_marketing_activities}
-              />
-              <Section title="Goals" data={selected.goals} />
-              <Section
-                title="Service Requirements"
-                data={selected.service_requirements}
-              />
+              {selectedQuestionSections.length > 0 ? (
+                selectedQuestionSections.map((section) => (
+                  <QuestionAnswerSection
+                    key={section.title}
+                    title={section.title}
+                    entries={section.entries}
+                  />
+                ))
+              ) : (
+                <>
+                  <Section title="Brand Brief" data={selected.brand_brief} />
+                  <Section title="Objectives" data={selected.objectives} />
+                  <Section title="Challenges" data={selected.challenges} />
+                  <Section
+                    title="Current Marketing Activities"
+                    data={selected.current_marketing_activities}
+                  />
+                  <Section title="Goals" data={selected.goals} />
+                  <Section
+                    title="Service Requirements"
+                    data={selected.service_requirements}
+                  />
+                </>
+              )}
               <Section title="Metadata" data={selected.metadata} />
             </div>
           </div>

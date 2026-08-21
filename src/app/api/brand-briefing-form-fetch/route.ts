@@ -26,6 +26,16 @@ function optionalRecord(value: unknown): Record<string, unknown> {
   return record(value) ?? {};
 }
 
+function questionAnswers(value: unknown): Record<string, unknown>[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) return null;
+
+  const entries = value.map(record);
+  return entries.every((entry) => entry !== null)
+    ? (entries as Record<string, unknown>[])
+    : null;
+}
+
 async function authenticate(request: NextRequest) {
   const token = request.headers
     .get("authorization")
@@ -87,6 +97,11 @@ export async function POST(request: NextRequest) {
     return json({ error: `${invalidSection} must be a JSON object` }, 400);
   }
 
+  const submittedQuestionAnswers = questionAnswers(body.questionAnswers);
+  if (submittedQuestionAnswers === null) {
+    return json({ error: "questionAnswers must be an array of JSON objects" }, 400);
+  }
+
   const firstName = str(contact.firstName);
   const lastName = str(contact.lastName);
   const phoneCountryCode = str(contact.phoneCountryCode);
@@ -118,6 +133,7 @@ export async function POST(request: NextRequest) {
       ),
       goals: optionalRecord(body.goals),
       service_requirements: optionalRecord(body.serviceRequirements),
+      question_answers: submittedQuestionAnswers,
       metadata: optionalRecord(body.metadata),
       raw_payload: body,
       source_ip: sourceIp,
@@ -141,7 +157,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await supabaseAdmin
     .from("brand_briefing_form_submissions")
     .select(
-      "id, company, full_name, first_name, last_name, email, phone_country_code, mobile, mobile_with_country_code, brand_brief, objectives, challenges, current_marketing_activities, goals, service_requirements, metadata, created_at",
+      "id, company, full_name, first_name, last_name, email, phone_country_code, mobile, mobile_with_country_code, brand_brief, objectives, challenges, current_marketing_activities, goals, service_requirements, question_answers, metadata, created_at",
     )
     .order("created_at", { ascending: false });
 

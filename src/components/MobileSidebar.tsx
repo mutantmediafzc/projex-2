@@ -57,6 +57,22 @@ const navItems = [
     activeGradient: "from-rose-500 to-pink-500",
   },
   {
+    href: "/accounts",
+    label: "Accounts",
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    gradient: "from-indigo-100 to-blue-100",
+    iconColor: "text-indigo-600",
+    hoverGradient: "hover:from-indigo-50 hover:to-blue-50",
+    activeGradient: "from-indigo-500 to-blue-500",
+  },
+  {
     href: "/projects",
     label: "Projects",
     icon: (
@@ -279,8 +295,46 @@ const navItems = [
   },
 ];
 
+type MobileNavItem = (typeof navItems)[number];
+
+const navGroups = [
+  { label: "Finance", hrefs: ["/financials", "/accounts"] },
+  { label: "Marketing and Sales", hrefs: ["/companies", "/contacts", "/lms", "/brand-briefing-form", "/social-media"] },
+  { label: "Operations", hrefs: ["/projects", "/tasks", "/seo"] },
+  { label: "HR", hrefs: ["/leaves", "/request-documents", "/users"] },
+] as const;
+
+const groupedHrefs = new Set<string>(navGroups.flatMap((group) => group.hrefs));
+
 export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
   const pathname = usePathname();
+  const standaloneItems = navItems.filter((item) => !groupedHrefs.has(item.href));
+
+  const renderItem = (item: MobileNavItem) => {
+    const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-all active:scale-[0.98] ${
+          isActive
+            ? "bg-gradient-to-r from-slate-100 to-slate-50 text-slate-900 shadow-sm"
+            : `text-slate-600 ${item.hoverGradient} hover:text-slate-900`
+        }`}
+      >
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-xl shadow-sm transition-all ${
+            isActive
+              ? `bg-gradient-to-br ${item.activeGradient} text-white shadow-lg`
+              : `bg-gradient-to-br ${item.gradient} ${item.iconColor}`
+          }`}
+        >
+          {item.icon}
+        </span>
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
 
   // Close on escape key
   useEffect(() => {
@@ -365,31 +419,22 @@ export default function MobileSidebar({ isOpen, onClose }: MobileSidebarProps) {
 
         {/* Navigation */}
         <nav className="relative flex-1 overflow-y-auto px-3 py-4 space-y-1">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          {standaloneItems[0] && renderItem(standaloneItems[0])}
+          {navGroups.map((group) => {
+            const items = group.hrefs
+              .map((href) => navItems.find((item) => item.href === href))
+              .filter((item): item is MobileNavItem => Boolean(item));
+
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`group flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-medium transition-all active:scale-[0.98] ${
-                  isActive
-                    ? "bg-gradient-to-r from-slate-100 to-slate-50 text-slate-900 shadow-sm"
-                    : `text-slate-600 ${item.hoverGradient} hover:text-slate-900`
-                }`}
-              >
-                <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl shadow-sm transition-all ${
-                    isActive
-                      ? `bg-gradient-to-br ${item.activeGradient} text-white shadow-lg`
-                      : `bg-gradient-to-br ${item.gradient} ${item.iconColor}`
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
+              <section key={group.label} className="pt-3">
+                <h2 className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+                  {group.label}
+                </h2>
+                <div className="space-y-1">{items.map(renderItem)}</div>
+              </section>
             );
           })}
+          {standaloneItems.slice(1).map(renderItem)}
         </nav>
       </div>
     </div>

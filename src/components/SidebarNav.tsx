@@ -266,6 +266,15 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
+const NAV_GROUPS = [
+  { label: "Finance", hrefs: ["/financials", "/accounts"] },
+  { label: "Marketing and Sales", hrefs: ["/companies", "/contacts", "/lms", "/brand-briefing-form", "/social-media"] },
+  { label: "Operations", hrefs: ["/projects", "/tasks", "/seo"] },
+  { label: "HR", hrefs: ["/leaves", "/request-documents", "/users"] },
+] as const;
+
+const GROUPED_HREFS = new Set<string>(NAV_GROUPS.flatMap((group) => group.hrefs));
+
 export default function SidebarNav() {
   const { role, loading } = useUserRole();
   const isAdmin = role === "admin";
@@ -275,6 +284,20 @@ export default function SidebarNav() {
     if (item.adminOnly && !isAdmin) return false;
     return true;
   });
+  const standaloneItems = visibleItems.filter((item) => !GROUPED_HREFS.has(item.href));
+
+  const renderItem = (item: NavItem) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition-all hover:bg-gradient-to-r hover:${item.gradient.hover} hover:text-slate-900 hover:shadow-sm`}
+    >
+      <span className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient.from} text-current shadow-sm transition-all group-hover:${item.gradient.to} group-hover:text-white group-hover:shadow-lg group-hover:${item.gradient.shadow}`}>
+        {item.icon}
+      </span>
+      <span>{item.label}</span>
+    </Link>
+  );
 
   if (loading) {
     return (
@@ -288,18 +311,24 @@ export default function SidebarNav() {
 
   return (
     <nav className="relative mt-1 flex-1 space-y-1 text-sm">
-      {visibleItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium text-slate-600 transition-all hover:bg-gradient-to-r hover:${item.gradient.hover} hover:text-slate-900 hover:shadow-sm`}
-        >
-          <span className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient.from} text-current shadow-sm transition-all group-hover:${item.gradient.to} group-hover:text-white group-hover:shadow-lg group-hover:${item.gradient.shadow}`}>
-            {item.icon}
-          </span>
-          <span>{item.label}</span>
-        </Link>
-      ))}
+      {standaloneItems[0] && renderItem(standaloneItems[0])}
+      {NAV_GROUPS.map((group) => {
+        const items = group.hrefs
+          .map((href) => visibleItems.find((item) => item.href === href))
+          .filter((item): item is NavItem => Boolean(item));
+
+        if (items.length === 0) return null;
+
+        return (
+          <section key={group.label} className="pt-3">
+            <h2 className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              {group.label}
+            </h2>
+            <div className="space-y-1">{items.map(renderItem)}</div>
+          </section>
+        );
+      })}
+      {standaloneItems.slice(1).map(renderItem)}
     </nav>
   );
 }

@@ -596,6 +596,15 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">KPIs & Performance</h2>
           </div>
 
+          {data.kpi_description && (
+            <div className="mb-4 rounded-2xl border border-orange-100 bg-white p-4 shadow-sm sm:p-6">
+              <div
+                className="strategy-content overflow-hidden whitespace-pre-wrap text-sm leading-relaxed text-slate-700"
+                dangerouslySetInnerHTML={{ __html: data.kpi_description }}
+              />
+            </div>
+          )}
+
           {kpis.length > 0 ? (
             <div className="space-y-6">
               {kpis.map((kpi) => (
@@ -707,11 +716,11 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                 </div>
               ))}
             </div>
-          ) : (
+          ) : !data.kpi_description ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
               <p className="text-sm text-slate-500">No KPI data available for this strategy.</p>
             </div>
-          )}
+          ) : null}
         </section>
 
         {/* SECTION: Content Calendar (Social Media) */}
@@ -720,6 +729,15 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
             <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 text-white text-sm">📅</span>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900">Social Media Content</h2>
           </div>
+
+          {data.platform_specific_strategy && (
+            <div className="mb-4 rounded-2xl border border-pink-100 bg-white p-4 shadow-sm sm:p-6">
+              <div
+                className="strategy-content overflow-hidden whitespace-pre-wrap text-sm leading-relaxed text-slate-700"
+                dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }}
+              />
+            </div>
+          )}
           
           {contentPosts.length > 0 ? (
             <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -761,11 +779,11 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
                 ))}
               </div>
             </div>
-          ) : (
+          ) : !data.platform_specific_strategy ? (
             <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
               <p className="text-sm text-slate-500">No social media content for this quarter.</p>
             </div>
-          )}
+          ) : null}
         </section>
 
         {/* SECTION: Email & WhatsApp Campaigns */}

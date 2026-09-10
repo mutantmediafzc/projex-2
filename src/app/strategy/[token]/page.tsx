@@ -567,25 +567,6 @@ export default function PublicStrategyPage({ params }: { params: Promise<{ token
               </div>
             )}
             
-            {data.kpi_description && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-pink-100 text-pink-600 text-xs">📊</span>
-                  KPIs
-                </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.kpi_description }} />
-              </div>
-            )}
-            
-            {data.platform_specific_strategy && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm overflow-hidden">
-                <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 text-xs">📱</span>
-                  Platform Specific Strategy
-                </h3>
-                <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap strategy-content overflow-hidden" dangerouslySetInnerHTML={{ __html: data.platform_specific_strategy }} />
-              </div>
-            )}
           </div>
         </section>
 

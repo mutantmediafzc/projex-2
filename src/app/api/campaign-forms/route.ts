@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
   } catch {
     return json({ error: "Invalid JSON body" }, 400);
   }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return json({ error: "JSON body must be an object" }, 400);
+  }
 
   const source = String(body.source ?? body.formSlug ?? "unknown");
   const sourceUrl = String(body.sourceUrl ?? body.source_url ?? source);
@@ -56,12 +59,29 @@ export async function POST(request: NextRequest) {
       ? (body.answers as Record<string, unknown>)
       : {};
   const questionnaire = Array.isArray(body.questionnaire)
-    ? body.questionnaire
+    ? [...body.questionnaire]
     : Object.entries(answers).map(([id, answer]) => ({
         id,
         question: id,
         answer,
       }));
+  // Landing-page forms send contact fields alongside their business questionnaire.
+  // Store them as answers so LMS uses the same contact display for both formats.
+  const contactFields = [
+    ["firstName", "First name"],
+    ["lastName", "Last name"],
+    ["fullName", "Full name"],
+    ["phoneCountryCode", "Country calling code"],
+    ["mobile", "Mobile number"],
+  ] as const;
+  for (const [id, question] of contactFields) {
+    const value = body[id];
+    if (typeof value !== "string" || !value.trim()) continue;
+    const entry = { id, question, answer: value.trim() };
+    const index = questionnaire.findIndex((item) => item?.id === id);
+    if (index === -1) questionnaire.push(entry);
+    else questionnaire[index] = entry;
+  }
   const website = String(body.website ?? answers.website ?? "");
   const email = String(body.email ?? answers.email ?? "").trim().toLowerCase();
   const metadata =

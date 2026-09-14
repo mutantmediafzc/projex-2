@@ -54,3 +54,24 @@ Content-Type: application/json
 Instead of `answers`, callers may provide any `questionnaire` array. When `answers` is supplied, it is stored as a questionnaire automatically. Top-level `website` and `email` fields are also accepted; otherwise they are taken from `answers` when present.
 
 Before deploying, apply all pending migrations under `supabase/migrations/`.
+
+Top-level `firstName`, `lastName`, `fullName`, `phoneCountryCode`, and `mobile` are also accepted as strings with either submission format. Nonblank values are trimmed and saved as contact answers in `questionnaire`, replacing an answer with the same ID when present. Blank or non-string values leave existing answers unchanged. LMS displays these answers as the contact name and phone number; `fullName` takes precedence over the combined first and last name.
+
+For example, a landing-page submission can send:
+
+```json
+{
+  "source": "mm26-aeo",
+  "website": "https://example.com",
+  "email": "jane@example.com",
+  "firstName": "Jane",
+  "lastName": "Doe",
+  "phoneCountryCode": "+971",
+  "mobile": "501234567",
+  "questionnaire": [
+    { "id": "business", "question": "Business type", "answer": "Retail" }
+  ]
+}
+```
+
+This applies to new submissions. Existing records with missing contact answers need to be backfilled from their original source.

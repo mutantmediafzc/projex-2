@@ -174,7 +174,7 @@ export default function ContentCalendar2026() {
         company:companies(id, name, logo_url),
         project_manager_ids, account_manager_ids, creative_team_lead_ids, creative_ids, videographer_ids,
         social_media_specialist_ids, performance_marketer_ids, email_whatsapp_specialist_ids,
-        website_blogs_specialist_ids, content_creator_ids
+        website_blogs_specialist_ids, content_creator_ids, production_traffic_coordinator_ids
       `)
       .in("status", ["active", "paused"])
       .order("name");
@@ -195,7 +195,8 @@ export default function ContentCalendar2026() {
           (p.performance_marketer_ids || []).includes(userId) ||
           (p.email_whatsapp_specialist_ids || []).includes(userId) ||
           (p.website_blogs_specialist_ids || []).includes(userId) ||
-          (p.content_creator_ids || []).includes(userId)
+          (p.content_creator_ids || []).includes(userId) ||
+          (p.production_traffic_coordinator_ids || []).includes(userId)
         );
       });
       
@@ -236,7 +237,8 @@ export default function ContentCalendar2026() {
               (p.performance_marketer_ids || []).includes(userId) ||
               (p.email_whatsapp_specialist_ids || []).includes(userId) ||
               (p.website_blogs_specialist_ids || []).includes(userId) ||
-              (p.content_creator_ids || []).includes(userId)
+              (p.content_creator_ids || []).includes(userId) ||
+              (p.production_traffic_coordinator_ids || []).includes(userId)
             );
           })
           .map((p: any) => p.id)

@@ -23,6 +23,7 @@ type TeamAssignment = {
   email_whatsapp_specialist_ids: string[];
   website_blogs_specialist_ids: string[];
   content_creator_ids: string[];
+  production_traffic_coordinator_ids: string[];
 };
 
 type Props = {
@@ -90,6 +91,12 @@ const ROLE_CONFIG = [
     label: "Content Creator", 
     icon: "🎬",
     description: "Creates content for all platforms"
+  },
+  {
+    key: "production_traffic_coordinator_ids" as const,
+    label: "Production & Traffic Coordinator",
+    icon: "🚦",
+    description: "Coordinates production schedules and workflow traffic"
   },
 ];
 
@@ -286,6 +293,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     email_whatsapp_specialist_ids: [],
     website_blogs_specialist_ids: [],
     content_creator_ids: [],
+    production_traffic_coordinator_ids: [],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -323,7 +331,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
     // Load current assignments (now arrays)
     const { data: project } = await supabaseClient
       .from("social_projects")
-      .select("project_manager_ids, account_manager_ids, creative_team_lead_ids, creative_ids, videographer_ids, social_media_specialist_ids, performance_marketer_ids, email_whatsapp_specialist_ids, website_blogs_specialist_ids, content_creator_ids")
+      .select("project_manager_ids, account_manager_ids, creative_team_lead_ids, creative_ids, videographer_ids, social_media_specialist_ids, performance_marketer_ids, email_whatsapp_specialist_ids, website_blogs_specialist_ids, content_creator_ids, production_traffic_coordinator_ids")
       .eq("id", projectId)
       .single();
 
@@ -339,6 +347,7 @@ export default function TeamAssignments({ projectId, onUpdate }: Props) {
         email_whatsapp_specialist_ids: project.email_whatsapp_specialist_ids || [],
         website_blogs_specialist_ids: project.website_blogs_specialist_ids || [],
         content_creator_ids: project.content_creator_ids || [],
+        production_traffic_coordinator_ids: project.production_traffic_coordinator_ids || [],
       });
     }
 

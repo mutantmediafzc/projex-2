@@ -217,7 +217,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           <View style={styles.breakdownSection} wrap={false}>
             <Text style={styles.sectionTitle}>Payment Breakdown</Text>
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, styles.breakdownInvoiceCol]}>Invoice</Text>
+              <Text style={[styles.tableHeaderCell, styles.breakdownInvoiceCol]}>#</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownDescCol]}>Description</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownAmountCol]}>Amount</Text>
               <Text style={[styles.tableHeaderCell, styles.breakdownDateCol]}>Due Date</Text>
@@ -225,7 +225,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             </View>
             {paymentBreakdowns.map((breakdown, index) => (
               <View key={breakdown.id} style={styles.tableRow}>
-                <Text style={[styles.tableCell, styles.breakdownInvoiceCol]}>{invoice.payment_breakdown_parent_invoice_number || invoice.invoice_number}-{index + 1}</Text>
+                <Text style={[styles.tableCell, styles.breakdownInvoiceCol]}>{index + 1}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDescCol]}>{breakdown.description}</Text>
                 <Text style={[styles.tableCell, styles.breakdownAmountCol]}>{formatMoney(Number(breakdown.amount), invoice.currency)}</Text>
                 <Text style={[styles.tableCell, styles.breakdownDateCol]}>{formatDate(breakdown.due_date)}</Text>

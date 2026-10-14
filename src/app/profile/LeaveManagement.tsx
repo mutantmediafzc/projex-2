@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabaseClient } from "@/lib/supabaseClient";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
+import { canFilePastLeave, getLeaveToday } from "@/lib/leaveDateAccess";
 
 interface LeaveBalance {
   annualLeaveUsed: number;
@@ -58,6 +59,7 @@ export default function LeaveManagement({
 }: LeaveManagementProps) {
   const { hasHrAccess } = useUserRole();
   const [userId, setUserId] = useState<string | null>(null);
+  const [canBackdate, setCanBackdate] = useState(false);
   const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [requestUserId, setRequestUserId] = useState("");
   const [balance, setBalance] = useState<LeaveBalance | null>(null);
@@ -78,7 +80,10 @@ export default function LeaveManagement({
   useEffect(() => {
     async function loadUser() {
       const { data: { user } } = await supabaseClient.auth.getUser();
-      if (user) setUserId(user.id);
+      if (user) {
+        setUserId(user.id);
+        setCanBackdate(canFilePastLeave(user.email));
+      }
     }
     loadUser();
   }, []);
@@ -140,9 +145,7 @@ export default function LeaveManagement({
     try {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (start < today) { setError("Start date cannot be in the past"); setSubmitting(false); return; }
+      if (!canBackdate && formData.startDate < getLeaveToday()) { setError("Start date cannot be in the past"); setSubmitting(false); return; }
       if (end < start) { setError("End date must be after start date"); setSubmitting(false); return; }
       const { data: sessionData } = await supabaseClient.auth.getSession();
       const accessToken = sessionData.session?.access_token;

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { canFilePastLeave, getLeaveToday } from "@/lib/leaveDateAccess";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -132,6 +133,17 @@ export async function POST(request: NextRequest) {
     // Calculate days count
     const start = new Date(startDate);
     const end = new Date(endDate);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate) ||
+        !Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) ||
+        start.toISOString().slice(0, 10) !== startDate || end.toISOString().slice(0, 10) !== endDate) {
+      return NextResponse.json({ error: "Invalid leave dates" }, { status: 400 });
+    }
+    if (end < start) {
+      return NextResponse.json({ error: "End date must be after start date" }, { status: 400 });
+    }
+    if (!canFilePastLeave(currentUser.email) && startDate < getLeaveToday()) {
+      return NextResponse.json({ error: "Start date cannot be in the past" }, { status: 403 });
+    }
     const diffTime = Math.abs(end.getTime() - start.getTime());
     const daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
 

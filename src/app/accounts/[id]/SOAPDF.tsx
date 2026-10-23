@@ -1,6 +1,7 @@
 "use client";
 
-import { Document, Image, Page, PDFDownloadLink, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { useRef, useState } from "react";
+import { Document, Image, Page, pdf, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 export type AccountCompanyForPDF = {
   name: string;
@@ -247,6 +248,7 @@ export function SOADocument({
   payments,
   accountBalance,
   generatedAt,
+  period,
 }: {
   clientName: string;
   company: AccountCompanyForPDF | null;
@@ -254,6 +256,7 @@ export function SOADocument({
   payments: AccountSOAPDFPayment[];
   accountBalance: number;
   generatedAt: Date;
+  period?: string;
 }) {
   const paidByInvoice = payments.reduce<Record<string, number>>((totals, payment) => {
     totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
@@ -297,6 +300,7 @@ export function SOADocument({
         </View>
 
         <Text style={styles.title}>STATEMENT</Text>
+        {period && <Text style={styles.partyLine}>Period: {period}</Text>}
 
         <View style={styles.parties}>
           <View style={styles.party}>
@@ -373,31 +377,69 @@ export function AccountSOAPDFDownload({
   invoices,
   payments,
   accountBalance,
+  period,
+  disabled = false,
 }: {
   clientName: string;
   company: AccountCompanyForPDF | null;
   invoices: AccountSOAPDFInvoice[];
   payments: AccountSOAPDFPayment[];
   accountBalance: number;
+  period?: string;
+  disabled?: boolean;
 }) {
-  const generatedAt = new Date();
-  const fileName = `SOA_${clientName.replace(/[^a-z0-9]+/gi, "_")}_${generatedAt.toISOString().slice(0, 10)}.pdf`;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const exporting = useRef(false);
+
+  async function handleDownload() {
+    if (disabled || exporting.current) return;
+    exporting.current = true;
+    setLoading(true);
+    setError(null);
+    let url: string | null = null;
+    try {
+      const generatedAt = new Date();
+      const fileName = `SOA_${clientName.replace(/[^a-z0-9]+/gi, "_")}_${generatedAt.toISOString().slice(0, 10)}.pdf`;
+      // A fresh renderer avoids reconciling invoice rows while the date range changes.
+      const blob = await pdf(
+        <SOADocument clientName={clientName} company={company} invoices={invoices} payments={payments} accountBalance={accountBalance} generatedAt={generatedAt} period={period} />,
+      ).toBlob();
+      url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error("Failed to export account PDF:", error);
+      setError("Unable to export PDF. Please try again.");
+    } finally {
+      if (url) {
+        const downloadUrl = url;
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      }
+      exporting.current = false;
+      setLoading(false);
+    }
+  }
 
   return (
-    <PDFDownloadLink
-      document={<SOADocument clientName={clientName} company={company} invoices={invoices} payments={payments} accountBalance={accountBalance} generatedAt={generatedAt} />}
-      fileName={fileName}
-      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50"
-    >
-      {({ loading }) => (
-        <>
-          <svg className="h-4 w-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
-          {loading ? "Preparing PDF..." : "Export PDF"}
-        </>
-      )}
-    </PDFDownloadLink>
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={handleDownload}
+        disabled={disabled || loading}
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <svg className="h-4 w-4 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
+        {loading ? "Preparing PDF..." : "Export PDF"}
+      </button>
+      {error && <p role="alert" className="text-[12px] text-red-600">{error}</p>}
+    </div>
   );
 }

@@ -1052,7 +1052,9 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
     const day = date?.slice(0, 10);
     return Boolean(day && (!exportFrom || day >= exportFrom) && (!exportTo || day <= exportTo));
   };
-  const exportInvoices = invoices.filter((invoice) => inExportRange(invoice.issue_date));
+  const exportInvoices = invoices.filter((invoice) => (
+    invoice.status !== "cancelled" && inExportRange(invoice.issue_date)
+  ));
   const chronologicalExportInvoices = [...exportInvoices].sort((a, b) => a.issue_date.localeCompare(b.issue_date));
   const exportInvoiceIds = new Set(exportInvoices.map((invoice) => invoice.id));
   const exportPayments = invoicePayments.filter((payment) => exportInvoiceIds.has(payment.invoice_id));

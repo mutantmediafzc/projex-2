@@ -1043,9 +1043,31 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [invoicesError, setInvoicesError] = useState<string | null>(null);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const currentMonth = new Date().getMonth();
-  const displayMonths = months.slice(Math.max(0, currentMonth - 2), currentMonth + 1);
+  const [exportFrom, setExportFrom] = useState("");
+  const [exportTo, setExportTo] = useState("");
+  const [exportRangeOpen, setExportRangeOpen] = useState(false);
+  const invalidExportRange = Boolean(exportFrom && exportTo && exportFrom > exportTo);
+  const inExportRange = (date: string) => {
+    if (!exportFrom && !exportTo) return true;
+    const day = date?.slice(0, 10);
+    return Boolean(day && (!exportFrom || day >= exportFrom) && (!exportTo || day <= exportTo));
+  };
+  const exportInvoices = invoices.filter((invoice) => inExportRange(invoice.issue_date));
+  const chronologicalExportInvoices = [...exportInvoices].sort((a, b) => a.issue_date.localeCompare(b.issue_date));
+  const exportInvoiceIds = new Set(exportInvoices.map((invoice) => invoice.id));
+  const exportPayments = invoicePayments.filter((payment) => exportInvoiceIds.has(payment.invoice_id));
+  const exportAdhocItems = adhocItems.filter((item) => inExportRange(item.date_requested));
+  const exportPeriod = exportFrom || exportTo
+    ? `${exportFrom || "Beginning"} to ${exportTo || "Present"}`
+    : "All dates";
+  const exportDisabled = invalidExportRange || invoicesLoading || Boolean(invoicesError);
+  const exportPaidByInvoice = exportPayments.reduce<Record<string, number>>((totals, payment) => {
+    totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
+    return totals;
+  }, {});
+  const exportBalance = exportInvoices.reduce((sum, invoice) => (
+    sum + Math.max(0, invoice.total - (exportPaidByInvoice[invoice.id] || 0))
+  ), 0);
 
   useEffect(() => {
     let active = true;
@@ -1135,16 +1157,17 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
   }, [client.company_id, client.currency]);
 
   async function handleExport(format: "pdf" | "excel") {
-    const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
+    if (exportDisabled) return;
+    const paidByInvoice = exportPayments.reduce<Record<string, number>>((totals, payment) => {
       totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
       return totals;
     }, {});
     const data = {
       client: client.client_name,
-      period: `${displayMonths[0]} - ${displayMonths[displayMonths.length - 1]} ${new Date().getFullYear()}`,
+      period: exportPeriod,
       retainer: client.retainer_fee,
       serviceBased: client.service_based_fee,
-      adhoc: adhocItems.reduce((sum, a) => sum + a.amount, 0),
+      adhoc: exportAdhocItems.reduce((sum, a) => sum + a.amount, 0),
       adhocItems,
       invoices,
     };
@@ -1156,7 +1179,7 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
         [""],
         ["Invoices"],
         ["Invoice Number", "Project", "Issue Date", "Due Date", "Status", "Total", "Paid", "Balance"],
-        ...invoices.map((invoice) => {
+        ...chronologicalExportInvoices.map((invoice) => {
           const paid = paidByInvoice[invoice.id] || 0;
           return [invoice.invoice_number, invoice.project_name, invoice.issue_date, invoice.due_date || "", invoice.status || "", invoice.total, paid, Math.max(0, invoice.total - paid)];
         }),
@@ -1168,7 +1191,7 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
         [""],
         ["Ad-Hoc Requirements"],
         ["Date", "Description", "Amount", "Status"],
-        ...adhocItems.map((a) => [a.date_requested, a.description, a.amount, a.status]),
+        ...exportAdhocItems.slice().sort((a, b) => a.date_requested.localeCompare(b.date_requested)).map((a) => [a.date_requested, a.description, a.amount, a.status]),
       ].map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv" });
@@ -1177,24 +1200,71 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
       a.href = url;
       a.download = `SOA_${client.client_name}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
+      URL.revokeObjectURL(url);
     }
   }
 
-  const paidByInvoice = invoicePayments.reduce<Record<string, number>>((totals, payment) => {
-    totals[payment.invoice_id] = (totals[payment.invoice_id] || 0) + payment.amount;
-    return totals;
-  }, {});
-  const invoicedTotal = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
-  const paidTotal = invoices.reduce((sum, invoice) => sum + Math.min(invoice.total, paidByInvoice[invoice.id] || 0), 0);
-  const outstandingTotal = Math.max(0, invoicedTotal - paidTotal);
+  const paidByInvoice = exportPaidByInvoice;
+  const invoicedTotal = exportInvoices.reduce((sum, invoice) => sum + invoice.total, 0);
+  const paidTotal = exportInvoices.reduce((sum, invoice) => sum + Math.min(invoice.total, paidByInvoice[invoice.id] || 0), 0);
+  const outstandingTotal = exportBalance;
 
   return (
     <div className="space-y-6">
       {/* Export Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <h3 className="text-[15px] font-semibold text-slate-700">Statement of Account</h3>
-        <div className="flex gap-2">
-          <button onClick={() => handleExport("excel")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50">
+        <div className="flex flex-wrap items-end gap-2">
+          <div
+            className="relative"
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget)) setExportRangeOpen(false);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setExportRangeOpen(false);
+                event.currentTarget.querySelector("button")?.focus();
+              }
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Statement date range"
+              aria-expanded={exportRangeOpen}
+              aria-controls="soa-export-date-range"
+              onClick={() => setExportRangeOpen((open) => !open)}
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <svg className="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M16 3v4M8 3v4M3 11h18" />
+              </svg>
+              {exportFrom || exportTo
+                ? `${exportFrom ? formatDate(exportFrom) : "Beginning"} to ${exportTo ? formatDate(exportTo) : "Present"}`
+                : "Date range: All dates"}
+              <svg className="h-3 w-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+            {exportRangeOpen && (
+              <div id="soa-export-date-range" role="group" aria-label="Invoice date range" className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+                <p className="mb-3 text-[12px] font-semibold text-slate-700">Invoice date range</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-600">
+                    From
+                    <input type="date" value={exportFrom} max={exportTo || undefined} onChange={(event) => setExportFrom(event.target.value)} aria-invalid={invalidExportRange} className="min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-[12px] text-slate-700" />
+                  </label>
+                  <label className="flex min-w-0 flex-col gap-1 text-[11px] font-medium text-slate-600">
+                    To
+                    <input type="date" value={exportTo} min={exportFrom || undefined} onChange={(event) => setExportTo(event.target.value)} aria-invalid={invalidExportRange} className="min-w-0 w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-[12px] text-slate-700" />
+                  </label>
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <button type="button" onClick={() => { setExportFrom(""); setExportTo(""); setExportRangeOpen(false); }} className="text-[12px] font-medium text-slate-500 hover:text-slate-700">Clear dates</button>
+                  <button type="button" disabled={invalidExportRange} onClick={() => setExportRangeOpen(false)} className="rounded-lg bg-teal-500 px-3 py-1.5 text-[12px] font-medium text-white hover:bg-teal-600 disabled:opacity-50">Done</button>
+                </div>
+              </div>
+            )}
+          </div>
+          <button disabled={exportDisabled} onClick={() => handleExport("excel")} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">
             <svg className="h-4 w-4 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -1204,19 +1274,26 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
           <AccountSOAPDFDownload
             clientName={client.client_name}
             company={company}
-            invoices={invoices}
-            payments={invoicePayments}
-            accountBalance={outstandingTotal}
+            invoices={chronologicalExportInvoices}
+            payments={exportPayments}
+            accountBalance={exportBalance}
+            period={exportPeriod}
+            disabled={exportDisabled}
           />
         </div>
       </div>
+
+      {invalidExportRange && <p role="alert" className="text-[12px] text-red-600">From date must be on or before To date.</p>}
+      {(exportFrom || exportTo) && !invalidExportRange && (
+        <p role="status" className="text-[12px] text-slate-500">Showing {exportInvoices.length} invoices for {exportPeriod}.</p>
+      )}
 
       {/* Invoice Ledger */}
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Invoices</p>
-            <p className="mt-1 text-xl font-bold text-slate-900">{invoices.length}</p>
+            <p className="mt-1 text-xl font-bold text-slate-900">{exportInvoices.length}</p>
           </div>
           <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
             <p className="text-[11px] font-medium uppercase tracking-wide text-violet-600">Total Invoiced</p>
@@ -1240,8 +1317,8 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
             <p className="px-4 py-8 text-center text-[13px] text-slate-400">Loading company invoices...</p>
           ) : invoicesError ? (
             <p className="px-4 py-8 text-center text-[13px] text-red-600">{invoicesError}</p>
-          ) : invoices.length === 0 ? (
-            <p className="px-4 py-8 text-center text-[13px] text-slate-400">No invoices found for this company.</p>
+          ) : exportInvoices.length === 0 ? (
+            <p className="px-4 py-8 text-center text-[13px] text-slate-400">{exportFrom || exportTo ? "No invoices found for the selected date range." : "No invoices found for this company."}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
@@ -1258,7 +1335,7 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
                 <tbody className="divide-y divide-slate-100">
                   {(() => {
                     let runningBalance = 0;
-                    return invoices.map((invoice) => {
+                    return exportInvoices.map((invoice) => {
                       const paid = Math.min(invoice.total, paidByInvoice[invoice.id] || 0);
                       runningBalance += invoice.total - paid;
                       return (
@@ -1277,7 +1354,7 @@ function SOATab({ client, company, adhocItems }: { client: AccountClient; compan
                 <tfoot className="bg-slate-50">
                   <tr>
                     <td colSpan={4} className="px-4 py-3" />
-                    <td className="px-4 py-3 text-right font-semibold text-slate-700">Account Current Balance</td>
+                    <td className="px-4 py-3 text-right font-semibold text-slate-700">{exportFrom || exportTo ? "Balance for Selected Period" : "Account Current Balance"}</td>
                     <td className="px-4 py-3 text-right font-bold text-amber-700">{formatCurrency(outstandingTotal, client.currency)}</td>
                   </tr>
                 </tfoot>

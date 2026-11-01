@@ -84,21 +84,18 @@ async function save(request: NextRequest, token: string, submit: boolean) {
     return json({ error: "Invalid JSON body" }, 400);
   }
 
-  const title = typeof body.title === "string" ? body.title.trim().slice(0, 500) : "";
-  const description = typeof body.description === "string" ? body.description.slice(0, 20000) : "";
+  // Title and description are owned by the QA lead and ignored here.
   const prUrl = typeof body.pr_url === "string" ? body.pr_url.trim().slice(0, 2000) : "";
   const breakdown = sanitizeBreakdown(body.breakdown);
   const cases = sanitizeCases(body.cases);
 
   if (submit) {
-    const problem = validateSubmission({ title, description, pr_url: prUrl, breakdown, cases });
+    const problem = validateSubmission({ pr_url: prUrl, breakdown, cases });
     if (problem) return json({ error: problem }, 400);
   }
 
   const { error } = await supabaseAdmin.rpc("qa_save_task", {
     p_token: token,
-    p_title: title,
-    p_description: description,
     p_pr_url: prUrl,
     p_breakdown: breakdown,
     p_cases: cases,

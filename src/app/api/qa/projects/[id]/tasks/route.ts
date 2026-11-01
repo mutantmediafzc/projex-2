@@ -6,7 +6,7 @@ import { getActorName, json, logQaEvent, requireQaAdmin } from "@/lib/qaTracking
 type Params = { params: Promise<{ id: string }> };
 
 // POST /api/qa/projects/[id]/tasks — generate a task link for a team member.
-// Body: { assignee_id, title?, description? }
+// Body: { assignee_id, title, description }
 export async function POST(request: NextRequest, { params }: Params) {
   const auth = await requireQaAdmin(request);
   if (auth.error) return auth.error;
@@ -32,6 +32,9 @@ export async function POST(request: NextRequest, { params }: Params) {
 
   const title = typeof body.title === "string" ? body.title.trim().slice(0, 500) : "";
   const description = typeof body.description === "string" ? body.description.slice(0, 10000) : "";
+  // The QA lead owns the title and description; members cannot edit them.
+  if (!title) return json({ error: "Task title is required" }, 400);
+  if (!description.trim()) return json({ error: "Task description is required" }, 400);
 
   const { data: task, error } = await supabaseAdmin
     .from("qa_tasks")

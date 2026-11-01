@@ -308,19 +308,19 @@ export default function QaProjectPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-[12px] text-slate-500">Optional: pre-fill the task title and description. The team member can edit both until they submit.</p>
+              <p className="text-[12px] text-slate-500">You own the task title and description. The team member sees them read-only and fills in the PR link, breakdown and test cases.</p>
               <div>
-                <label className="mb-1 block text-[12px] font-semibold text-slate-700">Task title</label>
+                <label className="mb-1 block text-[12px] font-semibold text-slate-700">Task title<span className="text-rose-500">*</span></label>
                 <input className={qaInput} value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="e.g. Add invoice export to CSV" />
               </div>
               <div>
-                <label className="mb-1 block text-[12px] font-semibold text-slate-700">Description</label>
+                <label className="mb-1 block text-[12px] font-semibold text-slate-700">Description<span className="text-rose-500">*</span></label>
                 <textarea className={`${qaInput} min-h-[90px]`} value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)} />
               </div>
               {formError && <p className="text-[12px] text-rose-600">{formError}</p>}
               <div className="flex justify-end gap-2">
                 <button type="button" className={qaButton.secondary} onClick={closeGenerate}>Cancel</button>
-                <button type="button" className={qaButton.primary} disabled={busy} onClick={generateTask}>
+                <button type="button" className={qaButton.primary} disabled={busy || !taskTitle.trim() || !taskDescription.trim()} onClick={generateTask}>
                   {busy ? "Generating..." : "Generate link"}
                 </button>
               </div>

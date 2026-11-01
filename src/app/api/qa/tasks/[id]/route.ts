@@ -88,13 +88,22 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       return json({ error: "This task has been submitted and is locked" }, 409);
     }
     const update: Record<string, string> = {};
-    if (typeof body.title === "string") update.title = body.title.trim().slice(0, 500);
-    if (typeof body.description === "string") update.description = body.description.slice(0, 10000);
+    if (typeof body.title === "string") {
+      update.title = body.title.trim().slice(0, 500);
+      if (!update.title) return json({ error: "Task title is required" }, 400);
+    }
+    if (typeof body.description === "string") {
+      update.description = body.description.slice(0, 10000);
+      if (!update.description.trim()) return json({ error: "Task description is required" }, 400);
+    }
     if (body.regenerate_token === true) update.public_token = generateQaToken();
     const { error } = await supabaseAdmin.from("qa_tasks").update(update).eq("id", id);
     if (error) return json({ error: "Unable to update task" }, 500);
     if (update.public_token) {
       await logQaEvent({ taskId: id, eventType: "link_regenerated", actorId: auth.user.id, actorName });
+    }
+    if (update.title !== undefined || update.description !== undefined) {
+      await logQaEvent({ taskId: id, eventType: "details_updated", actorId: auth.user.id, actorName });
     }
   }
 

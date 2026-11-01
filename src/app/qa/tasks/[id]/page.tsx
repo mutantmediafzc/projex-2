@@ -69,6 +69,9 @@ export default function QaTaskReviewPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
 
   // Editable review state
   const [verdict, setVerdict] = useState<QaTaskReviewStatus>("pending");
@@ -132,6 +135,32 @@ export default function QaTaskReviewPage() {
     }
   }
 
+  function startEditDetails() {
+    if (!task) return;
+    setEditTitle(task.title);
+    setEditDescription(task.description);
+    setEditingDetails(true);
+  }
+
+  async function saveDetails() {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await authFetch(`/api/qa/tasks/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: editTitle, description: editDescription }),
+      });
+      const payload = await res.json();
+      if (!res.ok) throw new Error(payload.error || "Unable to save task details");
+      setEditingDetails(false);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to save task details");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function copyLink() {
     if (!task) return;
     navigator.clipboard.writeText(`${window.location.origin}/public/qa/${task.public_token}`).then(() => {
@@ -174,7 +203,30 @@ export default function QaTaskReviewPage() {
                   <Badge className="bg-sky-50 text-sky-700 ring-sky-200">Draft, not submitted yet</Badge>
                 )}
                 <span className="text-[12px] text-slate-500">Assigned to <b className="text-slate-700">{memberName}</b></span>
+                {!submitted && !editingDetails && (
+                  <button type="button" className={`${qaButton.secondary} ml-auto`} onClick={startEditDetails}>
+                    Edit title &amp; description
+                  </button>
+                )}
               </div>
+              {editingDetails && (
+                <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
+                  <div>
+                    <label className="mb-1 block text-[12px] font-semibold text-slate-700">Task title<span className="text-rose-500">*</span></label>
+                    <input className={qaInput} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[12px] font-semibold text-slate-700">Description<span className="text-rose-500">*</span></label>
+                    <textarea className={`${qaInput} min-h-[90px]`} value={editDescription} onChange={(e) => setEditDescription(e.target.value)} />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button type="button" className={qaButton.secondary} onClick={() => setEditingDetails(false)}>Cancel</button>
+                    <button type="button" className={qaButton.primary} disabled={saving || !editTitle.trim() || !editDescription.trim()} onClick={saveDetails}>
+                      {saving ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </div>
+              )}
               <dl className="mt-4 grid gap-4 text-[13px] sm:grid-cols-2">
                 <div>
                   <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">PR link</dt>

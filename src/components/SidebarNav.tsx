@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useUserRole } from "@/app/profile/hooks/useUserRole";
+import { supabaseClient } from "@/lib/supabaseClient";
+import { isQaAdminEmail } from "@/lib/qaTracking";
 
 type NavItem = {
   href: string;
@@ -9,6 +12,7 @@ type NavItem = {
   icon: React.ReactNode;
   gradient: { from: string; to: string; hover: string; shadow: string };
   adminOnly?: boolean;
+  qaAdminOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -118,6 +122,18 @@ const NAV_ITEMS: NavItem[] = [
     icon: (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+      </svg>
+    ),
+  },
+  {
+    href: "/qa",
+    label: "QA Tracking",
+    qaAdminOnly: true,
+    gradient: { from: "from-emerald-100 to-teal-100", to: "from-emerald-500 to-teal-500", hover: "from-emerald-50 to-teal-50", shadow: "shadow-emerald-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 11l3 3L22 4" />
+        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
       </svg>
     ),
   },
@@ -282,7 +298,7 @@ const NAV_ITEMS: NavItem[] = [
 const NAV_GROUPS = [
   { label: "Finance", hrefs: ["/financials", "/accounts"] },
   { label: "Marketing and Sales", hrefs: ["/companies", "/contacts", "/lms", "/brand-briefing-form", "/design-requests", "/social-media"] },
-  { label: "Operations", hrefs: ["/projects", "/tasks", "/seo"] },
+  { label: "Operations", hrefs: ["/projects", "/tasks", "/qa", "/seo"] },
   { label: "HR", hrefs: ["/leaves", "/request-documents", "/users"] },
 ] as const;
 
@@ -291,10 +307,22 @@ const GROUPED_HREFS = new Set<string>(NAV_GROUPS.flatMap((group) => group.hrefs)
 export default function SidebarNav() {
   const { role, loading } = useUserRole();
   const isAdmin = role === "admin";
+  const [isQaAdmin, setIsQaAdmin] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    supabaseClient.auth.getUser().then(({ data }) => {
+      if (mounted) setIsQaAdmin(isQaAdminEmail(data.user?.email));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Filter nav items based on role
   const visibleItems = NAV_ITEMS.filter(item => {
     if (item.adminOnly && !isAdmin) return false;
+    if (item.qaAdminOnly && !isQaAdmin) return false;
     return true;
   });
   const standaloneItems = visibleItems.filter((item) => !GROUPED_HREFS.has(item.href));

@@ -70,8 +70,6 @@ export default function PublicQaTaskPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [prUrl, setPrUrl] = useState("");
   const [breakdown, setBreakdown] = useState<string[]>([""]);
   const [cases, setCases] = useState<CaseDraft[]>([]);
@@ -91,8 +89,6 @@ export default function PublicQaTaskPage() {
       if (!res.ok) throw new Error(payload.error || "Unable to load this task");
       const data = payload as TaskPayload;
       setTask(data);
-      setTitle(data.title || "");
-      setDescription(data.description || "");
       setPrUrl(data.pr_url || "");
       setBreakdown(data.breakdown.length ? data.breakdown : [""]);
       setCases(data.cases.length ? data.cases.map((c) => ({ ...c, key: ++keyRef.current })) : [emptyCase()]);
@@ -143,8 +139,6 @@ export default function PublicQaTaskPage() {
 
   function buildBody() {
     return {
-      title: title.trim(),
-      description,
       pr_url: prUrl.trim(),
       breakdown: breakdown.map((b) => b.trim()).filter(Boolean),
       cases: cases
@@ -244,12 +238,15 @@ export default function PublicQaTaskPage() {
         {/* Task */}
         <section className="space-y-4 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
           <h2 className="text-[13px] font-semibold uppercase tracking-wide text-slate-500">1. Task</h2>
-          <Field label="Task title" required>
-            <input className={input} disabled={locked} value={title} onChange={(e) => { touch(); setTitle(e.target.value); }} placeholder="What does this PR deliver?" />
-          </Field>
-          <Field label="Description" required>
-            <textarea className={`${input} min-h-[110px]`} disabled={locked} value={description} onChange={(e) => { touch(); setDescription(e.target.value); }} placeholder="What changed and why. Mention affected pages, APIs or database changes." />
-          </Field>
+          <div>
+            <p className="mb-1 text-[12px] font-semibold text-slate-700">Task title</p>
+            <p className="text-[16px] font-semibold text-slate-900">{task.title || <span className="font-normal italic text-slate-400">No title set yet</span>}</p>
+          </div>
+          <div>
+            <p className="mb-1 text-[12px] font-semibold text-slate-700">Description</p>
+            <p className="whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-[14px] text-slate-700">{task.description || <span className="italic text-slate-400">No description</span>}</p>
+          </div>
+          {!locked && <p className="text-[11px] text-slate-400">Title and description are set by your QA lead.</p>}
           <Field label="PR link" required>
             {locked ? (
               <a href={prUrl} target="_blank" rel="noreferrer" className="block break-all text-[14px] text-sky-600 hover:underline">{prUrl}</a>

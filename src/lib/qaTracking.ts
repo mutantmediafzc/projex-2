@@ -110,6 +110,7 @@ export const QA_EVENT_LABELS: Record<string, string> = {
   submitted: "Submitted by team member",
   reviewed: "Review updated",
   link_regenerated: "Link regenerated",
+  details_updated: "Title or description updated by QA lead",
 };
 
 export function isQaCaseStatus(value: unknown): value is QaCaseStatus {
@@ -173,15 +174,13 @@ export function sanitizeCases(value: unknown): QaTestCase[] {
 
 // Mirrors the database submit validation so the member gets a clear message
 // before the request is sent.
+// Title and description are set by the QA lead and are not part of the
+// member's submission.
 export function validateSubmission(input: {
-  title: string;
-  description: string;
   pr_url: string;
   breakdown: string[];
   cases: QaTestCase[];
 }): string | null {
-  if (!input.title.trim()) return "Task title is required";
-  if (!input.description.trim()) return "Task description is required";
   if (!input.pr_url.trim()) return "PR link is required";
   if (!isValidHttpUrl(input.pr_url.trim())) return "PR link must be a valid URL";
   if (input.breakdown.length === 0) return "Add at least one breakdown item";

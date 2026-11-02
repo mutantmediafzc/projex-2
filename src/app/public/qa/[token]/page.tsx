@@ -62,6 +62,54 @@ function formatDate(value: string | null) {
   }).format(new Date(value));
 }
 
+type DraftBackup = {
+  pr_url: string;
+  breakdown: string[];
+  cases: Array<Omit<CaseDraft, "key" | "review_status" | "review_comment">>;
+};
+
+// Local backup of unsaved answers, so a failed save or a closed tab never
+// loses the member's work. Storage can be unavailable (private mode), so
+// every access is guarded.
+function backupKey(token: string) {
+  return `qa-draft-backup:${token}`;
+}
+
+function readBackup(token: string): DraftBackup | null {
+  try {
+    const raw = window.localStorage.getItem(backupKey(token));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DraftBackup;
+    return parsed && Array.isArray(parsed.cases) && Array.isArray(parsed.breakdown) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeBackup(token: string, backup: DraftBackup) {
+  try {
+    window.localStorage.setItem(backupKey(token), JSON.stringify(backup));
+  } catch {
+    // ignore
+  }
+}
+
+function clearBackup(token: string) {
+  try {
+    window.localStorage.removeItem(backupKey(token));
+  } catch {
+    // ignore
+  }
+}
+
+async function readJson(res: Response): Promise<Record<string, unknown>> {
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
 export default function PublicQaTaskPage() {
   const { token } = useParams<{ token: string }>();
   const keyRef = useRef(0);
@@ -89,10 +137,20 @@ export default function PublicQaTaskPage() {
       if (!res.ok) throw new Error(payload.error || "Unable to load this task");
       const data = payload as TaskPayload;
       setTask(data);
-      setPrUrl(data.pr_url || "");
-      setBreakdown(data.breakdown.length ? data.breakdown : [""]);
-      setCases(data.cases.length ? data.cases.map((c) => ({ ...c, key: ++keyRef.current })) : [emptyCase()]);
-      setDirty(false);
+      const backup = data.status === "draft" ? readBackup(token) : null;
+      if (data.status !== "draft") clearBackup(token);
+      if (backup) {
+        setPrUrl(backup.pr_url || "");
+        setBreakdown(backup.breakdown.length ? backup.breakdown : [""]);
+        setCases(backup.cases.length ? backup.cases.map((c) => ({ ...c, key: ++keyRef.current })) : [emptyCase()]);
+        setDirty(true);
+        setNotice({ tone: "ok", text: "We restored answers you had not saved yet from this browser. Click Save draft to store them." });
+      } else {
+        setPrUrl(data.pr_url || "");
+        setBreakdown(data.breakdown.length ? data.breakdown : [""]);
+        setCases(data.cases.length ? data.cases.map((c) => ({ ...c, key: ++keyRef.current })) : [emptyCase()]);
+        setDirty(false);
+      }
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : "Unable to load this task");
     } finally {
@@ -115,6 +173,19 @@ export default function PublicQaTaskPage() {
   }, [dirty]);
 
   const locked = task?.status === "submitted";
+
+  // Keep a local copy of unsaved work.
+  useEffect(() => {
+    if (!dirty || locked || !task) return;
+    const timer = setTimeout(() => {
+      writeBackup(token, {
+        pr_url: prUrl,
+        breakdown,
+        cases: cases.map((c) => ({ title: c.title, steps: c.steps, expected_result: c.expected_result, status: c.status, comment: c.comment })),
+      });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [dirty, locked, task, token, prUrl, breakdown, cases]);
 
   function touch() {
     setDirty(true);
@@ -165,8 +236,15 @@ export default function PublicQaTaskPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || "Unable to save");
+      const payload = await readJson(res);
+      if (!res.ok) {
+        throw new Error(
+          typeof payload.error === "string"
+            ? payload.error
+            : `Unable to save (error ${res.status}). Your answers are kept on this page, please try again.`,
+        );
+      }
+      clearBackup(token);
       setDirty(false);
       if (mode === "submit") {
         setConfirmOpen(false);

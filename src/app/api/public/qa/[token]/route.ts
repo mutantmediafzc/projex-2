@@ -74,6 +74,59 @@ export async function GET(_request: NextRequest, { params }: Params) {
   });
 }
 
+type RpcError = { code?: string; message: string; details?: string | null; hint?: string | null } | null;
+
+// PostgREST / Postgres codes for "this function signature does not exist".
+const MISSING_FUNCTION_CODES = new Set(["PGRST202", "42883"]);
+
+// Saves the member's work through the qa_save_task database function.
+//
+// Supports both database versions so a save never fails just because the
+// SQL migration and the deploy happened at different times:
+//  - current (20261102): qa_save_task(token, pr_url, breakdown, cases, submit)
+//  - original (20261101): qa_save_task(token, title, description, pr_url, breakdown, cases, submit)
+// For the original version the stored title and description are passed back
+// unchanged, so the member still cannot edit them.
+async function saveTask(input: {
+  token: string;
+  prUrl: string;
+  breakdown: string[];
+  cases: ReturnType<typeof sanitizeCases>;
+  submit: boolean;
+}): Promise<{ error: RpcError }> {
+  const current = await supabaseAdmin.rpc("qa_save_task", {
+    p_token: input.token,
+    p_pr_url: input.prUrl,
+    p_breakdown: input.breakdown,
+    p_cases: input.cases,
+    p_submit: input.submit,
+  });
+  if (!current.error || !MISSING_FUNCTION_CODES.has(current.error.code ?? "")) {
+    return { error: current.error };
+  }
+
+  console.warn("qa_save_task (5 args) not found, falling back to the original signature. Run supabase/migrations/20261102_qa_lock_task_title_description.sql.");
+
+  const { data: task, error: loadError } = await supabaseAdmin
+    .from("qa_tasks")
+    .select("title, description")
+    .eq("public_token", input.token)
+    .maybeSingle();
+  if (loadError) return { error: loadError };
+  if (!task) return { error: { code: "P0002", message: "QA task not found" } };
+
+  const legacy = await supabaseAdmin.rpc("qa_save_task", {
+    p_token: input.token,
+    p_title: task.title ?? "",
+    p_description: task.description ?? "",
+    p_pr_url: input.prUrl,
+    p_breakdown: input.breakdown,
+    p_cases: input.cases,
+    p_submit: input.submit,
+  });
+  return { error: legacy.error };
+}
+
 async function save(request: NextRequest, token: string, submit: boolean) {
   if (!TOKEN_PATTERN.test(token)) return json({ error: "This QA link is not valid" }, 404);
 
@@ -94,20 +147,25 @@ async function save(request: NextRequest, token: string, submit: boolean) {
     if (problem) return json({ error: problem }, 400);
   }
 
-  const { error } = await supabaseAdmin.rpc("qa_save_task", {
-    p_token: token,
-    p_pr_url: prUrl,
-    p_breakdown: breakdown,
-    p_cases: cases,
-    p_submit: submit,
-  });
+  const { error } = await saveTask({ token, prUrl, breakdown, cases, submit });
 
   if (error) {
     if (error.code === "P0002") return json({ error: "This QA link is not valid or has been removed" }, 404);
     if (error.code === "P0001") return json({ error: "This task has already been submitted and can no longer be changed" }, 409);
     if (error.code === "22023") return json({ error: error.message }, 400);
-    console.error("Failed to save public QA task", error);
-    return json({ error: "Unable to save your work, please try again" }, 500);
+    console.error("Failed to save public QA task", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      submit,
+    });
+    return json(
+      {
+        error: `Unable to save your work${error.code ? ` (error ${error.code})` : ""}. Your answers are kept on this page, please try again or send this message to your QA lead.`,
+      },
+      500,
+    );
   }
 
   return json({ ok: true, submitted: submit });

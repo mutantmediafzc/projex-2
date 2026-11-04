@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { supabaseClient } from "@/lib/supabaseClient";
+import { canDeleteInvoice } from "@/lib/invoiceDeleteAccess";
 import RequireAdmin from "@/components/RequireAdmin";
 import InvoiceCreateModal from "@/app/projects/[id]/InvoiceCreateModal";
 import InvoicePdfModal from "@/app/projects/[id]/InvoicePdfModal";
@@ -607,6 +608,10 @@ export default function FinancialsPage() {
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Invoice | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Invoice | null>(null);
+  const [deleteAllowed, setDeleteAllowed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
   const [expenseEditTarget, setExpenseEditTarget] = useState<FinancialExpense | null>(null);
 
@@ -682,6 +687,7 @@ export default function FinancialsPage() {
 
   async function loadSettings() {
     const { data: authData } = await supabaseClient.auth.getUser();
+    setDeleteAllowed(canDeleteInvoice(authData.user));
     if (!authData?.user) return;
     const { data } = await supabaseClient.from("invoice_settings").select("*").eq("user_id", authData.user.id).single();
     if (data) setSettings(data as InvoiceSettings);
@@ -1286,6 +1292,11 @@ export default function FinancialsPage() {
                         Cancel
                       </button>
                     )}
+                    {deleteAllowed && inv.invoice_type === "invoice" && (
+                      <button type="button" onClick={() => { setDeleteError(null); setDeleteTarget(inv); }} className="h-8 rounded-lg bg-red-50 px-2.5 text-[11px] font-semibold text-red-600 hover:bg-red-100">
+                        Delete Invoice
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1359,6 +1370,42 @@ export default function FinancialsPage() {
         onClose={() => setShowSettingsModal(false)}
         onSaved={() => { void loadSettings(); setShowSettingsModal(false); }}
       />
+    )}
+    {deleteTarget && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div role="dialog" aria-modal="true" aria-labelledby="delete-invoice-title" className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+          <h3 id="delete-invoice-title" className="text-base font-bold text-slate-900">Delete Invoice?</h3>
+          <p className="mt-2 text-sm text-slate-600">
+            {deleteTarget.invoice_number} will be removed from invoice lists and financial totals. The invoice and payment records will be retained for your records.
+          </p>
+          {deleteError && <p role="alert" className="mt-3 text-sm text-red-600">{deleteError}</p>}
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" disabled={deleting} onClick={() => setDeleteTarget(null)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm disabled:opacity-50">Keep Invoice</button>
+            <button type="button" disabled={deleting} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={async () => {
+              setDeleting(true);
+              setDeleteError(null);
+              try {
+                const { data } = await supabaseClient.auth.getSession();
+                if (!data.session) throw new Error("Please sign in again.");
+                const response = await fetch(`/api/financials/invoices/${deleteTarget.id}`, {
+                  method: "DELETE",
+                  headers: { Authorization: `Bearer ${data.session.access_token}` },
+                });
+                if (!response.ok) {
+                  const result = await response.json();
+                  throw new Error(result.error || "Unable to delete invoice.");
+                }
+                setDeleteTarget(null);
+                await loadAll();
+              } catch (error) {
+                setDeleteError(error instanceof Error ? error.message : "Unable to delete invoice.");
+              } finally {
+                setDeleting(false);
+              }
+            }}>{deleting ? "Deleting…" : "Delete Invoice"}</button>
+          </div>
+        </div>
+      </div>
     )}
     {cancelTarget && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

@@ -245,6 +245,19 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    href: "/admin/activity",
+    label: "Activity Monitor",
+    adminOnly: true,
+    gradient: { from: "from-emerald-100 to-teal-100", to: "from-emerald-500 to-teal-500", hover: "from-emerald-50 to-teal-50", shadow: "shadow-emerald-500/25" },
+    icon: (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" />
+        <path d="M8 21h8M12 17v4" />
+        <path d="M6 12l3-3 3 2 4-4" />
+      </svg>
+    ),
+  },
+  {
     href: "/chat",
     label: "Chat with Colton",
     gradient: { from: "from-purple-100 to-violet-100", to: "from-purple-500 to-violet-500", hover: "from-purple-50 to-violet-50", shadow: "shadow-purple-500/25" },
@@ -299,7 +312,7 @@ const NAV_GROUPS = [
   { label: "Finance", hrefs: ["/financials", "/accounts"] },
   { label: "Marketing and Sales", hrefs: ["/companies", "/contacts", "/lms", "/brand-briefing-form", "/design-requests", "/social-media"] },
   { label: "Operations", hrefs: ["/projects", "/tasks", "/qa", "/seo"] },
-  { label: "HR", hrefs: ["/leaves", "/request-documents", "/users"] },
+  { label: "HR", hrefs: ["/leaves", "/request-documents", "/users", "/admin/activity"] },
 ] as const;
 
 const GROUPED_HREFS = new Set<string>(NAV_GROUPS.flatMap((group) => group.hrefs));

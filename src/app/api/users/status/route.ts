@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { logFirstAttendance } from "@/lib/attendance";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -79,29 +80,7 @@ export async function POST(request: NextRequest) {
 
   // Log attendance: record first time user sets status to "available" each day
   if (work_status === "available") {
-    // Use GST (UTC+4) for both the date and the late check
-    const gstOffsetMs = 4 * 60 * 60 * 1000;
-    const gstNow = new Date(now.getTime() + gstOffsetMs);
-    const todayStr = gstNow.toISOString().slice(0, 10); // YYYY-MM-DD in GST
-    const gstHour = gstNow.getUTCHours();
-    const minutes = gstNow.getUTCMinutes();
-    const isLate = gstHour > 9 || (gstHour === 9 && minutes >= 10);
-
-    // Upsert: only set first_available_at if not already logged today
-    await supabaseAdmin
-      .from("attendance_logs")
-      .upsert(
-        {
-          user_id: user.id,
-          log_date: todayStr,
-          first_available_at: now.toISOString(),
-          is_late: isLate,
-        },
-        {
-          onConflict: "user_id,log_date",
-          ignoreDuplicates: true, // only insert if no row yet for today
-        }
-      );
+    await logFirstAttendance(user.id, now);
   }
 
   return NextResponse.json({ success: true, work_status });

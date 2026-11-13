@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { supabaseClient } from "@/lib/supabaseClient";
 import UserStatusDropdown from "./UserStatusDropdown";
+import CheckInButton from "./CheckInButton";
 
 interface CurrentUserInfo {
   fullName: string;
@@ -103,6 +104,7 @@ export default function HeaderUser() {
 
   return (
     <div className="flex items-center gap-1.5 sm:gap-2">
+      <CheckInButton />
       <UserStatusDropdown />
       <button
         type="button"

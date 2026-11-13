@@ -1,0 +1,57 @@
+name: Build desktop tracker
+
+# Builds the Mutant CRM Tracker installers for Windows (.exe) and macOS (.dmg).
+# Run it from the Actions tab. Set these repository variables first
+# (Settings > Secrets and variables > Actions > Variables):
+#   TRACKER_CRM_URL            e.g. https://crm.example.com
+#   TRACKER_SUPABASE_URL       same value as NEXT_PUBLIC_SUPABASE_URL
+#   TRACKER_SUPABASE_ANON_KEY  same value as NEXT_PUBLIC_SUPABASE_ANON_KEY (public key, never the service key)
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: dist:win
+            artifact: desktop-agent/dist/*.exe
+          - os: macos-latest
+            target: dist:mac
+            artifact: desktop-agent/dist/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Write config.json
+        shell: bash
+        env:
+          CRM_URL: ${{ vars.TRACKER_CRM_URL }}
+          SB_URL: ${{ vars.TRACKER_SUPABASE_URL }}
+          SB_KEY: ${{ vars.TRACKER_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$CRM_URL" ] || [ -z "$SB_URL" ] || [ -z "$SB_KEY" ]; then
+            echo "Set TRACKER_CRM_URL, TRACKER_SUPABASE_URL and TRACKER_SUPABASE_ANON_KEY repository variables first." >&2
+            exit 1
+          fi
+          node -e 'require("fs").writeFileSync("config.json", JSON.stringify({crmUrl: process.env.CRM_URL, supabaseUrl: process.env.SB_URL, supabaseAnonKey: process.env.SB_KEY}, null, 2))'
+      - run: npm ci
+      - run: npm test
+      - run: npm run ${{ matrix.target }} -- --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mutant-crm-tracker-${{ matrix.os }}
+          path: ${{ matrix.artifact }}
+          if-no-files-found: error

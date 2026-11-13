@@ -1,0 +1,55 @@
+{
+  "name": "mutant-crm-tracker",
+  "productName": "Mutant CRM Tracker",
+  "version": "1.0.0",
+  "description": "Records on-screen activity and active/idle time for Mutant CRM users between check-in and check-out.",
+  "private": true,
+  "type": "module",
+  "main": "src/main.js",
+  "author": "Mutant Media",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/activityBuffer.test.js",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.83.0",
+    "get-windows": "9.3.0"
+  },
+  "devDependencies": {
+    "electron": "39.8.10",
+    "electron-builder": "26.16.1"
+  },
+  "build": {
+    "appId": "ae.mutant.crm-tracker",
+    "productName": "Mutant CRM Tracker",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "config.json",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/get-windows/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.png",
+      "category": "public.app-category.business",
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSScreenCaptureUsageDescription": "Mutant CRM Tracker reads the active window title and takes screenshots only while you are checked in to the CRM."
+      }
+    }
+  }
+}

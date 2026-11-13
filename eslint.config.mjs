@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Desktop tracker app: separate Electron project with its own tooling.
+    "desktop-agent/**",
   ]),
 ]);
 

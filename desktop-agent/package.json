@@ -35,7 +35,8 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "artifactName": "${productName}-${version}-windows-setup.${ext}"
     },
     "nsis": {
       "oneClick": true,
@@ -43,13 +44,22 @@
       "runAfterFinish": true
     },
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/icon.png",
       "category": "public.app-category.business",
       "extendInfo": {
         "LSUIElement": true,
         "NSScreenCaptureUsageDescription": "Mutant CRM Tracker reads the active window title and takes screenshots only while you are checked in to the CRM."
-      }
+      },
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
     }
   }
 }

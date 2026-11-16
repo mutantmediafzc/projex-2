@@ -21,6 +21,7 @@ export type InvoiceItem = {
   unit_price: number;
   amount: number;
   sort_order: number;
+  tax_rate?: number | null;
 };
 
 export type InvoicePaymentBreakdown = {
@@ -268,6 +269,7 @@ export default function InvoiceManagement({ projectId, projectName, clientName }
           quantity: item.quantity,
           unit_price: item.unit_price,
           amount: item.amount,
+          tax_rate: item.tax_rate ?? null,
           sort_order: item.sort_order,
         }));
         await supabaseClient.from("invoice_items").insert(newItems);

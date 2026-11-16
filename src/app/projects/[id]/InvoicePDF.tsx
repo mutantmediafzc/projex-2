@@ -201,7 +201,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
           </View>
           {items.map((item, index) => (
             <View key={index} style={styles.tableRow}>
-              <Text style={[styles.tableCell, invoice.is_payment_breakdown_invoice ? { width: "100%" } : styles.descCol]}>{item.description}</Text>
+              <Text style={[styles.tableCell, invoice.is_payment_breakdown_invoice ? { width: "100%" } : styles.descCol]}>{item.description}{item.tax_rate != null ? `\nVAT: ${item.tax_rate}%` : ""}</Text>
               {!invoice.is_payment_breakdown_invoice && (
                 <>
                   <Text style={[styles.tableCell, styles.qtyCol]}>{item.quantity}</Text>
@@ -248,7 +248,7 @@ function InvoiceDocument({ invoice, settings }: { invoice: Invoice; settings?: I
             </View>
           )}
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Tax ({invoice.tax_rate}%)</Text>
+            <Text style={styles.totalLabel}>{items.some((item) => item.tax_rate != null) ? "VAT (per item)" : `Tax (${invoice.tax_rate}%)`}</Text>
             <Text style={styles.totalValue}>{formatMoney(invoice.tax_amount, invoice.currency)}</Text>
           </View>
           {totalPaid > 0 ? (

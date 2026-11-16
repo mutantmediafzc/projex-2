@@ -59,7 +59,10 @@
         "LSUIElement": true,
         "NSScreenCaptureUsageDescription": "Mutant CRM Tracker reads the active window title and takes screenshots only while you are checked in to the CRM."
       },
-      "artifactName": "${productName}-${version}-mac-${arch}.${ext}"
+      "artifactName": "${productName}-${version}-mac-${arch}.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     }
   }
 }

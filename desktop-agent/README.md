@@ -77,7 +77,12 @@ To try it without building, run `npm start`.
 ## 4. Install on each PC
 
 - **Windows:** run the `.exe`. Until the installer is code-signed, SmartScreen shows "Windows protected your PC": click **More info > Run anyway**.
-- **macOS:** open the `.dmg` and drag the app to Applications. Until it is signed and notarised, right-click the app and choose **Open** the first time. Then grant **System Settings > Privacy & Security > Screen Recording** (needed for window titles and screenshots) and **Accessibility**, and reopen the app.
+- **macOS:** open the `.dmg` and drag the app to **Applications**. The app is not yet signed with an Apple Developer ID, so the first time:
+  1. Double-click the app. macOS says it "could not verify" the app. Click **Done**.
+  2. Open **System Settings > Privacy & Security**, scroll down, click **Open Anyway** next to Mutant CRM Tracker, and confirm.
+  3. Grant **Screen Recording** (needed for window titles and screenshots) and **Accessibility** in the same Privacy & Security page, then quit and reopen the app from the menu bar.
+
+  If a Mac still says the app **"is damaged and can't be opened"** (older builds, or files copied through some chat apps), open **Terminal** and run `xattr -cr "/Applications/Mutant CRM Tracker.app"`, then open the app again.
 
 The person signs in with their CRM email and password and accepts the monitoring notice. The app then starts with the computer and sits in the tray.
 

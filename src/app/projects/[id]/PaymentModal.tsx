@@ -71,7 +71,6 @@ export default function PaymentModal({ invoice, payments, onClose, onSaved }: Pr
   async function handleSubmit() {
     const amt = parseFloat(amount);
     if (!amt || amt <= 0) { setError("Enter a valid amount."); return; }
-    if (amt > balance + 0.01) { setError(`Amount exceeds balance of ${formatMoney(balance, invoice.currency)}.`); return; }
     setSaving(true);
     setError(null);
     try {

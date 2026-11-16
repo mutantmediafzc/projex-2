@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { calculateInvoiceTotals } from "@/lib/invoiceTax";
 import { supabaseClient } from "@/lib/supabaseClient";
 import InvoicePdfModal from "./InvoicePdfModal";
 import type { Invoice as ManagedInvoice, InvoiceSettings, InvoiceItem } from "./InvoiceManagement";
@@ -82,7 +83,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
   const [formDueDate, setFormDueDate] = useState(invoice.due_date?.split("T")[0] || "");
   const [formPaidDate, setFormPaidDate] = useState(invoice.paid_date?.split("T")[0] || "");
   const [formNotes, setFormNotes] = useState(invoice.notes || "");
-  const [formItems, setFormItems] = useState<{ id?: string; description: string; quantity: number; unit_price: number }[]>([]);
+  const [formItems, setFormItems] = useState<{ id?: string; description: string; quantity: number; unit_price: number; tax_rate: number | null }[]>([]);
   const [formTaxRate, setFormTaxRate] = useState(invoice.tax_rate || 0);
   const [formDiscount, setFormDiscount] = useState(invoice.discount_amount || 0);
   const [formStatus, setFormStatus] = useState(invoice.status);
@@ -129,9 +130,10 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
           description: item.description || "",
           quantity: item.quantity || 1,
           unit_price: item.unit_price || 0,
+          tax_rate: item.tax_rate ?? null,
         })));
       } else {
-        setFormItems([{ description: "", quantity: 1, unit_price: 0 }]);
+        setFormItems([{ description: "", quantity: 1, unit_price: 0, tax_rate: 5 }]);
       }
       const generatedInvoiceIds = (breakdownData || []).flatMap((item) => item.generated_invoice_id ? [item.generated_invoice_id] : []);
       const { data: generatedInvoices } = generatedInvoiceIds.length > 0
@@ -178,9 +180,8 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
     c.name.toLowerCase().includes(companySearch.toLowerCase())
   );
 
-  const subtotal = formItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-  const taxAmount = (subtotal - formDiscount) * (formTaxRate / 100);
-  const total = subtotal - formDiscount + taxAmount;
+  const hasPerItemVat = formItems.some((item) => item.tax_rate !== null);
+  const { subtotal, taxAmount, total } = calculateInvoiceTotals(formItems, formDiscount, formTaxRate);
   const paymentBreakdownTotal = formPaymentBreakdowns.reduce((sum, item) => sum + Math.max(0, item.amount), 0);
   const paidBreakdownTotal = formPaymentBreakdowns
     .filter((item) => item.status === "paid")
@@ -191,7 +192,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
     : null;
 
   function addItem() {
-    setFormItems([...formItems, { description: "", quantity: 1, unit_price: 0 }]);
+    setFormItems([...formItems, { description: "", quantity: 1, unit_price: 0, tax_rate: 5 }]);
   }
 
   function removeItem(index: number) {
@@ -302,6 +303,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
         quantity: item.quantity,
         unit_price: item.unit_price,
         amount: item.quantity * item.unit_price,
+        tax_rate: item.tax_rate,
         sort_order: itemIndex,
       }));
       if (generatedItems.length > 0) {
@@ -384,6 +386,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
           quantity: item.quantity,
           unit_price: item.unit_price,
           amount: item.quantity * item.unit_price,
+          tax_rate: item.tax_rate,
           sort_order: itemIndex,
         }));
 
@@ -455,6 +458,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
         quantity: item.quantity,
         unit_price: item.unit_price,
         amount: item.quantity * item.unit_price,
+        tax_rate: item.tax_rate,
         sort_order: index,
       }));
 
@@ -656,6 +660,15 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
                   <div key={index} className="rounded-xl border border-slate-200 bg-slate-50/50 p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-1">
+                        <label className="mb-2 flex items-center gap-2 text-[11px] font-semibold text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={(item.tax_rate ?? formTaxRate) > 0}
+                            onChange={(event) => updateItem(index, "tax_rate", event.target.checked ? 5 : 0)}
+                            className="h-4 w-4 rounded border-slate-300 accent-violet-600"
+                          />
+                          {(item.tax_rate ?? formTaxRate) || 5}% VAT
+                        </label>
                         <label className="block text-[10px] font-semibold text-slate-500 mb-1">Description</label>
                         <textarea
                           placeholder="Item description..."
@@ -700,10 +713,12 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
 
             {/* Tax & Discount */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tax Rate (%)</label>
-                <input type="number" value={formTaxRate} onChange={(e) => setFormTaxRate(parseFloat(e.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
-              </div>
+              {hasPerItemVat ? <p className="text-[11px] text-slate-500">VAT is calculated per item. Discounts are shared proportionally.</p> : (
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tax Rate (%)</label>
+                  <input type="number" value={formTaxRate} onChange={(e) => setFormTaxRate(parseFloat(e.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
+                </div>
+              )}
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">Discount</label>
                 <input type="number" value={formDiscount} onChange={(e) => setFormDiscount(parseFloat(e.target.value) || 0)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-[13px] text-black focus:border-violet-400 focus:outline-none" />
@@ -720,7 +735,7 @@ export default function InvoiceEditModal({ invoice, settings, onClose, onSaved }
             <div className="rounded-xl bg-slate-50 p-4 space-y-2">
               <div className="flex justify-between text-[13px]"><span className="text-slate-700">Subtotal</span><span className="font-semibold text-slate-900">{subtotal.toFixed(2)}</span></div>
               {formDiscount > 0 && <div className="flex justify-between text-[13px]"><span className="text-slate-700">Discount</span><span className="font-semibold text-red-600">-{formDiscount.toFixed(2)}</span></div>}
-              <div className="flex justify-between text-[13px]"><span className="text-slate-700">Tax ({formTaxRate}%)</span><span className="font-semibold text-slate-900">{taxAmount.toFixed(2)}</span></div>
+              <div className="flex justify-between text-[13px]"><span className="text-slate-700">{hasPerItemVat ? "VAT (per item)" : `Tax (${formTaxRate}%)`}</span><span className="font-semibold text-slate-900">{taxAmount.toFixed(2)}</span></div>
               {paidBreakdownTotal > 0 ? (
                 <>
                   <div className="flex justify-between text-[13px]"><span className="text-slate-700">Total</span><span className="font-semibold text-slate-900">{formCurrency} {total.toFixed(2)}</span></div>
